@@ -1,0 +1,54 @@
+import json
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+import standalone_app
+import suite_navigation
+from flask import Flask, send_file
+
+class StandaloneTests(unittest.TestCase):
+    def setUp(self):
+        self.directory=tempfile.TemporaryDirectory();self.addCleanup(self.directory.cleanup)
+        registry_patch=patch.object(suite_navigation,'REGISTRY',Path(self.directory.name)/'registry.json')
+        registry_patch.start();self.addCleanup(registry_patch.stop)
+        self.client=standalone_app.app.test_client()
+
+    def test_meter_host_has_no_supply_routes_or_hardware_on_page_load(self):
+        with patch('hp34401a.execute') as execute:
+            self.assertEqual(self.client.get('/').status_code,302)
+            for path in ['/multimeter/classic','/multimeter/modern','/api/multimeter/status']:
+                self.assertEqual(self.client.get(path).status_code,200)
+            self.assertEqual(self.client.get('/api/status').status_code,404)
+            execute.assert_not_called()
+
+    def test_cross_origin_control_is_refused(self):
+        with patch('hp34401a.execute') as execute:
+            self.assertEqual(self.client.post('/api/control/meter/identify',json={},headers={'Origin':'http://other'}).status_code,403)
+            execute.assert_not_called()
+
+    def test_same_origin_control_uses_shared_backend(self):
+        with patch('hp34401a.execute',side_effect=[{'identity':'HP,34401A,0,1'},{'function':'dcv'}]) as execute:
+            r=self.client.post('/api/control/meter/identify',json={},headers={'Origin':'http://localhost'})
+            self.assertEqual(r.status_code,200)
+            self.assertEqual([c.args for c in execute.call_args_list],[('meter','identify'),('meter','configuration')])
+
+    def test_navigation_defaults_to_meter_only_and_follows_explicit_selection(self):
+        with tempfile.TemporaryDirectory() as d,patch.object(suite_navigation,'CONFIG',Path(d)/'tools.json'):
+            self.assertEqual(suite_navigation.selected(),['meter'])
+            suite_navigation.CONFIG.write_text(json.dumps({'instruments':['meter','scope']}))
+            self.assertEqual(suite_navigation.selected(),['meter','scope'])
+            script=self.client.get('/api/suite/navigation.js').text
+            self.assertIn('"instruments": ["meter", "scope"]',script)
+            suite_navigation.CONFIG.write_text('{"instruments":["unknown"]}')
+            self.assertIn('"instruments": []',self.client.get('/api/suite/navigation.js').text)
+
+    def test_file_served_scope_page_gets_navigation_without_stale_etag(self):
+        with tempfile.TemporaryDirectory() as d:
+            page=Path(d)/'index.html';page.write_text('<html><body>Scope</body></html>')
+            app=Flask('scope-test')
+            app.add_url_rule('/',view_func=lambda:send_file(page))
+            suite_navigation.install(app,current='scope')
+            response=app.test_client().get('/')
+            self.assertIn('/api/suite/navigation.js',response.text)
+            self.assertNotIn('ETag',response.headers)
