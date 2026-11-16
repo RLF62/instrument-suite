@@ -180,6 +180,7 @@ def provision(tool,job,notify):
             for name in ('app.py','archive_tools.py','ethernet_transport.py','example_catalog.py','scope_io.py','screen_effect.py','index.html','setup.html','requirements.txt'):
                 shutil.copy2(source/name,target/name)
             shutil.copytree(source/'docs',target/'docs')
+            if (source/'static').is_dir():shutil.copytree(source/'static',target/'static')
             atomic(target/'connection.json',{'address':'scope-not-configured.invalid','timeout':6})
             tests=['discover','-s',str(source),'-p','test_*.py']
         shutil.copy2(source/'tool_registration.py',target/'tool_registration.py')

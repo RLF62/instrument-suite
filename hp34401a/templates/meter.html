@@ -3,7 +3,15 @@
 <title>HP 34401A · {{ 'Modern' if modern else 'Classic' }}</title>
 <link rel="stylesheet" href="{{ url_for('meter.static', filename='meter.css') }}">
 <script defer src="{{ url_for('meter.static', filename='meter.js') }}"></script>
-<script defer src="{{ url_for('meter.static', filename='menu.js') }}"></script></head>
+<script defer src="{{ url_for('meter.static', filename='menu.js') }}"></script>
+<link rel="icon" type="image/x-icon" href="/multimeter/assets/icons/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/multimeter/assets/icons/icon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/multimeter/assets/icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/multimeter/assets/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/multimeter/assets/icons/icon-180.png">
+<link rel="manifest" href="/multimeter/assets/manifest.webmanifest?v=branding-1">
+<meta name="apple-mobile-web-app-title" content="HP 34401A">
+</head>
 <body data-view="{{ 'modern' if modern else 'classic' }}">
 <main><nav aria-label="Instrument navigation"><a href="/">HP supply</a><span>HP 34401A MULTIMETER</span><div><a href="/multimeter/classic">Classic</a> · <a href="/multimeter/modern">Modern</a> · <a href="{{ url_for('meter.static', filename='docs/index.html') }}">Documentation</a></div></nav>
 <div class="layout-toolbar"><button id="layout-customize" class="layout-ui" type="button" aria-pressed="false">Customize layout</button><button id="layout-reset" class="layout-ui" type="button" hidden>Reset layout</button><span id="layout-note" class="muted" hidden>Drag a handle or use arrows to move. Set a width or drag the bottom-right corner to resize. Saved in this browser.</span></div><div class="toolbar"><span id="data-source" class="badge">DISCONNECTED · NO LIVE DATA</span><span id="shift-indicator" class="badge shift-indicator" hidden>SHIFT</span><label><input type="checkbox" id="guides"> Control guides</label><label><input type="checkbox" id="preview"> Illustrative preview</label><button id="size">Half size</button><button id="open-menu">Web menu</button><button data-action="local" title="Stops meter polling and requests addressed Go To Local. An explicit new meter command can return it to remote.">Request Local</button></div>

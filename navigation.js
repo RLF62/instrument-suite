@@ -5,6 +5,12 @@
     const nav = document.querySelector('nav[aria-label="Instrument navigation"], .suite-topbar');
     if (!cfg || !nav) return;
     if(cfg.current==='auto') cfg.current=nav.matches('nav[aria-label="Instrument navigation"]')?'meter':'supply';
+    // Cached Classic templates can adopt the reviewed CSS without a controller restart.
+    if(document.head && cfg.current==='supply' && document.getElementById('classic-layout-grid') && !document.getElementById('classic-mobile-width-stylesheet')){
+      const style=document.createElement('link');style.id='classic-mobile-width-stylesheet';
+      style.rel='stylesheet';style.href='/static/classic-mobile-fix.css?v=1';document.head.append(style);
+    }
+
     nav.querySelectorAll('a').forEach(a => {
       const u = new URL(a.href, location.href);
       if (a.id === 'suiteLink' || /Tektronix|HP supply|HP 6033A|HP 34401A/i.test(a.textContent) ||

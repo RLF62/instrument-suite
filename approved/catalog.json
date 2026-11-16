@@ -4,17 +4,17 @@
     "meter": {
       "name": "HP 34401A Multimeter",
       "description": "Photographic Classic and Modern meter views, shared GPIB backend and local manual.",
-      "sha256": "d1fa5b3352d8d8e3bbe08bdb606cb0c922e3454247c787618bd1297ff6824a8f"
+      "sha256": "fe7eab46504dfb4ecc83bb3b350efcf5cea3d03e89328aaa9b10510986a35268"
     },
     "supply": {
       "name": "HP 6033A Supply",
       "description": "Classic and Modern supply views with coordinated GPIB access. Hardware control stays disabled until configured.",
-      "sha256": "13b6b5abf7d31a9746f135b2c153f64b65709c8471181f36894dc634c834054f"
+      "sha256": "dfa71447bc978751440217f9368f148d315a1b88b8f39d3edd3ba7fe8bcdd974"
     },
     "scope": {
       "name": "Tektronix Ethernet",
       "description": "Scope dashboard, captures and setup over Ethernet. Enter the scope IP after installing.",
-      "sha256": "6bcbaaac2ba623511614cf4e1a6584664bcbe37198ed032f4bcf21539a655259"
+      "sha256": "cb249bc76bdcaab2646cf99cfd4edf986d0d447f83f6caed4cbc8e232448125d"
     }
   }
 }

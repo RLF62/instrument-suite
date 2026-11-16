@@ -50,3 +50,16 @@ The three installers are maintained in the central repository:
 ## Independent services behind HTTPS
 
 The shared suite now includes the gateway and deployment-policy support used to separate legacy controllers while preserving existing HTTPS URLs and control authentication. After a completed migration, each controller can be removed and reinstalled without taking down the suite or the other instruments. See the [gateway and migration guide](https://github.com/RLF62/instrument-suite/blob/main/GATEWAY_MIGRATION.md). Existing legacy installations still require an attended migration; installing the catalog alone does not perform it.
+
+
+## Dashboard icons
+
+The controller includes local favicon sizes 16, 32 and 48 px, an Apple touch
+icon at 180 px, and Android home-screen icons at 192 and 512 px. Icons and the
+web app manifest use same-origin paths for HTTP and HTTPS. The two HP
+controllers use the existing HP artwork; the Tektronix controller uses the
+supplied Tektronix artwork. Browser tab icons may need a hard refresh after
+upgrading. Existing Android shortcuts may need to be added again.
+
+The shared suite and standalone installers retain these assets. Icon updates
+do not change instrument configuration or issue instrument commands.

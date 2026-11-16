@@ -53,3 +53,30 @@ document.querySelectorAll('[data-menu-nav]').forEach(b=>b.addEventListener('clic
 window.meterMenu={isOpen:()=>open,toggle:()=>show(!open),recall:()=>show(true,last),navigate,setRecall:key=>{if(key)last=key}};
 renderMenu();
 })();
+
+
+/* HP 34401A branding: refresh head metadata for already-running template workers. */
+(function () {
+  function meterBranding() {
+    if (!document.body || !['classic','modern'].includes(document.body.dataset.view)) return;
+    const base='/multimeter/assets/';
+    const links=[
+      ['icon','image/x-icon',null,'icons/favicon.ico'],
+      ['icon','image/png','16x16','icons/icon-16.png'],
+      ['icon','image/png','32x32','icons/icon-32.png'],
+      ['icon','image/png','192x192','icons/icon-192.png'],
+      ['apple-touch-icon',null,'180x180','icons/icon-180.png'],
+      ['manifest',null,null,'manifest.webmanifest']
+    ];
+    document.head.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"],link[rel="manifest"]').forEach(el=>el.remove());
+    for (const [rel,type,sizes,path] of links) {
+      const el=document.createElement('link');el.rel=rel;el.href=base+path+'?v=hp34401a-branding-1';
+      if(type)el.type=type;if(sizes)el.sizes=sizes;document.head.append(el);
+    }
+    let title=document.head.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if(!title){title=document.createElement('meta');title.name='apple-mobile-web-app-title';document.head.append(title);}
+    title.content='HP 34401A';
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',meterBranding,{once:true});
+  else meterBranding();
+})();

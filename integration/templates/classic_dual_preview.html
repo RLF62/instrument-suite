@@ -677,7 +677,45 @@ body.layout-editing .suite-grid .tile-resize{display:block;position:absolute;rig
 .hp-chart-box input[type=checkbox]{width:auto;min-height:0;margin:0;accent-color:#62ded0}.hp-chart-box button{font:14px system-ui,sans-serif;min-height:44px;padding:8px 12px;color:#eef6f7;background:#303b42;border:1px solid #6c7c87;border-radius:5px}
 .hp-chart-box #history{display:block;width:100%;height:360px;background:#111b20;border-radius:6px}.hp-chart-note,#hp-chart-summary{font:12px/1.5 system-ui,sans-serif;color:#b3bec6;overflow-wrap:anywhere}#hp-chart-status{min-height:24px;font:13px system-ui,sans-serif}
 .hp-chart-box summary{cursor:pointer;min-height:44px;font:700 15px system-ui,sans-serif}.hp-chart-box[hidden]{display:none!important}
-</style></head>
+</style><style id="classic-mobile-width-fix">/* Classic-only mobile layout: keep the layout-editor wrapper at panel width.
+   The original v7 rule targeted body > main.instrument before it was wrapped. */
+@media (max-width: 700px) {
+  body > #classic-layout-grid.suite-classic-root {
+    width: 100%;
+    min-width: 0;
+    max-width: 1120px;
+    margin: 0 auto;
+    align-self: stretch;
+    order: 1;
+  }
+
+  body > nav.suite-topbar {
+    width: 100%;
+    gap: 6px !important;
+    margin: 0 auto 10px !important;
+  }
+
+  body > nav.suite-topbar a {
+    width: auto;
+    max-width: 100%;
+    margin: 0;
+    order: 0;
+    text-align: center;
+  }
+
+  body > nav.suite-topbar .suite-tool-links {
+    flex: 1 1 100%;
+    justify-content: center;
+    gap: 6px;
+    order: 1;
+  }
+
+  body > nav.suite-topbar #layout-customize {
+    font-size: 12px;
+  }
+}
+</style>
+</head>
 <body>
 <nav><strong>CLASSIC INSTRUMENT VIEW</strong><a href="/" style="color: #9baabe; font-family: system-ui, Segoe UI, sans-serif; font-size: 13px; text-decoration: underline;">Modern View</a><a href="/docs/">Documentation</a><a class="tektronix-nav-link" href="http://{{ request.host.split(':')[0] }}:8081/" style="display:inline-block;color:#73e3d1;border:1px solid #3f726f;border-radius:8px;padding:9px 13px;min-height:40px;text-decoration:none;font:13px system-ui,sans-serif">Tektronix TDS 3032B</a><a href="/multimeter/classic" style="color:#73e3d1;padding:9px 13px;display:inline-block">HP 34401A Multimeter</a></nav>
 <main class="instrument">
