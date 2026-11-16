@@ -63,3 +63,13 @@ upgrading. Existing Android shortcuts may need to be added again.
 
 The shared suite and standalone installers retain these assets. Icon updates
 do not change instrument configuration or issue instrument commands.
+
+
+## One-command updater development
+
+The signed one-command installer/updater is a development candidate. See
+[ONE_COMMAND_UPDATER.md](ONE_COMMAND_UPDATER.md) and the
+[validation record](VALIDATION_ONE_COMMAND.md). The public bootstrap is gated
+until release signing, attended enrollment and hardware validation are complete.
+Existing installations and authentication are preserved; this branch must not
+be installed over a working controller as an unattended migration.
