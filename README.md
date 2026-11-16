@@ -39,10 +39,14 @@ Bare-card operating-system installation and hardware commissioning are separate 
 
 The three installers are maintained in the central repository:
 
-| Installer | Download | SHA-256 |
-| --- | --- | --- |
-| HP 34401A Multimeter | [meter.zip](https://github.com/RLF62/instrument-suite/raw/main/approved/packages/meter.zip) | `18b40dd084cd9cb9e2263ec9df71d322b371dd57f158c6f012180c1769424e77` |
-| HP 6033A Supply | [supply.zip](https://github.com/RLF62/instrument-suite/raw/main/approved/packages/supply.zip) | `3c1a796617f26f9b1e83263f439e4c9e2f7a2ac775a3e7a4dde13a75950932a0` |
-| Tektronix Ethernet | [scope.zip](https://github.com/RLF62/instrument-suite/raw/main/approved/packages/scope.zip) | `cb0e7fd651a11a282ca439e1ae90713cdab41825db6b4c00f1a38a4f977e1e6d` |
+| Installer | Download |
+| --- | --- |
+| HP 34401A Multimeter | [meter.zip](https://github.com/RLF62/instrument-suite/raw/main/approved/packages/meter.zip) |
+| HP 6033A Supply | [supply.zip](https://github.com/RLF62/instrument-suite/raw/main/approved/packages/supply.zip) |
+| Tektronix Ethernet | [scope.zip](https://github.com/RLF62/instrument-suite/raw/main/approved/packages/scope.zip) |
 
 [Approved catalog and checksums](https://github.com/RLF62/instrument-suite/blob/main/approved/catalog.json). For the complete installer and manager setup, follow the [Instrument Suite instructions](https://github.com/RLF62/instrument-suite#install).
+
+## Independent services behind HTTPS
+
+The shared suite now includes the gateway and deployment-policy support used to separate legacy controllers while preserving existing HTTPS URLs and control authentication. After a completed migration, each controller can be removed and reinstalled without taking down the suite or the other instruments. See the [gateway and migration guide](https://github.com/RLF62/instrument-suite/blob/main/GATEWAY_MIGRATION.md). Existing legacy installations still require an attended migration; installing the catalog alone does not perform it.

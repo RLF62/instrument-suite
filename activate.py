@@ -5,6 +5,8 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from deployment_profile import bind_host
 
 BASE=Path('/home/pi')
 UNITS=Path('/etc/systemd/system')
@@ -85,9 +87,10 @@ User=pi
 Group=www-data
 WorkingDirectory={BASE}/{folder}
 Environment=PYTHONPATH={BASE}/instrument-suite
-ExecStart={BASE}/{folder}/venv/bin/gunicorn --workers 1 --threads 4 --bind 0.0.0.0:{port} {module}:app
+ExecStart={BASE}/{folder}/venv/bin/gunicorn --workers 1 --threads 4 --bind {bind_host(tool)}:{port} {module}:app
 Restart=on-failure
 TimeoutStopSec=7
+{'NoNewPrivileges=true' if tool=='scope' else ''}
 [Install]
 WantedBy=multi-user.target
 ''')

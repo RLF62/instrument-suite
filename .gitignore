@@ -6,3 +6,9 @@ tools.json
 registry.json
 .control*
 .instrument-suite-manager/
+gateway-venv/
+security/
+captures/
+setup-backups/
+personal-examples/
+connection.json

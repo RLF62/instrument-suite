@@ -13,8 +13,11 @@ ROOT=Path('/opt/fischer-suite-manager')
 HOME=Path('/home/pi')
 UNIT=Path('/etc/systemd/system/fischer-suite-manager.service')
 SUDOERS=Path('/etc/sudoers.d/fischer-suite-catalog')
-FILES=('catalog_service.py','manager_engine.py','activate.py','catalog_cli.py')
-WEB=('suite_navigation.py','navigation.js','catalog_web.py','catalog.html','tool_registration.py')
+SYSTEMD=Path('/etc/systemd/system')
+BACKUPS=Path('/var/backups/fischer-suite-manager')
+WEB_SERVICES=('hp6033a','hp34401a','tektronix-controller','fischer-suite-web')
+FILES=('catalog_service.py','manager_engine.py','activate.py','catalog_cli.py','deployment_profile.py')
+WEB=('suite_navigation.py','navigation.js','catalog_web.py','catalog.html','tool_registration.py','suite_gateway.py')
 
 def run(*args,check=True):return subprocess.run(list(map(str,args)),check=check,timeout=45)
 
@@ -25,7 +28,11 @@ def main():
     for key,item in metadata['tools'].items():
         if hashlib.sha256((SOURCE/'approved/packages'/(key+'.zip')).read_bytes()).hexdigest()!=item['sha256']:
             raise RuntimeError('Package checksum mismatch: '+key)
-    backup=Path('/var/backups/fischer-suite-manager')/time.strftime('%Y%m%d-%H%M%S')
+    active_web={name:subprocess.run(['systemctl','is-active','--quiet',name]).returncode==0 for name in WEB_SERVICES}
+    uid=pwd.getpwnam('pi').pw_uid
+    user=['runuser','-u','pi','--','env','XDG_RUNTIME_DIR=/run/user/'+str(uid),'systemctl','--user']
+    active_user_scope=subprocess.run([*user,'is-active','--quiet','tektronix-controller']).returncode==0
+    backup=BACKUPS/time.strftime('%Y%m%d-%H%M%S')
     backup.mkdir(parents=True,mode=0o700)
     original={}
     for name,path in [('manager',ROOT),('service',UNIT),('sudoers',SUDOERS)]:
@@ -54,7 +61,7 @@ def main():
         temporary=backup/'sudoers.new';temporary.write_text('pi ALL=(root) NOPASSWD: '+', '.join(commands)+'\n');temporary.chmod(0o440)
         run('visudo','-cf',temporary);shutil.copy2(temporary,SUDOERS);SUDOERS.chmod(0o440)
         for name in ('hp34401a','hp6033a','tektronix-controller','fischer-gpib'):
-            path=Path('/etc/systemd/system')/(name+'.service')
+            path=SYSTEMD/(name+'.service')
             if path.is_file() and not path.is_symlink():path.chmod(0o644)
         uid=pwd.getpwnam('pi').pw_uid;gid=pwd.getpwnam('pi').pw_gid
         for target in targets:
@@ -79,10 +86,9 @@ KillMode=control-group
 WantedBy=multi-user.target
 ''')
         run('systemctl','daemon-reload');run('systemctl','enable','--now','fischer-suite-manager');run('systemctl','restart','fischer-suite-manager')
-        for service in ('hp6033a','hp34401a','tektronix-controller'):
-            if subprocess.run(['systemctl','is-active','--quiet',service]).returncode==0:run('systemctl','restart',service)
-        user=['runuser','-u','pi','--','env','XDG_RUNTIME_DIR=/run/user/'+str(uid),'systemctl','--user']
-        if subprocess.run([*user,'is-active','--quiet','tektronix-controller']).returncode==0:run(*user,'restart','tektronix-controller')
+        for service,was_running in active_web.items():
+            if was_running:run('systemctl','restart',service)
+        if active_user_scope:run(*user,'restart','tektronix-controller')
     except Exception:
         run('systemctl','stop','fischer-suite-manager',check=False)
         for name,path in [('manager',ROOT),('service',UNIT),('sudoers',SUDOERS)]:
@@ -95,6 +101,9 @@ WantedBy=multi-user.target
             elif path.exists():path.unlink()
         run('systemctl','daemon-reload')
         if original['service']:run('systemctl','start','fischer-suite-manager',check=False)
+        for service,was_running in active_web.items():
+            if was_running:run('systemctl','restart',service,check=False)
+        if active_user_scope:run(*user,'restart','tektronix-controller',check=False)
         raise
     print('Approved catalog enabled. Backup:',backup)
 

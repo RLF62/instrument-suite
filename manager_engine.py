@@ -11,6 +11,7 @@ import subprocess
 import time
 import urllib.request
 import zipfile
+from deployment_profile import public_records,configure_app,sync_security
 
 HOME=Path('/home/pi')
 SUITE=HOME/'instrument-suite'
@@ -95,7 +96,7 @@ def scan():
         result['meter']={'port':8082,'scheme':'http','path':'/multimeter/classic','folder':str(HOME/'hp34401a')}
     if (HOME/'tektronix-controller/app.py').exists() and (active('tektronix-controller') or active('tektronix-controller',True)) and healthy(8081,'/api/config'):
         result['scope']={'port':8081,'scheme':'http','path':'/','folder':str(HOME/'tektronix-controller')}
-    return result
+    return public_records(result)
 
 def register(force=False):
     tools=scan()
@@ -168,7 +169,7 @@ def provision(tool,job,notify):
             shutil.copytree(source/'hp34401a',target/'hp34401a')
             tests=['test_standalone','test_standalone_install','test_views','test_coordination']
         elif tool=='supply':
-            for name in ('app.py','requirements.txt'):shutil.copy2(source/name,target/name)
+            for name in ('app.py','requirements.txt','config.example.json'):shutil.copy2(source/name,target/name)
             for name in ('templates','static','docs','deploy'):shutil.copytree(source/name,target/name)
             # Patched app comes from a reviewed package, never a direct VISA controller.
             if 'FISCHER_SHARED_ADAPTER_V1' not in (target/'app.py').read_text():raise RuntimeError('Supply package is not coordinated')
@@ -195,6 +196,7 @@ def provision(tool,job,notify):
         if tests:
             command([python,'-m','unittest',*tests],log,as_pi=True,timeout=120) if tool=='scope' else command([python,'-m','unittest','discover','-s',source,'-p','test_views.py'],log,as_pi=True,timeout=120)
         restore_settings(tool,target)
+        configure_app(tool,target)
         if tool!='scope':
             meter_source=source if tool=='meter' else unpack('meter',job/'shared-meter')
             ensure_broker(meter_source,python,log)
@@ -235,7 +237,7 @@ def rollback(tool,job):
     intent.unlink();register()
 
 SETTINGS={'meter':('appearance.json','presets.json'),
-          'supply':('config.json','presets.json','.control_auth_mode','.control_htpasswd'),
+          'supply':('config.json','config.example.json','presets.json','.hp6033a-version.json','.control_auth_mode','.control_htpasswd'),
           'scope':('connection.json','appearance.json','measurement-selection.json','presets.json','captures','setup-backups','personal-examples')}
 
 def is_runtime_stub(tool):
@@ -301,6 +303,7 @@ def remove(tool,job,keep_settings,notify):
     try:
         notify('Stopping only the selected dashboard; shared adapter stays running')
         activate(tool,'remove',job,job/'install.log')
+        if tool=='supply':sync_security(target)
         if keep_runtime:
             archive.mkdir()
             for p in list(target.iterdir()):

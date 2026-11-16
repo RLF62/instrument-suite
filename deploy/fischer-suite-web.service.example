@@ -1,0 +1,20 @@
+# Example only. Prepare the gateway runtime and migrate services before enabling.
+[Unit]
+Description=Fischer Instrument Suite stable HTTPS gateway
+After=network.target
+
+[Service]
+User=pi
+Group=www-data
+WorkingDirectory=/home/pi/instrument-suite
+RuntimeDirectory=hp6033a
+RuntimeDirectoryMode=0750
+UMask=0007
+Environment=PYTHONPATH=/home/pi/instrument-suite
+ExecStart=/home/pi/instrument-suite/gateway-venv/bin/gunicorn --workers 1 --threads 8 --bind unix:/run/hp6033a/gunicorn.sock suite_gateway:app
+Restart=on-failure
+TimeoutStopSec=7
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
