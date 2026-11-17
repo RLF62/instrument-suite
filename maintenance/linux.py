@@ -140,7 +140,7 @@ class LinuxHost:
                 blockers.append(name+': service layout is missing, unreadable or a legacy symlink; attended review required')
             if not guarded:
                 blockers.append(name+': verified maintenance guard must be installed before controller replacement')
-            if gateway and not loopback:
+            if gateway and name in ('meter','supply') and not loopback:
                 blockers.append(name+': HTTPS backend must remain bound to loopback')
             if runtime.exists() and not permanent_runtime:
                 blockers.append(name+': preserve the in-directory runtime until a permanent runtime migration is verified')
@@ -364,7 +364,14 @@ class LinuxHost:
                 if name=='supply' and dest.name=='supply_standalone.py' and dest.exists():continue
                 if dest.is_file() and dest.read_bytes()==p.read_bytes():continue
                 if not dest.exists():meta['created_files'].append(str(dest));atomic_json(backup/'backup.json',meta)
-                self.copy_atomic(p,dest)
+                prepared=p
+                if gateway and name=='meter' and p.relative_to(source).as_posix()=='standalone_app.py':
+                    text=p.read_text()
+                    if '# FISCHER_GATEWAY_PROXY:' not in text:
+                        text+='\n# FISCHER_GATEWAY_PROXY: backend is bound to loopback by the root helper.\nfrom werkzeug.middleware.proxy_fix import ProxyFix\napp.wsgi_app=ProxyFix(app.wsgi_app,x_proto=1)\n'
+                    prepared=Path(job)/'meter-https-standalone.py'
+                    prepared.write_text(text)
+                self.copy_atomic(prepared,dest)
             if name in self.runtimes:
                 link=self.runtime_link(name)
                 if link.exists() and not link.is_symlink():
