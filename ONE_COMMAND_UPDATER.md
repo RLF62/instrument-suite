@@ -1,13 +1,12 @@
-# One-command maintenance: development candidate
+# One-command installation and maintenance
 
-This implementation is being validated on a clean Raspberry Pi OS card. It has
-not been published as a signed public release. The development bootstrap fails
-closed until a maintainer pins an approved release public key. Do not advertise
-the public download command as working before that release is published.
+The stable signed release channel is published and verified. Fresh-card HTTP
+installation and attended enrollment of an existing HTTPS deployment passed.
+See [FRESH_CARD_VALIDATION.md](FRESH_CARD_VALIDATION.md) for the acceptance record.
+Existing legacy installations require the attended migration procedure; the
+bootstrap refuses to overwrite an installed updater.
 
-The production Pi must not be changed without separate explicit approval.
-
-## Intended public interface
+## Public interface
 
 ```sh
 curl -fsSLO https://raw.githubusercontent.com/RLF62/instrument-suite/main/bootstrap.sh
@@ -128,13 +127,26 @@ instrument-safety and recovery checks remain mandatory. Status/progress and
 errors are available while a job is running. During local candidate validation,
 public update discovery reports that a signed public release is still required.
 
-## Validation and release gate
+## Validation and release maintenance
 
 The isolated maintenance tests exercise signature verification, replay/expiry,
 unsafe archives, dependency compatibility, independent updates, one/two/three
 controller plans, low space, interrupted download, activation failure, recovery,
 quiescence, dry runs and concurrent-operation locks. These simulated tests do not
 substitute for a clean-card installation, hardware interlocks or a power-loss test.
-Record clean-card results separately before publishing. A public release also
-needs a reviewed signing identity, immutable assets in the respective repositories,
-a pinned public bootstrap, and approval to publish.
+The stable release uses a pinned production signing identity and immutable assets
+in the respective repositories. Release metadata expires: maintainers must publish
+new signed metadata before expiry; changing the clock or skipping signature checks
+is not a recovery procedure.
+
+## Existing Unix-socket HTTPS gateways
+
+The web authorization policy requires a verified connection address. An existing
+Unix-only Gunicorn gateway needs a local TCP listener for the update API. Retain
+the original Unix listener, add a loopback-only listener, and route only the exact
+`/api/software-updates` location to that listener. The HTTPS proxy must overwrite
+`Host`, `X-Real-IP` and `X-Forwarded-Proto` with its own verified values. Keep the
+existing LAN restrictions and dashboard credentials. Do not bind this listener to
+all interfaces or trust client-supplied forwarding headers. Back up the deployment
+configuration and validate Nginx before reloading it. The updater preserves these
+host-specific service and proxy settings.
