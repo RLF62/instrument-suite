@@ -70,7 +70,7 @@ def main(signed_only=False):
     (backup/'manifest.json').write_text(json.dumps({'original':original,'web':[{'path':str(p),'backup':str(s),'existed':e} for p,s,e in managed]},indent=2))
     (backup/'ROLLBACK.txt').write_text('Stop fischer-suite-manager. Restore manager/service/sudoers and web files according to manifest.json, reload systemd, then restart the previously running web services. Existing instrument configuration and authentication were not modified. Do not restore a direct GPIB application alongside the broker.\n')
     try:
-        if signed_only:run('systemctl','stop','fischer-suite-manager')
+        if signed_only and original['service']:run('systemctl','stop','fischer-suite-manager')
         ROOT.mkdir(exist_ok=True)
         for name in FILES:shutil.copy2(SOURCE/name,ROOT/name)
         if not signed_only:
