@@ -60,6 +60,18 @@ class LinuxHost:
     def temporary(self): return tempfile.TemporaryDirectory(prefix='fischer-release-')
     def folder(self, name): return self.home/SPECS[name][0]
 
+    def service(self, name):
+        if name == 'suite' and self.https_gateway():
+            unit = Path('/etc/systemd/system/fischer-suite-web.service')
+            if not unit.is_file() or unit.is_symlink():
+                raise MaintenanceError('Existing HTTPS gateway service must be reviewed before maintenance')
+            return 'fischer-suite-web'
+        return SPECS[name][1]
+
+    def runtime_link(self, name):
+        leaf = 'gateway-venv' if name == 'suite' and self.https_gateway() else 'venv'
+        return self.folder(name)/leaf
+
     def https_gateway(self):
         """Recognize the protected administrator policy without changing the deployment."""
         profile = Path('/etc/fischer-suite/profile.json')
@@ -96,7 +108,7 @@ class LinuxHost:
             if p.exists() and json.loads(p.read_text())==value:continue
             atomic_json(p,value);p.chmod(0o644)
     def active(self, name):
-        return subprocess.run(['systemctl','is-active','--quiet',SPECS[name][1]], capture_output=True, timeout=10).returncode == 0
+        return subprocess.run(['systemctl','is-active','--quiet',self.service(name)], capture_output=True, timeout=10).returncode == 0
 
     def discover(self):
         return {name for name in SPECS if self.folder(name).exists() or Path('/etc/systemd/system', SPECS[name][1]+'.service').exists()}
@@ -120,7 +132,7 @@ class LinuxHost:
                 text = ''
             guarded = name == 'suite' or 'maintenance_entry:app' in text
             loopback = name == 'suite' or '--bind 127.0.0.1:' in text or '--bind=127.0.0.1:' in text
-            runtime = folder/'venv'
+            runtime = self.runtime_link(name)
             permanent_runtime = runtime.is_symlink() and runtime.is_dir()
             if name not in known:
                 blockers.append(name+': unversioned software preserved; compare with reviewed release artifacts before attended enrollment')
@@ -201,11 +213,12 @@ class LinuxHost:
         # New runtimes have permanent paths; console-script shebangs never move.
         for name, stage in stages.items():
             previous = self.folder(name)
+            runtime_link = self.runtime_link(name)
             lock = stage/'requirements.lock'
-            if (previous/'venv/bin/python').exists() and (previous/'requirements.lock').is_file() and (previous/'requirements.lock').read_bytes()==lock.read_bytes():
-                self.run([previous/'venv/bin/python','-m','pip','check'], as_pi=True)
+            if (runtime_link/'bin/python').exists() and (previous/'requirements.lock').is_file() and (previous/'requirements.lock').read_bytes()==lock.read_bytes():
+                self.run([runtime_link/'bin/python','-m','pip','check'], as_pi=True)
                 continue
-            if (previous/'venv').exists() and not (previous/'venv').is_symlink():
+            if runtime_link.exists() and not runtime_link.is_symlink():
                 raise MaintenanceError(name+': existing in-directory runtime is preserved. Attended enrollment must establish a permanent runtime before dependency changes')
             runtime = Path('/opt/fischer-suite-runtimes')/job.name/name
             runtime.mkdir(parents=True, mode=0o755); os.chown(runtime, uid, gid)
@@ -257,7 +270,7 @@ class LinuxHost:
         # an update stores only selected code, preserving unrelated applications.
         for name in changes:
             for p in self.managed(name,self.folder(name)): files.append(p)
-            files.append(Path('/etc/systemd/system',SPECS[name][1]+'.service'))
+            files.append(Path('/etc/systemd/system',self.service(name)+'.service'))
         if 'suite' in changes:
             files += [Path('/etc/nginx/sites-available/fischer-suite-dashboard'),Path('/etc/nginx/sites-enabled/fischer-suite-dashboard')]
             files += [Path('/etc/systemd/system/fischer-gpib.service'),Path('/etc/udev/rules.d/70-fischer-gpib.rules')]
@@ -273,7 +286,7 @@ class LinuxHost:
         archive=destination/'private-system.tar.gz'
         with tarfile.open(archive,'w:gz') as tar:
             def filter_member(member):
-                if any(x in {'venv','__pycache__','.git'} for x in Path(member.name).parts): return None
+                if any(x in {'venv','gateway-venv','__pycache__','.git'} for x in Path(member.name).parts): return None
                 return member
             for p in paths:
                 if p.exists():tar.add(p,arcname=str(p).lstrip('/'),filter=filter_member)
@@ -286,12 +299,13 @@ class LinuxHost:
         metadata={'schema':1,'state':state,'affected':affected,'changes':changes,'files':inventory,
                   'archive_sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),
                   'absent':[str(self.folder(n)) for n in changes if not self.folder(n).exists()],
-                  'venvs':{n:os.readlink(self.folder(n)/'venv') if (self.folder(n)/'venv').is_symlink() else None for n in changes},
+                  'venvs':{n:os.readlink(self.runtime_link(n)) if self.runtime_link(n).is_symlink() else None for n in changes},
+                  'runtime_links':{n:self.runtime_link(n).name for n in changes},
                   'created_files':[],'created_units':[],
                   'restart_broker':self.restart_broker,
                   'engine_link':os.readlink('/opt/fischer-suite-updater/current') if Path('/opt/fischer-suite-updater/current').is_symlink() else None,
                   'broker_active':subprocess.run(['systemctl','is-active','--quiet','fischer-gpib'],capture_output=True,timeout=10).returncode==0,
-                  'service_states':{n:{'active':self.active(n),'enabled':subprocess.run(['systemctl','is-enabled','--quiet',SPECS[n][1]],capture_output=True,timeout=10).returncode==0} for n in changes}}
+                  'service_states':{n:{'active':self.active(n),'enabled':subprocess.run(['systemctl','is-enabled','--quiet',self.service(n)],capture_output=True,timeout=10).returncode==0} for n in changes}}
         atomic_json(destination/'backup.json',metadata)
         (destination/'RECOVERY.txt').write_text('Run sudo instrument-suite rollback. Code rollback preserves current private settings. private-system.tar.gz contains applications and private system configuration; restore those only through an attended administrator recovery. Never start an uncoordinated GPIB process alongside the broker.\n')
         self.verify_backup(destination)
@@ -318,7 +332,8 @@ class LinuxHost:
 
     def stop(self, affected):
         for name in affected:
-            if Path('/etc/systemd/system',SPECS[name][1]+'.service').exists():self.run(['systemctl','stop',SPECS[name][1]])
+            service = self.service(name)
+            if Path('/etc/systemd/system',service+'.service').exists():self.run(['systemctl','stop',service])
         if 'suite' in affected and self.restart_broker and Path('/etc/systemd/system/fischer-gpib.service').exists():self.run(['systemctl','stop','fischer-gpib'])
 
     def copy_atomic(self, source, target):
@@ -351,7 +366,7 @@ class LinuxHost:
                 if not dest.exists():meta['created_files'].append(str(dest));atomic_json(backup/'backup.json',meta)
                 self.copy_atomic(p,dest)
             if name in self.runtimes:
-                link=target/'venv'
+                link=self.runtime_link(name)
                 if link.exists() and not link.is_symlink():
                     raise MaintenanceError('Existing in-directory runtime preserved; attended enrollment must establish a permanent runtime first')
                 link.unlink(missing_ok=True);link.symlink_to(self.runtimes[name],target_is_directory=True)
@@ -363,7 +378,7 @@ class LinuxHost:
                 if name=='scope':
                     atomic_json(target/'connection.json',{'address':'scope-not-configured.invalid','timeout':6});os.chown(target/'connection.json',uid,gid)
             if name!='suite':self.entry(name,job,meta)
-            unit=Path('/etc/systemd/system',SPECS[name][1]+'.service')
+            unit=Path('/etc/systemd/system',self.service(name)+'.service')
             if not unit.exists():
                 meta['created_units'].append(str(unit));atomic_json(backup/'backup.json',meta)
                 module='maintenance.landing' if name=='suite' else 'maintenance_entry'
@@ -431,16 +446,20 @@ class LinuxHost:
 
     def start(self, affected, changes):
         names=sorted(set(affected)|set(changes),key=lambda n:n!='suite')
-        if Path('/etc/systemd/system/fischer-gpib.service').exists() and (set(names)&{'suite','meter','supply'}):
+        needs_broker = bool(set(names)&{'meter','supply'}) or ('suite' in names and self.restart_broker)
+        if Path('/etc/systemd/system/fischer-gpib.service').exists() and needs_broker:
             self.run(['systemctl','start','fischer-gpib'])
         for name in names:
-            if Path('/etc/systemd/system',SPECS[name][1]+'.service').exists() and (self.folder(name)/'venv/bin/python').exists():self.run(['systemctl','start',SPECS[name][1]])
+            service = self.service(name)
+            if Path('/etc/systemd/system',service+'.service').exists() and (self.runtime_link(name)/'bin/python').exists():self.run(['systemctl','start',service])
         for name in changes:
-            if Path('/etc/systemd/system',SPECS[name][1]+'.service').exists():self.run(['systemctl','enable',SPECS[name][1]])
+            service = self.service(name)
+            if Path('/etc/systemd/system',service+'.service').exists():self.run(['systemctl','enable',service])
 
     def health(self, affected, changes):
         for name in sorted(set(affected)|set(changes)):
-            if not Path('/etc/systemd/system',SPECS[name][1]+'.service').exists():continue
+            service = self.service(name)
+            if not Path('/etc/systemd/system',service+'.service').exists():continue
             for attempt in range(20):
                 try:
                     if not self.active(name):raise MaintenanceError('Service not active')
@@ -449,7 +468,16 @@ class LinuxHost:
                             s.settimeout(2);s.connect('/run/fischer-maintenance-'+name+'/control.sock')
                             s.sendall(b'{"action":"health","schema":1}\n');data=json.loads(s.makefile('rb').readline(4097))
                             if data.get('ok') is not True or data.get('tool')!=name:raise MaintenanceError('Controller guard not ready')
-                    self.run(['curl','--fail','--silent','--max-time','2',f'http://127.0.0.1:{SPECS[name][2]}/'] if name=='suite' else ['systemctl','is-active',SPECS[name][1]])
+                    if name == 'suite':
+                        command = ['curl','--fail','--silent','--max-time','2']
+                        if self.https_gateway():
+                            command += ['--unix-socket','/run/hp6033a/gunicorn.sock',
+                                        'http://localhost/api/suite/navigation.js']
+                        else:
+                            command += [f'http://127.0.0.1:{SPECS[name][2]}/']
+                    else:
+                        command = ['systemctl','is-active',service]
+                    self.run(command)
                     break
                 except (OSError,ValueError,MaintenanceError):
                     if attempt==19:raise MaintenanceError(name+' failed activation health checks')
@@ -463,7 +491,10 @@ class LinuxHost:
         for item in data['files']:
             self.copy_atomic(backup/item['slot'],Path(item['path']));Path(item['path']).chmod(item['mode'])
         for name,previous in data['venvs'].items():
-            link=self.folder(name)/'venv'
+            leaf = data.get('runtime_links', {}).get(name, 'venv')
+            if leaf not in ('venv', 'gateway-venv') or leaf == 'gateway-venv' and name != 'suite':
+                raise MaintenanceError('Invalid backup runtime path')
+            link=self.folder(name)/leaf
             if link.is_symlink():
                 link.unlink()
                 if previous:link.symlink_to(previous,target_is_directory=True)
@@ -477,6 +508,7 @@ class LinuxHost:
             if data.get('engine_link'):pointer.symlink_to(data['engine_link'],target_is_directory=True)
         self.run(['systemctl','daemon-reload'])
         for name,state in data.get('service_states',{}).items():
-            if Path('/etc/systemd/system',SPECS[name][1]+'.service').exists():
-                self.run(['systemctl','enable' if state['enabled'] else 'disable',SPECS[name][1]])
+            service = self.service(name)
+            if Path('/etc/systemd/system',service+'.service').exists():
+                self.run(['systemctl','enable' if state['enabled'] else 'disable',service])
         if Path('/etc/nginx/nginx.conf').exists():self.run(['nginx','-t']);self.run(['systemctl','reload','nginx'])

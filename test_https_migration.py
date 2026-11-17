@@ -169,6 +169,61 @@ class HttpsFilesystemTests(unittest.TestCase):
         self.assertFalse(self.commands)
 
 
+    def test_gateway_service_and_socket_are_used_for_lifecycle_and_health(self):
+        runtime = self.host.folder('suite')/'gateway-venv/bin'
+        runtime.mkdir(parents=True)
+        (runtime/'python').write_text('# inert runtime\n')
+        self.host.restart_broker = False
+        self.host.stop(['suite'])
+        self.host.start(['suite'], ['suite'])
+        self.host.health(['suite'], ['suite'])
+        self.assertIn(['systemctl', 'stop', 'fischer-suite-web'], self.commands)
+        self.assertIn(['systemctl', 'start', 'fischer-suite-web'], self.commands)
+        curl = next(cmd for cmd in self.commands if cmd[0] == 'curl')
+        self.assertIn('--unix-socket', curl)
+        self.assertIn('/run/hp6033a/gunicorn.sock', curl)
+        self.assertFalse(any('fischer-suite-dashboard' in cmd or 'fischer-gpib' in cmd
+                             for cmd in self.commands))
+        self.assertFalse(any('8090' in arg for cmd in self.commands for arg in cmd))
+
+    def test_gateway_runtime_and_service_restore_without_replacing_broker_runtime(self):
+        suite = self.host.folder('suite')
+        old = self.root/'opt/runtime-old'; old.mkdir()
+        new = self.root/'opt/runtime-new'; new.mkdir()
+        (suite/'gateway-venv').symlink_to(old, target_is_directory=True)
+        (suite/'venv').mkdir()
+        sentinel = suite/'venv/broker-runtime'; sentinel.write_text('preserve broker runtime')
+        before = self.protected()
+        backup = self.backup('suite')
+        meta = self.host.verify_backup(backup)
+        self.assertEqual(meta['runtime_links']['suite'], 'gateway-venv')
+        self.assertIn(str(self.gateway), [entry['path'] for entry in meta['files']])
+        self.host.runtimes['suite'] = new
+        self.host.activate({'suite':self.source}, self.job)
+        self.assertEqual((suite/'gateway-venv').resolve(), new)
+        self.assertFalse((self.root/'etc/systemd/system/fischer-suite-dashboard.service').exists())
+        self.host.restore(backup)
+        self.assertEqual((suite/'gateway-venv').resolve(), old)
+        self.assertEqual(sentinel.read_text(), 'preserve broker runtime')
+        self.assertEqual(self.protected(), before)
+
+    def test_matching_gateway_dependencies_reuse_gateway_runtime(self):
+        suite = self.host.folder('suite')
+        binary = suite/'gateway-venv/bin/python'
+        binary.parent.mkdir(parents=True); binary.write_text('# inert runtime\n')
+        (suite/'requirements.lock').write_text('# pinned fixture\n')
+        (self.source/'requirements.lock').write_text('# pinned fixture\n')
+        self.host.prepare_runtimes({'suite':self.source}, self.job)
+        self.assertEqual(self.commands, [[str(binary), '-m', 'pip', 'check']])
+        self.assertFalse(self.host.runtimes)
+
+    def test_gateway_profile_without_gateway_unit_fails_before_service_changes(self):
+        self.gateway.unlink()
+        with self.assertRaisesRegex(MaintenanceError, 'gateway service'):
+            self.host.stop(['suite'])
+        self.assertFalse(self.commands)
+
+
 class RealTlsAuthorizationTests(unittest.TestCase):
     """Exercise HTTPS, browser cookie and CSRF behavior without a privileged helper."""
     def setUp(self):
