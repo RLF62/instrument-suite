@@ -150,11 +150,6 @@ UPDATER_CONFIG=Path('/etc/fischer-suite-updater.json')
 def provision(tool,job,notify):
     if tool not in APP_DIRS:raise ValueError('Choose an approved instrument')
     if tool in scan():register();return {'already_installed':True}
-    if UPDATER_CONFIG.exists():
-        notify('Installing through the signed updater with retained settings and safety checks')
-        result=activate(tool,'install-signed',job,job/'install.log')
-        register(force=True)
-        return result
     target=HOME/APP_DIRS[tool];unit=UNITS/(SERVICES[tool]+'.service')
     stub=is_runtime_stub(tool)
     if (target.exists() and not stub) or target.is_symlink() or unit.exists():
@@ -164,6 +159,11 @@ def provision(tool,job,notify):
     hp=HOME/'hp6033a/app.py'
     if tool!='scope' and hp.exists() and 'FISCHER_SHARED_ADAPTER_V1' not in hp.read_text():
         raise RuntimeError('Existing supply uses direct adapter access; integrate coordination before adding a GPIB tool')
+    if UPDATER_CONFIG.exists():
+        notify('Installing through the signed updater with retained settings and safety checks')
+        result=activate(tool,'install-signed',job,job/'install.log')
+        register(force=True)
+        return result
     log=job/'install.log';source=job/'source';source.mkdir(mode=0o755)
     notify('Verifying approved package checksum')
     unpack(tool,source)
