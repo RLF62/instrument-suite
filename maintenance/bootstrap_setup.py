@@ -48,6 +48,9 @@ def main(argv=None):
     command.write_text('#!/bin/sh\nexec /usr/bin/python3 -I /opt/fischer-suite-updater/current/runner.py "$@"\n');command.chmod(0o755)
     atomic_json(cfg,{'schema':1,'key':str(key)})
     result=engine.apply(manifest,selected)
+    # This source was authenticated by bootstrap and again by the shared engine.
+    # Install only the catalog helper; preserve all controller/gateway services.
+    host.run(['/usr/bin/python3','-I',str(source/'deploy_manager.py'),'--signed-only'],timeout=180)
     from .web_policy import installation_choice
     installation_choice(args.web_updates,args.trusted_lan,args.update_origin)
     print(result)
