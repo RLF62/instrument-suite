@@ -34,7 +34,7 @@ class SignedCatalogTests(unittest.TestCase):
  def test_signed_remove_and_reinstall_delegate_to_fixed_root_operations(self):
   with tempfile.TemporaryDirectory() as tmp:
    base=Path(tmp);cfg=base/'updater.json';cfg.write_text('{}');job=base/('a'*32);job.mkdir()
-   with patch.object(manager,'UPDATER_CONFIG',cfg),patch.object(manager,'activate',return_value={'ok':True}) as action,patch.object(manager,'scan',return_value={}),patch.object(manager,'register'),patch.object(manager,'unpack') as unpack:
+   with patch.object(manager,'HOME',base),patch.object(manager,'UNITS',base/'units'),patch.object(manager,'UPDATER_CONFIG',cfg),patch.object(manager,'activate',return_value={'ok':True}) as action,patch.object(manager,'scan',return_value={}),patch.object(manager,'register'),patch.object(manager,'unpack') as unpack:
     manager.remove('meter',job,True,lambda _:None)
     action.assert_called_once_with('meter','remove-signed',job,job/'install.log',True)
     action.reset_mock();manager.provision('meter',job,lambda _:None)
