@@ -1,5 +1,8 @@
 # Preserved HP supply UI: reviewed development work
 
+> Historical validation record. Status and unfinished-work statements below describe this testing stage. The signed release and attended HTTPS acceptance subsequently completed; see [current acceptance](FRESH_CARD_VALIDATION.md) and [current installation/maintenance](ONE_COMMAND_UPDATER.md).
+
+
 The owner explicitly approved inspection of the two production HP supply HTML
 templates. Inspection identified the shared presentation layout editor, saved
 layout migration, live voltage/current/power chart, chart visibility preferences,

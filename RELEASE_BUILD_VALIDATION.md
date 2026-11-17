@@ -1,5 +1,8 @@
 # Signed release builder (development validation)
 
+> Historical validation record. Status and unfinished-work statements below describe this testing stage. The signed release and attended HTTPS acceptance subsequently completed; see [current acceptance](FRESH_CARD_VALIDATION.md) and [current installation/maintenance](ONE_COMMAND_UPDATER.md).
+
+
 `tools/build_release.py` builds artifacts; it never enrolls the updater, installs dependencies, contacts instruments, changes authentication, starts services, or publishes to GitHub. Run it as an ordinary user. The private test-candidate builder remains available for fixtures; its historical source labels must not be used as public release provenance.
 
 ## Required inputs

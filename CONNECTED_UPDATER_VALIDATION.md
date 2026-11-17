@@ -1,5 +1,8 @@
 # Connected updater acceptance checks
 
+> Historical validation record. Status and unfinished-work statements below describe this testing stage. The signed release and attended HTTPS acceptance subsequently completed; see [current acceptance](FRESH_CARD_VALIDATION.md) and [current installation/maintenance](ONE_COMMAND_UPDATER.md).
+
+
 Validated on the development Raspberry Pi on 2026-11-16 (America/Chicago), using UsbGpib V2 firmware reporting V2.5. Production was inspected read-only and was not changed.
 
 ## Passed

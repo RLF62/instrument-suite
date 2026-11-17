@@ -1,5 +1,8 @@
 # Meter-only installation and selected navigation
 
+> This page documents the original source/ZIP installer workflow. For new installations and enrolled updates, start with the [signed suite installer](https://github.com/RLF62/instrument-suite/blob/main/ONE_COMMAND_UPDATER.md). Existing legacy installations need attended migration. Commands below do not replace signed-updater maintenance.
+
+
 The HP 34401A can run without installing the HP 6033A application. Use Raspberry Pi OS with the `pi` account. Install OS prerequisites `python3-venv`, `python3-pip`, `curl`, and `libusb-1.0-0` first. Extract this repository into a staging folder, then run:
 
 ```sh

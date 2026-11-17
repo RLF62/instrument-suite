@@ -1,5 +1,8 @@
 # Production migration comparison gate
 
+> Historical validation record. Status and unfinished-work statements below describe this testing stage. The signed release and attended HTTPS acceptance subsequently completed; see [current acceptance](FRESH_CARD_VALIDATION.md) and [current installation/maintenance](ONE_COMMAND_UPDATER.md).
+
+
 The production installation remains running with its existing HTTPS gateway,
 authentication, controller services, settings and runtime layout. No updater
 enrollment or controller activation was performed during this review. A private

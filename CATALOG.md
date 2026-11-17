@@ -1,5 +1,8 @@
 # Add instruments
 
+> This page describes the original approved ZIP catalog. For signed installation and updates, use the [signed suite installer](https://github.com/RLF62/instrument-suite/blob/main/ONE_COMMAND_UPDATER.md). Existing legacy installations need attended migration. Commands below do not replace signed-updater maintenance.
+
+
 Every dashboard has an **Add instruments** link when the approved catalog is enabled. The same catalog is available from the meter, supply, and scope; it always installs on the Pi hosting that page.
 
 1. Open **Add instruments**.

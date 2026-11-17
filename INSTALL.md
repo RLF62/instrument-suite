@@ -1,5 +1,8 @@
 # Install and update the three-instrument suite
 
+> This page documents the original source/ZIP installer workflow. For new installations and enrolled updates, start with the [signed suite installer](https://github.com/RLF62/instrument-suite/blob/main/ONE_COMMAND_UPDATER.md). Existing legacy installations need attended migration. Commands below do not replace signed-updater maintenance.
+
+
 ## Components
 
 | Component | Repository | Connection | Installed endpoint |

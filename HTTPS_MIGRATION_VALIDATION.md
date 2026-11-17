@@ -1,5 +1,8 @@
 # Existing HTTPS installation: validation and attended migration
 
+> Historical validation record. Status and unfinished-work statements below describe this testing stage. The signed release and attended HTTPS acceptance subsequently completed; see [current acceptance](FRESH_CARD_VALIDATION.md) and [current installation/maintenance](ONE_COMMAND_UPDATER.md).
+
+
 This is development work, not authorization to enroll a working instrument
 controller. The public bootstrap remains gated pending release signing and the
 remaining connected-instrument acceptance tests. Never run the clean-card

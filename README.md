@@ -1,87 +1,73 @@
 # Fischer Instrument Suite
 
-Raspberry Pi controllers for the HP 6033A power supply, HP 34401A multimeter, and Tektronix Ethernet oscilloscope. Each installed controller shares a menu and an approved catalog for adding standalone instruments.
+Raspberry Pi web controllers for the HP 6033A power supply, HP 34401A multimeter and Tektronix Ethernet oscilloscope. Install any supported combination and use the shared navigation to switch between instruments.
 
-## Install
+## Install and update
 
-On a fresh Raspberry Pi OS installation with the `pi` account, use the signed installer:
+For a fresh Raspberry Pi OS installation with the `pi` account, use the signed suite installer and select the controllers you want:
 
 ```sh
-curl -fsSLO https://raw.githubusercontent.com/RLF62/instrument-suite/main/bootstrap.sh
-sudo bash bootstrap.sh
+curl -fsSLO https://raw.githubusercontent.com/RLF62/instrument-suite/main/bootstrap.sh && sudo bash bootstrap.sh
 ```
 
-After installation, use `sudo instrument-suite check` and `sudo instrument-suite update`.
-See [ONE_COMMAND_UPDATER.md](ONE_COMMAND_UPDATER.md) for supported platforms,
-web maintenance, instrument safety and recovery. Legacy installations require
-attended migration before enrollment.
+For installations already enrolled in the signed updater:
 
-The original ZIP installers remain available below. Extract each into its own
-staging folder and follow its included installation instructions.
+```sh
+sudo instrument-suite check
+sudo instrument-suite update --dry-run
+sudo instrument-suite update
+```
 
-Choose the meter-only installation or integration with an existing HP 6033A controller. The meter-only path can enable the included, checksum-verified instrument catalog. Read [STANDALONE.md](STANDALONE.md), [INSTALL.md](INSTALL.md), and [CATALOG.md](CATALOG.md) before activation.
+[Installation and recovery guide](https://github.com/RLF62/instrument-suite/blob/main/ONE_COMMAND_UPDATER.md) · [Stable signed release](https://github.com/RLF62/instrument-suite/releases/latest)
 
-## Shared menu and removal
+HTTPS web maintenance reuses the existing dashboard credentials. Trusted-LAN HTTP installations can explicitly enable password-free updates. Terminal maintenance uses sudo. Existing legacy installations require [attended migration](https://github.com/RLF62/instrument-suite/blob/main/GATEWAY_MIGRATION.md); the bootstrap does not overwrite an enrolled updater.
 
-Successful installers request registration with the local manager. Verified installed tools appear in every controller's menu, using the current browser host and each controller's configured protocol and port. A missing or busy manager reports registration as pending without failing the controller installation.
+## Controllers
 
-Standalone catalog installations support individual removal and reinstall while retaining settings. Existing integrated or legacy services remain protected: they must be migrated before their Remove buttons can be enabled. Installing the manager does not perform that migration.
+| Controller | Repository | Fresh-install HTTP port |
+| --- | --- | --- |
+| HP 6033A power supply | [Source and operating guide](https://github.com/RLF62/hp6033a-web-controller) | 8083 |
+| HP 34401A multimeter | [Source and operating guide](https://github.com/RLF62/hp34401a-web-controller) | 8082 |
+| Tektronix Ethernet oscilloscope | [Source and operating guide](https://github.com/RLF62/tektronix-ethernet-controller) | 8081 |
 
-New standalone controllers use trusted-LAN HTTP and begin with GPIB access disabled. Existing secured installations retain their configuration and authentication. Installation and registration do not reset or program the physical instruments.
+The fresh suite dashboard uses port 8080. Existing HTTPS installations retain their configured URLs and authentication. Navigation uses the current browser host. Supply and meter share one adapter broker; do not run a direct-adapter application against that same adapter.
 
-## Validation
+## Maintenance and recovery
 
-- 86 suite Python tests, 59 supply-installer tests, and 26 Tektronix tests passed.
-- Five shared-menu and seven Tektronix frontend checks passed with Node.
-- All three controllers completed removal and fresh application reinstall on the install-test Pi; the other controllers remained available with unchanged application files.
-- The existing production installation retains its shared/legacy removal protections.
+Signed manifests select compatible, independently versioned controller packages. Downloads and dependency locks are verified before activation. Instrument interlocks, private backups and automatic recovery remain mandatory.
 
-Bare-card operating-system installation and hardware commissioning are separate from application install validation.
+Before maintenance, confirm supply output OFF and remote programming disabled, pause meter polling, and stop scope acquisition. Missing or unknown instrument state blocks the operation. The updater does not change those instrument states for you.
 
-## Individual projects
+```sh
+sudo instrument-suite status
+sudo instrument-suite backup
+sudo instrument-suite rollback --dry-run
+```
 
-- [HP 6033A](https://github.com/RLF62/hp6033a-web-controller)
-- [HP 34401A](https://github.com/RLF62/hp34401a-web-controller)
-- [Tektronix Ethernet](https://github.com/RLF62/tektronix-ethernet-controller)
+After reviewing the preview, `sudo instrument-suite rollback` performs recovery. Keep private backup archives and credentials off GitHub.
 
-## Verified installer downloads
+## Documentation
 
-The three installers are maintained in the central repository:
+- [Documentation index](DOCUMENTATION.md)
+- [Signed installation, web updates and recovery](ONE_COMMAND_UPDATER.md)
+- [Existing HTTPS migration](GATEWAY_MIGRATION.md)
+- [Add/remove instruments and approved catalog](CATALOG.md)
+- [Current acceptance record](FRESH_CARD_VALIDATION.md)
+
+Controllers retain their own source, operating manuals, screenshots and release history. The suite owns signed release coordination and the central ZIP catalog.
+
+## Original ZIP installers
+
+These downloads support the original catalog workflow. They are distinct from the immutable archives selected by the signed updater.
 
 | Installer | Download |
 | --- | --- |
-| HP 34401A Multimeter | [meter.zip](https://github.com/RLF62/instrument-suite/raw/main/approved/packages/meter.zip) |
-| HP 6033A Supply | [supply.zip](https://github.com/RLF62/instrument-suite/raw/main/approved/packages/supply.zip) |
-| Tektronix Ethernet | [scope.zip](https://github.com/RLF62/instrument-suite/raw/main/approved/packages/scope.zip) |
+| HP 34401A | [meter.zip](approved/packages/meter.zip) |
+| HP 6033A | [supply.zip](approved/packages/supply.zip) |
+| Tektronix | [scope.zip](approved/packages/scope.zip) |
 
-[Approved catalog and checksums](https://github.com/RLF62/instrument-suite/blob/main/approved/catalog.json). For the complete installer and manager setup, follow the [Instrument Suite instructions](https://github.com/RLF62/instrument-suite#install).
+[Catalog checksums](approved/catalog.json) · [Original standalone installation](STANDALONE.md) · [Original integrated installation](INSTALL.md)
 
-## Independent services behind HTTPS
+## Validation
 
-The shared suite now includes the gateway and deployment-policy support used to separate legacy controllers while preserving existing HTTPS URLs and control authentication. After a completed migration, each controller can be removed and reinstalled without taking down the suite or the other instruments. See the [gateway and migration guide](https://github.com/RLF62/instrument-suite/blob/main/GATEWAY_MIGRATION.md). Existing legacy installations still require an attended migration; installing the catalog alone does not perform it.
-
-
-## Dashboard icons
-
-The controller includes local favicon sizes 16, 32 and 48 px, an Apple touch
-icon at 180 px, and Android home-screen icons at 192 and 512 px. Icons and the
-web app manifest use same-origin paths for HTTP and HTTPS. The two HP
-controllers use the existing HP artwork; the Tektronix controller uses the
-supplied Tektronix artwork. Browser tab icons may need a hard refresh after
-upgrading. Existing Android shortcuts may need to be added again.
-
-The shared suite and standalone installers retain these assets. Icon updates
-do not change instrument configuration or issue instrument commands.
-
-
-## Signed maintenance
-
-[Stable signed releases](https://github.com/RLF62/instrument-suite/releases/latest)
-provide independent controller versions, signature and dependency verification,
-instrument interlocks, backups and rollback. HTTPS web updates reuse the existing
-dashboard credentials; trusted-LAN HTTP installations can explicitly enable
-password-free updates. Terminal maintenance uses sudo.
-
-The [acceptance record](FRESH_CARD_VALIDATION.md) includes 230 regression tests,
-fresh-card installation and attended HTTPS production activation. A rollback
-preview passed; an actual production rollback and a power-loss test were not performed.
+All 230 regression tests passed for the signed release. Fresh-card HTTP installation, attended HTTPS production activation, dashboard routes, public artifact verification, backups and a no-op update passed. Settings and credentials were retained. Actual production rollback and unexpected power-loss recovery were not performed; see the acceptance record for limits.
