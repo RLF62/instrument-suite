@@ -30,17 +30,16 @@ JavaScript as well as layout changes; these differences cannot be treated as
 cache parameters or copied over without review. Existing server-specific
 wrappers and navigation differences also require preservation and reconciliation.
 
-## Blocked inspection and next action
+## Template inspection completed
 
-The automatic approval review rejected exporting production template contents
-and then rejected inspection of limited changed lines after credential-marker
-screening. No template content was exported or changed. Explicit permission to
-inspect `hp6033a/templates/index.html` and
-`hp6033a/templates/classic_dual_preview.html` is required before that review can
-continue. Credential files, live configuration, certificates and private keys
-are outside this inspection.
+The owner explicitly approved inspection of both production supply templates.
+The reviewed source preserves the chart, layout editor, saved preferences,
+branding and Classic mobile proportions. Both templates are now staged in the
+suite integration source, and the candidate builder overlays them into supply
+packages. Ten isolated browser checks and all 204 Linux regression tests passed.
+See PRESERVED_SUPPLY_UI_VALIDATION.md for exact hashes and validation limits.
 
-Until the production-specific changes are understood, preserve both templates
-and do not deploy controller artifacts over them. Keep legacy removal safeguards
-and bootstrap release gates enabled. Existing-HTTPS attended enrollment, final
-clean-card acceptance and production signing setup remain unfinished.
+Server-specific wrappers and navigation still need reconciliation. Keep legacy
+removal safeguards and bootstrap release gates enabled. Existing-HTTPS attended
+enrollment, final clean-card acceptance and production signing remain unfinished.
+No production application files or services were changed.

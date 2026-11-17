@@ -16,6 +16,23 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from maintenance.security import canonical,safe_member,REPOS,verify_manifest
 from maintenance.linux import LinuxHost
 
+def apply_suite_templates(suite, payload):
+    """Use the same reviewed supply views as the existing suite installer."""
+    source = Path(suite)/'integration/templates'
+    destination = Path(payload)/'templates'
+    names = ('index.html', 'classic_dual_preview.html')
+    if any(not (source/name).is_file() or (source/name).is_symlink() for name in names):
+        raise SystemExit('Reviewed suite supply templates are missing or symlinked')
+    if source.is_symlink() or destination.is_symlink():
+        raise SystemExit('Unexpected template directory symlink')
+    destination.mkdir(parents=True, exist_ok=True)
+    for name in names:
+        target = destination/name
+        if target.is_symlink():
+            raise SystemExit('Unexpected payload template symlink')
+        shutil.copy2(source/name, target)
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--suite',type=Path,required=True);parser.add_argument('--locks',type=Path,required=True)
@@ -50,6 +67,7 @@ def main():
                 subprocess.run([sys.executable,str(suite/'patch_hp.py'),str(payload/'app.py')],check=True)
                 path=payload/'app.py';text=path.read_text().replace('from hp34401a import install as install_meter\ninstall_meter(app)\n\n','');path.write_text(text)
                 if 'install_meter(app)' in text or 'ResourceManager' in text:raise SystemExit('Shared-adapter transformation failed')
+                apply_suite_templates(suite, payload)
             host.validate_payload(name,payload)
             filename=name+'.tar.gz';archive=args.output/filename
             with archive.open('wb') as raw,gzip.GzipFile(fileobj=raw,mode='wb',mtime=0,filename='') as gz,tarfile.open(fileobj=gz,mode='w') as tar:
