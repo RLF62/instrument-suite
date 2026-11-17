@@ -42,12 +42,12 @@ class Guard:
     def check(self):
         if self.tool == 'supply':
             if getattr(self.controller, 'remote_control_enabled', None) is not False:
-                raise RuntimeError('Disable HP 6033A remote programming in its dashboard and retry')
+                raise RuntimeError('In the live HP 6033A dashboard, turn OUTPUT OFF, then disable remote programming and retry. The updater never switches output')
             # Same read-only path used by the controller; a cached display is insufficient.
             values = self.controller.read_gpib()
             output = values.get('OUT')
             if type(output) not in (int, float) or output != 0:
-                raise RuntimeError('Turn HP 6033A output OFF at the instrument, verify it, then retry. The updater never switches output')
+                raise RuntimeError('In the live HP 6033A dashboard, turn OUTPUT OFF, then disable remote programming and retry. The updater never switches output')
             return {'output': False, 'remote_control_enabled': False, 'verified': True}
         if self.tool == 'meter':
             state = self.meter.snapshot()

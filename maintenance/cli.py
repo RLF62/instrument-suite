@@ -12,7 +12,7 @@ from .security import MaintenanceError
 
 ROOT = Path('/var/lib/fischer-suite-updater')
 CONFIG = Path('/etc/fischer-suite-updater.json')
-ACTIONS = ('install','update','status','check','backup','rollback','configure-web-updates')
+ACTIONS = ('install','update','status','check','backup','rollback','configure-web-updates','audit')
 
 def config():
     if not CONFIG.is_file() or CONFIG.is_symlink(): raise MaintenanceError('Updater is not enrolled. Use the signed bootstrap or attended enrollment guide')
@@ -60,6 +60,8 @@ def menu():
 def execute(action, instruments=None, dry_run=False, release_url=None):
     if action not in ACTIONS:raise MaintenanceError('Unsupported maintenance action')
     host=LinuxHost(ROOT);engine=Engine(ROOT,host)
+    if action=='audit':
+        return host.audit(engine.state(),engine.pending.exists())
     if action=='status':
         state=engine.state()
         return {'installed':state['components'],'discovered':sorted(host.discover()),

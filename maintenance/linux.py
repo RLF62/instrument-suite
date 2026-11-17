@@ -31,9 +31,11 @@ FILES = {'suite': {'activate.py', 'adapter_broker.py', 'adapter_worker.py', 'cat
     'scope': {'app.py', 'scope_io.py', 'ethernet_transport.py', 'screen_effect.py', 'archive_tools.py', 'example_catalog.py',
               'index.html', 'setup.html', 'tool_registration.py'}}
 COMMON = {'requirements.txt', 'requirements.lock', 'config.example.json', 'README.md', 'ONE_COMMAND_UPDATER.md','INSTALL.md',
-          'STANDALONE.md', 'CATALOG.md', 'GATEWAY_MIGRATION.md', 'DEPLOYMENT.md', 'INSTRUMENT_SUITE.md', 'PROJECT_HANDOFF.md'}
+          'STANDALONE.md', 'CATALOG.md', 'GATEWAY_MIGRATION.md', 'DEPLOYMENT.md', 'INSTRUMENT_SUITE.md', 'PROJECT_HANDOFF.md',
+          'HTTPS_MIGRATION_VALIDATION.md'}
 SYSTEM = (Path('/etc/nginx'), Path('/etc/systemd/system'), Path('/etc/sudoers.d'),
           Path('/etc/fischer-suite'), Path('/etc/udev/rules.d'), Path('/opt/fischer-suite-manager'),
+          Path('/etc/ssl'), Path('/etc/letsencrypt'),
           Path('/etc/fischer-suite-updater.json'),Path('/etc/fischer-suite-updater-web.json'))
 
 class LinuxHost:
@@ -57,6 +59,26 @@ class LinuxHost:
 
     def temporary(self): return tempfile.TemporaryDirectory(prefix='fischer-release-')
     def folder(self, name): return self.home/SPECS[name][0]
+
+    def https_gateway(self):
+        """Recognize the protected administrator policy without changing the deployment."""
+        profile = Path('/etc/fischer-suite/profile.json')
+        gateway = Path('/etc/systemd/system/fischer-suite-web.service')
+        if not profile.exists():
+            if profile.is_symlink() or gateway.exists() or gateway.is_symlink():
+                raise MaintenanceError('Existing HTTPS gateway requires its protected deployment policy; no network settings changed')
+            return False
+        stat = profile.stat()
+        if profile.is_symlink() or not profile.is_file() or stat.st_uid != 0 or stat.st_mode & 0o022:
+            raise MaintenanceError('HTTPS deployment policy must be root-owned and protected; no network settings changed')
+        try:
+            value = json.loads(profile.read_text())
+        except (OSError, ValueError):
+            raise MaintenanceError('HTTPS deployment policy is unreadable; no network settings changed') from None
+        if not isinstance(value, dict) or value.get('schema') != 1 or value.get('https_gateway') is not True:
+            raise MaintenanceError('Unrecognized HTTPS deployment policy preserved; attended migration required')
+        return True
+
     def publish(self,state):
         records={}
         prior=self.folder('suite')/'registry.json'
@@ -79,11 +101,52 @@ class LinuxHost:
     def discover(self):
         return {name for name in SPECS if self.folder(name).exists() or Path('/etc/systemd/system', SPECS[name][1]+'.service').exists()}
 
+    def audit(self, state, recovery_pending=False):
+        """Read-only migration inventory. This never enrolls unknown software."""
+        gateway = self.https_gateway()
+        actual = self.discover()
+        known = set(state.get('components', {}))
+        blockers = []
+        if recovery_pending:
+            blockers.append('Complete the existing recovery before enrollment or updates')
+        records = {}
+        for name in sorted(actual):
+            folder = self.folder(name)
+            unit_name = 'fischer-suite-web' if name == 'suite' and gateway else SPECS[name][1]
+            unit = Path('/etc/systemd/system', unit_name+'.service')
+            try:
+                text = unit.read_text() if unit.is_file() and not unit.is_symlink() else ''
+            except OSError:
+                text = ''
+            guarded = name == 'suite' or 'maintenance_entry:app' in text
+            loopback = name == 'suite' or '--bind 127.0.0.1:' in text or '--bind=127.0.0.1:' in text
+            runtime = folder/'venv'
+            permanent_runtime = runtime.is_symlink() and runtime.is_dir()
+            if name not in known:
+                blockers.append(name+': unversioned software preserved; compare with reviewed release artifacts before attended enrollment')
+            if not text:
+                blockers.append(name+': service layout is missing, unreadable or a legacy symlink; attended review required')
+            if not guarded:
+                blockers.append(name+': verified maintenance guard must be installed before controller replacement')
+            if gateway and not loopback:
+                blockers.append(name+': HTTPS backend must remain bound to loopback')
+            if runtime.exists() and not permanent_runtime:
+                blockers.append(name+': preserve the in-directory runtime until a permanent runtime migration is verified')
+            records[name] = {'enrolled':name in known, 'service':unit_name,
+                             'maintenance_guard_present':guarded, 'loopback_backend':loopback,
+                             'permanent_runtime':permanent_runtime,
+                             'version':state.get('components', {}).get(name, {}).get('version')}
+        return {'action':'audit', 'changes_performed':False,
+                'deployment':'https-gateway' if gateway else 'standalone-or-http',
+                'components':records, 'requires_attended_enrollment':sorted(actual-known),
+                'blocking_reasons':blockers, 'recovery_pending':bool(recovery_pending),
+                'next_step':'Resolve the listed items using the attended migration guide; audit never authorizes adoption or instrument interruption'}
+
     def affected(self, changes, actual):
         return sorted(set(actual) if 'suite' in changes else (set(changes)&set(actual)))
 
     def refine_affected(self,stages,conservative):
-        allowed={'README.md','ONE_COMMAND_UPDATER.md','test_web_update_policy.py','test_maintenance.py'}|{'maintenance/'+n for n in (
+        allowed={'README.md','ONE_COMMAND_UPDATER.md','HTTPS_MIGRATION_VALIDATION.md','test_web_update_policy.py','test_maintenance.py','test_https_migration.py'}|{'maintenance/'+n for n in (
             'landing.py','web_updates.py','web_policy.py','helper.py','cli.py','bootstrap_setup.py',
             'engine.py','linux.py','candidate.py','security.py')}
         if 'suite' in stages:
@@ -275,6 +338,7 @@ class LinuxHost:
             if os.path.exists(tmp):os.unlink(tmp)
 
     def activate(self, stages, job):
+        gateway = self.https_gateway()
         backup=Path(job)/'backup';meta=json.loads((backup/'backup.json').read_text())
         uid,gid=pwd.getpwnam('pi').pw_uid,pwd.getpwnam('pi').pw_gid
         for name,source in stages.items():
@@ -304,7 +368,7 @@ class LinuxHost:
                 meta['created_units'].append(str(unit));atomic_json(backup/'backup.json',meta)
                 module='maintenance.landing' if name=='suite' else 'maintenance_entry'
                 dependencies='Requires=fischer-gpib.service\nAfter=fischer-gpib.service\n' if name in ('meter','supply') else ''
-                text=f'[Unit]\nDescription=Fischer {name} controller\nAfter=network.target\n{dependencies}[Service]\nUser=pi\nGroup=www-data\nWorkingDirectory={target}\nEnvironment=PYTHONPATH={self.folder("suite")}\nRuntimeDirectory=fischer-maintenance-{name}\nRuntimeDirectoryMode=0700\nExecStart={target}/venv/bin/gunicorn --workers 1 --threads 4 --bind {"127.0.0.1" if name=="suite" else "0.0.0.0"}:{SPECS[name][2]} {module}:app\nRestart=on-failure\nTimeoutStopSec=20\n[Install]\nWantedBy=multi-user.target\n'
+                text=f'[Unit]\nDescription=Fischer {name} controller\nAfter=network.target\n{dependencies}[Service]\nUser=pi\nGroup=www-data\nWorkingDirectory={target}\nEnvironment=PYTHONPATH={self.folder("suite")}\nRuntimeDirectory=fischer-maintenance-{name}\nRuntimeDirectoryMode=0700\nExecStart={target}/venv/bin/gunicorn --workers 1 --threads 4 --bind {"127.0.0.1" if name=="suite" or gateway and name in ("meter","supply") else "0.0.0.0"}:{SPECS[name][2]} {module}:app\nRestart=on-failure\nTimeoutStopSec=20\n[Install]\nWantedBy=multi-user.target\n'
                 unit.write_text(text);unit.chmod(0o644)
         if 'suite' in stages:self.shared_setup(stages['suite'],job,meta)
         if set(stages)&{'meter','supply'}:
@@ -332,7 +396,7 @@ class LinuxHost:
         text+=f'install(app,{name!r},controller{extras})\n'
         temporary=Path(job)/(name+'-entry.py');temporary.write_text(text);self.copy_atomic(temporary,path)
 
-    def shared_setup(self,source,job,meta):
+    def setup_dashboard_site(self,job,meta):
         # Never refresh the legacy catalog helper here: it restarts unrelated
         # controllers and has its own removal protections. Preserve it unchanged.
         site=Path('/etc/nginx/sites-available/fischer-suite-dashboard')
@@ -349,6 +413,11 @@ class LinuxHost:
             site.chmod(0o644)
         self.run(['nginx','-t'])
         self.run(['systemctl','reload','nginx'])
+    def shared_setup(self,source,job,meta):
+        # Keep the existing HTTPS gateway and its authentication/certificates.
+        # In particular, never add the fresh-install HTTP listener alongside it.
+        if not self.https_gateway():
+            self.setup_dashboard_site(job,meta)
         engines=Path('/opt/fischer-suite-updater/releases');engines.mkdir(parents=True,exist_ok=True,mode=0o755)
         engine=engines/Path(job).name;engine.mkdir(mode=0o755)
         shutil.copytree(source/'maintenance',engine/'maintenance')
