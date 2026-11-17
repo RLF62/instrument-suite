@@ -53,3 +53,28 @@ app=controller.app
 app.wsgi_app=ProxyFix(app.wsgi_app,x_proto=1)
 controller.proxy_control_auth_mode=lambda: '2' if request.remote_addr=='127.0.0.1' and request.is_secure else None
 ''')
+
+def guarded_entry(tool):
+    module={'meter':'standalone_app','supply':'supply_standalone','scope':'app'}[tool]
+    text=f'import {module} as controller\nfrom maintenance.guard import install\napp=controller.app\n'
+    if tool=='supply':text+='controller=controller.controller\n'
+    extras=''
+    if tool=='meter':text+='import hp34401a as meter\n';extras=', meter=meter'
+    if tool=='scope':text+='import scope_io\n';extras=', scope_io=scope_io'
+    return text+f'install(app,{tool!r},controller{extras})\n'
+
+def standalone_service(tool,target,text,port,module):
+    """Recognize an independent direct launcher or the exact signed guard wrapper."""
+    target=Path(target)
+    if f'WorkingDirectory={target}\n' not in text or f':{port}' not in text:
+        return False
+    starts=[line for line in text.splitlines() if line.startswith('ExecStart=')]
+    if len(starts)!=1 or f'{target}/venv/bin/gunicorn ' not in starts[0]:
+        return False
+    if starts[0].split()[-1:]==[module+':app']:
+        return True
+    if starts[0].split()[-1:]!=['maintenance_entry:app']:
+        return False
+    entry=target/'maintenance_entry.py'
+    try:return not entry.is_symlink() and entry.read_text()==guarded_entry(tool)
+    except OSError:return False
