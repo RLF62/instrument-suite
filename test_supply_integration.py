@@ -61,6 +61,8 @@ class SupplyIntegrationTests(unittest.TestCase):
     def test_build_only_wrapper_asset_does_not_restart_existing_controllers(self):
         source=self.root/'source';(source/'integration').mkdir(parents=True)
         (source/'integration/supply_standalone.py').write_text('reviewed build asset')
+        (source/'test_build_release.py').write_text('# build-time tests only')
+        (source/'test_supply_integration.py').write_text('# build-time tests only')
         host=LinuxHost(self.root/'state',self.root/'home')
         actual=host.refine_affected({'suite':source},['suite','meter','scope'])
         self.assertEqual(actual,['suite'])
