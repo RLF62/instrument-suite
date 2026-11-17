@@ -16,6 +16,7 @@ sudo instrument-suite check
 sudo instrument-suite install --instruments meter,scope
 sudo instrument-suite update --dry-run
 sudo instrument-suite update
+sudo instrument-suite configure-catalog
 sudo instrument-suite backup
 sudo instrument-suite rollback --dry-run
 sudo instrument-suite rollback
@@ -150,3 +151,28 @@ existing LAN restrictions and dashboard credentials. Do not bind this listener t
 all interfaces or trust client-supplied forwarding headers. Back up the deployment
 configuration and validate Nginx before reloading it. The updater preserves these
 host-specific service and proxy settings.
+
+## v1.0.2 catalog-manager setup
+
+Fresh signed installations configure the corrected Add/Remove Instruments helper
+automatically. This setup starts or refreshes only the manager; controller,
+gateway and broker services are preserved.
+
+An updater upgrading from v1.0.1 runs its old activation engine for that first
+transaction. After the update, perform the one-time verified helper refresh:
+
+```sh
+sudo instrument-suite update && sudo instrument-suite configure-catalog
+```
+
+`configure-catalog` downloads and verifies the suite through the pinned signing
+key before privileged setup. It does not execute files from a mutable source
+checkout. It keeps a private helper/service/sudoers backup and restores them if
+setup fails. Run `sudo instrument-suite configure-catalog --dry-run` to inspect
+the selected release without changing services. Existing manually corrected
+managers can use the same refresh. No instrument removal is performed by setup.
+
+The corrected manager recognizes the exact generated maintenance wrapper on
+independent controller services. Enrolled removals use the instrument safety
+lease and shared lock; reinstall uses signed archives and the selected retained
+settings. Unknown/shared legacy services remain protected.
