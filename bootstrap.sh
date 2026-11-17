@@ -70,3 +70,37 @@ PY
 # The following module is from the authenticated suite payload, not a branch.
 cd "$staging/verified"
 /usr/bin/python3 -I -c 'import sys;sys.path.insert(0,sys.argv.pop(1));from maintenance.bootstrap_setup import main;raise SystemExit(main())' "$staging/verified" --manifest-url "$manifest_url" --key "$staging/release.pub" "$@"
+
+# Show browser-ready links only after a successful real installation.
+if [[ ! " $* " == *" --dry-run "* ]]; then
+/usr/bin/python3 -I - <<'WELCOME'
+import ipaddress
+from pathlib import Path
+import socket
+import subprocess
+
+addresses = subprocess.check_output(['hostname', '-I'], text=True).split()
+ipv4 = [a for a in addresses if isinstance(ipaddress.ip_address(a), ipaddress.IPv4Address)
+        and not ipaddress.ip_address(a).is_loopback and not ipaddress.ip_address(a).is_link_local]
+host = next((a for a in ipv4 if ipaddress.ip_address(a).is_private),
+            ipv4[0] if ipv4 else socket.gethostname() + '.local')
+print('\nWelcome to the Fischer Instrument Suite!')
+print('Installation complete. Open these links in a browser on your LAN:\n')
+print(f'  Instrument Suite:  http://{host}:8080/')
+print(f'  Software Updates: http://{host}:8080/software-updates')
+controllers = [
+    ('HP 6033A Supply', '/home/pi/hp6033a', 8083, '/classic-dual'),
+    ('HP 34401A Meter', '/home/pi/hp34401a', 8082, '/multimeter/classic'),
+    ('Tektronix Scope', '/home/pi/tektronix-controller', 8081, '/'),
+]
+manager = None
+for name, folder, port, path in controllers:
+    if Path(folder).is_dir():
+        print(f'  {name}: http://{host}:{port}{path}')
+        if manager is None:
+            manager = f'http://{host}:{port}/api/suite/manager'
+if manager:
+    print(f'  Add Instruments:  {manager}')
+print('\nConfigure instrument connections from each controller before use.')
+WELCOME
+fi
