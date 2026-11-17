@@ -16,7 +16,7 @@ import tempfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from maintenance.linux import LinuxHost
 from maintenance.security import canonical, safe_member, REPOS, VERSION, verify_manifest, MaintenanceError
-from tools.build_candidate import apply_suite_templates
+from tools.build_candidate import apply_suite_templates, apply_supply_wrapper
 
 def git(source, *args):
     result = subprocess.run(['git', '-C', str(source), *args], capture_output=True, check=True)
@@ -128,6 +128,7 @@ def build(sources, locks, versions, release, sequence, key, public_key, output):
                     raise MaintenanceError('Shared-adapter transformation failed')
                 app.write_text(text)
                 apply_suite_templates(staging/'suite',payload)
+                apply_supply_wrapper(staging/'suite',payload)
                 inputs[name]['suite_overlay_commit']=inputs['suite']['commit']
             host.validate_payload(name,payload)
             archive=artifacts/(name+'.tar.gz');archive_payload(payload,archive)

@@ -33,6 +33,15 @@ def apply_suite_templates(suite, payload):
         shutil.copy2(source/name, target)
 
 
+def apply_supply_wrapper(suite, payload):
+    """Include the reviewed fresh-HTTP entry module, preserving live wrappers at activation."""
+    source = Path(suite)/'integration/supply_standalone.py'
+    target = Path(payload)/'supply_standalone.py'
+    if not source.is_file() or source.is_symlink() or source.parent.is_symlink() or target.is_symlink():
+        raise SystemExit('Reviewed supply entry wrapper is missing or symlinked')
+    shutil.copy2(source, target)
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--suite',type=Path,required=True);parser.add_argument('--locks',type=Path,required=True)
@@ -68,6 +77,7 @@ def main():
                 path=payload/'app.py';text=path.read_text().replace('from hp34401a import install as install_meter\ninstall_meter(app)\n\n','');path.write_text(text)
                 if 'install_meter(app)' in text or 'ResourceManager' in text:raise SystemExit('Shared-adapter transformation failed')
                 apply_suite_templates(suite, payload)
+                apply_supply_wrapper(suite, payload)
             host.validate_payload(name,payload)
             filename=name+'.tar.gz';archive=args.output/filename
             with archive.open('wb') as raw,gzip.GzipFile(fileobj=raw,mode='wb',mtime=0,filename='') as gz,tarfile.open(fileobj=gz,mode='w') as tar:

@@ -22,6 +22,7 @@ class ReleaseBuildTests(unittest.TestCase):
             if name=='suite':
                 (source/'patch_hp.py').write_text('from pathlib import Path\nimport sys\np=Path(sys.argv[1]);p.write_text(p.read_text()+"\\n# FISCHER_SHARED_ADAPTER_V1\\n")\n')
                 templates=source/'integration/templates';templates.mkdir(parents=True)
+                (source/'integration/supply_standalone.py').write_text('# inert fixture entry wrapper\n')
                 (templates/'index.html').write_text('reviewed modern chart')
                 (templates/'classic_dual_preview.html').write_text('reviewed classic mobile proportions')
             elif name=='supply':
@@ -68,6 +69,7 @@ class ReleaseBuildTests(unittest.TestCase):
         payload=extract(self.output/'supply.tar.gz',self.root/'extracted')
         self.assertEqual((payload/'templates/index.html').read_text(),'reviewed modern chart')
         self.assertEqual((payload/'templates/classic_dual_preview.html').read_text(),'reviewed classic mobile proportions')
+        self.assertTrue((payload/'supply_standalone.py').is_file())
         self.assertIn('FISCHER_SHARED_ADAPTER_V1',(payload/'app.py').read_text())
         self.assertEqual(result['build_inputs']['supply']['suite_overlay_commit'],result['components']['suite']['commit'])
 

@@ -158,7 +158,7 @@ class LinuxHost:
         return sorted(set(actual) if 'suite' in changes else (set(changes)&set(actual)))
 
     def refine_affected(self,stages,conservative):
-        allowed={'README.md','ONE_COMMAND_UPDATER.md','HTTPS_MIGRATION_VALIDATION.md','test_web_update_policy.py','test_maintenance.py','test_https_migration.py'}|{'maintenance/'+n for n in (
+        allowed={'integration/supply_standalone.py','README.md','ONE_COMMAND_UPDATER.md','HTTPS_MIGRATION_VALIDATION.md','test_web_update_policy.py','test_maintenance.py','test_https_migration.py'}|{'maintenance/'+n for n in (
             'landing.py','web_updates.py','web_policy.py','helper.py','cli.py','bootstrap_setup.py',
             'engine.py','linux.py','candidate.py','security.py')}
         if 'suite' in stages:
