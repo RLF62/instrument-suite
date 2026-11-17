@@ -17,6 +17,15 @@ app.config['MAX_CONTENT_LENGTH']=262144
 app.wsgi_app=ProxyFix(app.wsgi_app,x_proto=1)
 install_catalog(app)
 
+def install_updater_routes(application):
+    # Older standalone gateways do not ship the updater package.
+    if not Path('/etc/fischer-suite-updater.json').is_file():
+        return
+    from maintenance.web_updates import install
+    install(application)
+
+install_updater_routes(app)
+
 def auth_path(name):
     live=HOME/'hp6033a'/name
     return live if live.is_file() and not live.is_symlink() else SECURITY/name

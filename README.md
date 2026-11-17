@@ -4,11 +4,20 @@ Raspberry Pi controllers for the HP 6033A power supply, HP 34401A multimeter, an
 
 ## Install
 
-Use a separate extracted staging folder on Raspberry Pi OS with the `pi` account. Install `python3-venv`, `python3-pip`, `curl`, and `libusb-1.0-0`, then run:
+On a fresh Raspberry Pi OS installation with the `pi` account, use the signed installer:
 
 ```sh
-bash install.sh
+curl -fsSLO https://raw.githubusercontent.com/RLF62/instrument-suite/main/bootstrap.sh
+sudo bash bootstrap.sh
 ```
+
+After installation, use `sudo instrument-suite check` and `sudo instrument-suite update`.
+See [ONE_COMMAND_UPDATER.md](ONE_COMMAND_UPDATER.md) for supported platforms,
+web maintenance, instrument safety and recovery. Legacy installations require
+attended migration before enrollment.
+
+The original ZIP installers remain available below. Extract each into its own
+staging folder and follow its included installation instructions.
 
 Choose the meter-only installation or integration with an existing HP 6033A controller. The meter-only path can enable the included, checksum-verified instrument catalog. Read [STANDALONE.md](STANDALONE.md), [INSTALL.md](INSTALL.md), and [CATALOG.md](CATALOG.md) before activation.
 
@@ -63,3 +72,16 @@ upgrading. Existing Android shortcuts may need to be added again.
 
 The shared suite and standalone installers retain these assets. Icon updates
 do not change instrument configuration or issue instrument commands.
+
+
+## Signed maintenance
+
+[Stable signed releases](https://github.com/RLF62/instrument-suite/releases/latest)
+provide independent controller versions, signature and dependency verification,
+instrument interlocks, backups and rollback. HTTPS web updates reuse the existing
+dashboard credentials; trusted-LAN HTTP installations can explicitly enable
+password-free updates. Terminal maintenance uses sudo.
+
+The [acceptance record](FRESH_CARD_VALIDATION.md) includes 230 regression tests,
+fresh-card installation and attended HTTPS production activation. A rollback
+preview passed; an actual production rollback and a power-loss test were not performed.

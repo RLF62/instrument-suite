@@ -422,7 +422,7 @@
 
 </style>
 
-<link rel="icon" href="/static/hp6033a.ico" sizes="any"><link rel="icon" type="image/png" sizes="192x192" href="/static/hp6033a-192.png"><link rel="apple-touch-icon" href="/static/hp6033a-192.png"><link rel="manifest" href="/static/manifest.webmanifest"><meta name="theme-color" content="#101723"><style>
+<meta name="theme-color" content="#101723"><style>
 /* Shared suite layout editor: presentation only, no instrument requests. */
 .suite-layoutbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px 0;color:#dce5ee;font:14px system-ui,sans-serif}
 .suite-layoutbar #layout-note{font-size:12px;line-height:1.5;color:#b3bec6}
@@ -677,7 +677,14 @@ body.layout-editing .suite-grid .tile-resize{display:block;position:absolute;rig
 .hp-chart-box input[type=checkbox]{width:auto;min-height:0;margin:0;accent-color:#62ded0}.hp-chart-box button{font:14px system-ui,sans-serif;min-height:44px;padding:8px 12px;color:#eef6f7;background:#303b42;border:1px solid #6c7c87;border-radius:5px}
 .hp-chart-box #history{display:block;width:100%;height:360px;background:#111b20;border-radius:6px}.hp-chart-note,#hp-chart-summary{font:12px/1.5 system-ui,sans-serif;color:#b3bec6;overflow-wrap:anywhere}#hp-chart-status{min-height:24px;font:13px system-ui,sans-serif}
 .hp-chart-box summary{cursor:pointer;min-height:44px;font:700 15px system-ui,sans-serif}.hp-chart-box[hidden]{display:none!important}
-</style><style id="classic-mobile-width-fix">/* Classic-only mobile layout: keep the layout-editor wrapper at panel width.
+</style><link rel="icon" type="image/x-icon" href="/static/icons/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/icons/icon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/icons/icon-180.png">
+<link rel="manifest" href="/static/manifest.webmanifest?v=branding-1">
+<meta name="apple-mobile-web-app-title" content="HP 6033A">
+<style id="classic-mobile-width-fix">/* Classic-only mobile layout: keep the layout-editor wrapper at panel width.
    The original v7 rule targeted body > main.instrument before it was wrapped. */
 @media (max-width: 700px) {
   body > #classic-layout-grid.suite-classic-root {
