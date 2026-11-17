@@ -1,10 +1,8 @@
-"""Trusted-LAN HTTP host; existing secured supply wrappers are preserved."""
-import app as supply
+"""Trusted-LAN HTTP host; existing secured supply installations are never replaced."""
+import app as controller
 from flask import request, jsonify
-
-app = supply.app
-controller = supply.controller
-supply.control_password_required = lambda: False
+app = controller.app
+controller.control_password_required = lambda: False
 
 @app.before_request
 def origin_guard():
