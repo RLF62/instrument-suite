@@ -63,13 +63,15 @@ def execute(action, instruments=None, dry_run=False, release_url=None):
     if action=='audit':
         return host.audit(engine.state(),engine.pending.exists())
     if action=='status':
+        gateway=host.https_gateway()
+        dashboard_service=host.service('suite')
         state=engine.state()
         return {'installed':state['components'],'discovered':sorted(host.discover()),
                 'services':{n:('active' if host.active(n) else 'inactive') for n in host.discover()},
                 'recovery_pending':engine.pending.exists(),
                 'local_candidate':(ROOT/'candidate-mode.json').exists(),
-                'dashboard':'http://RASPBERRY_PI_ADDRESS:8080/',
-                'troubleshooting':['sudo instrument-suite status','sudo instrument-suite rollback','sudo journalctl -u fischer-suite-dashboard -n 60 --no-pager']}
+                'dashboard':('https://RASPBERRY_PI_ADDRESS/' if gateway else 'http://RASPBERRY_PI_ADDRESS:8080/'),
+                'troubleshooting':['sudo instrument-suite status','sudo instrument-suite rollback','sudo journalctl -u '+dashboard_service+' -n 60 --no-pager']}
     if os.geteuid()!=0:raise MaintenanceError('Run sudo instrument-suite '+action)
     if action=='backup':return engine.backup(dry_run)
     if action=='rollback':return engine.rollback(dry_run)
