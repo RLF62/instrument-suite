@@ -57,7 +57,7 @@ def main():
         for folder,dirs,files in os.walk(ROOT):
             os.chown(folder,0,0);os.chmod(folder,0o755)
             for name in files:os.chown(Path(folder)/name,0,0);os.chmod(Path(folder)/name,0o644)
-        commands=[f'/usr/bin/python3 -I {ROOT}/activate.py {tool} {action}' for tool in ('meter','supply','scope') for action in ('start','commit','rollback','remove','commit-remove','restore-remove')]
+        commands=[f'/usr/bin/python3 -I {ROOT}/activate.py {tool} {action}' for tool in ('meter','supply','scope') for action in ('start','commit','rollback','remove','commit-remove','restore-remove','remove-signed','recover-signed','install-signed')]
         temporary=backup/'sudoers.new';temporary.write_text('pi ALL=(root) NOPASSWD: '+', '.join(commands)+'\n');temporary.chmod(0o440)
         run('visudo','-cf',temporary);shutil.copy2(temporary,SUDOERS);SUDOERS.chmod(0o440)
         for name in ('hp34401a','hp6033a','tektronix-controller','fischer-gpib'):

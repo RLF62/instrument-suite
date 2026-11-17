@@ -11,7 +11,7 @@ import subprocess
 import time
 import urllib.request
 import zipfile
-from deployment_profile import public_records,configure_app,sync_security
+from deployment_profile import public_records,configure_app,sync_security,standalone_service
 
 HOME=Path('/home/pi')
 SUITE=HOME/'instrument-suite'
@@ -135,13 +135,17 @@ def ensure_broker(meter_source,python,log):
     if not config.exists():shutil.copy2(meter_source/'config.example.json',config);config.chmod(0o600)
     pi_owned(SUITE)
 
-def activate(tool,operation,job,log):
-    if tool not in APP_DIRS or operation not in ('start','commit','rollback','remove','commit-remove','restore-remove'):raise ValueError('Invalid activation request')
+def activate(tool,operation,job,log,keep_settings=None):
+    if tool not in APP_DIRS or operation not in ('start','commit','rollback','remove','commit-remove','restore-remove','remove-signed','recover-signed','install-signed'):raise ValueError('Invalid activation request')
     args=['sudo','-n','/usr/bin/python3','-I',str(ROOT/'activate.py'),tool,operation]
-    result=subprocess.run(args,input=json.dumps({'job':job.name}),capture_output=True,text=True,timeout=45)
+    data={'job':job.name}
+    if keep_settings is not None:data['keep_settings']=keep_settings
+    result=subprocess.run(args,input=json.dumps(data),capture_output=True,text=True,timeout=900 if operation=='install-signed' else 90)
     with log.open('a') as stream:stream.write(result.stderr)
     if result.returncode:raise RuntimeError('Service activation '+operation+' failed: '+result.stderr[-800:])
     return json.loads(result.stdout)
+
+UPDATER_CONFIG=Path('/etc/fischer-suite-updater.json')
 
 def provision(tool,job,notify):
     if tool not in APP_DIRS:raise ValueError('Choose an approved instrument')
@@ -155,6 +159,11 @@ def provision(tool,job,notify):
     hp=HOME/'hp6033a/app.py'
     if tool!='scope' and hp.exists() and 'FISCHER_SHARED_ADAPTER_V1' not in hp.read_text():
         raise RuntimeError('Existing supply uses direct adapter access; integrate coordination before adding a GPIB tool')
+    if UPDATER_CONFIG.exists():
+        notify('Installing through the signed updater with retained settings and safety checks')
+        result=activate(tool,'install-signed',job,job/'install.log')
+        register(force=True)
+        return result
     log=job/'install.log';source=job/'source';source.mkdir(mode=0o755)
     notify('Verifying approved package checksum')
     unpack(tool,source)
@@ -261,7 +270,7 @@ def removal_policy(tool):
     if target.is_symlink() or not unit.is_file() or unit.is_symlink():return False,'Removal is available for standalone/catalog services; this legacy or shared installation is protected.'
     try:text=unit.read_text()
     except OSError:return False,'Service definition is not readable; administrator setup must repair its permissions.'
-    if f'WorkingDirectory={target}\n' not in text or f'{module}:app' not in text or f':{PORTS[tool]}' not in text:
+    if not standalone_service(tool,target,text,PORTS[tool],module):
         return False,'This controller shares a legacy service. Migrate it before removal so other tools stay available.'
     return True,''
 
@@ -286,14 +295,21 @@ def restore_settings(tool,target):
         elif source.is_file():shutil.copy2(source,destination)
 
 def remove(tool,job,keep_settings,notify):
+    if UPDATER_CONFIG.exists():
+        notify('Verifying signed controller safety before removal')
+        return activate(tool,'remove-signed',job,job/'install.log',keep_settings)
+    return _remove(tool,job,keep_settings,notify)
+
+def _remove(tool,job,keep_settings,notify,verified=False):
     if tool not in APP_DIRS or type(keep_settings) is not bool:raise ValueError('Invalid removal request')
     allowed,reason=removal_policy(tool)
     if not allowed:raise RuntimeError(reason)
-    # This endpoint reads application flags only, never instrument state.
-    try:
-        with urllib.request.urlopen(f'http://127.0.0.1:{PORTS[tool]}/api/suite/removal-state',timeout=3) as response:state=json.load(response)
-    except OSError as exc:raise RuntimeError('Could not verify that controller acquisition/programming is idle; no removal performed') from exc
-    if state.get('polling') or state.get('remote_control_enabled'):raise RuntimeError('Pause meter acquisition and disable remote programming before removal')
+    if not verified:
+        # This endpoint reads application flags only, never instrument state.
+        try:
+            with urllib.request.urlopen(f'http://127.0.0.1:{PORTS[tool]}/api/suite/removal-state',timeout=3) as response:state=json.load(response)
+        except OSError as exc:raise RuntimeError('Could not verify that controller acquisition/programming is idle; no removal performed') from exc
+        if state.get('polling') or state.get('remote_control_enabled'):raise RuntimeError('Pause meter acquisition and disable remote programming before removal')
     target=HOME/APP_DIRS[tool];archive=checked_archive(tool,job.name)
     archive.parent.mkdir(parents=True,mode=0o700);archive.parent.chmod(0o700)
     broker=UNITS/'fischer-gpib.service'
@@ -321,6 +337,11 @@ def remove(tool,job,keep_settings,notify):
         raise
 
 def recover_remove(tool,job):
+    if UPDATER_CONFIG.exists() and os.geteuid()!=0:
+        return activate(tool,'recover-signed',job,job/'install.log')
+    return _recover_remove(tool,job)
+
+def _recover_remove(tool,job):
     intent=job/'removal.json'
     if not intent.exists():return
     data=json.loads(intent.read_text())

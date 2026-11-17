@@ -11,6 +11,10 @@ import catalog_web
 import manager_engine as engine
 
 class RemovalTests(unittest.TestCase):
+    def setUp(self):
+        policy=patch.object(engine,'UPDATER_CONFIG',Path('/nonexistent-fixture-updater'))
+        policy.start();self.addCleanup(policy.stop)
+
     def test_explicit_confirmation_and_origin_are_required(self):
         app=Flask('remove-test');catalog_web.install(app);client=app.test_client()
         with patch.object(catalog_web,'helper',return_value={'job':'ok'}) as helper:
