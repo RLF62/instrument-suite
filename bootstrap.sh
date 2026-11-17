@@ -4,8 +4,8 @@ set -euo pipefail
 umask 077
 RELEASE_PUBLIC_KEY_B64='LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUNvd0JRWURLMlZ3QXlFQTV6YSs1Vk5Nd0luVWYrYzFOZ0RxUGpkblA3NlY3S1ZDK1VqYzA3NGo0eWs9Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQo='
 die() { printf 'Instrument Suite: %s\n' "$*" >&2; exit 1; }
-RELEASE_CHANNEL_READY='no'
-[[ "$RELEASE_CHANNEL_READY" == 'yes' ]] || die 'Clean-install validation found a catalog setup issue. The installer is temporarily paused while the correction is verified. Nothing was changed.'
+RELEASE_CHANNEL_READY='yes'
+[[ "$RELEASE_CHANNEL_READY" == 'yes' ]] || die 'This release channel is disabled. Nothing was changed.'
 [[ $EUID -eq 0 ]] || die 'Run sudo bash bootstrap.sh'
 case "$RELEASE_PUBLIC_KEY_B64" in @*) die 'This is an unpublished development bootstrap. A maintainer must pin the release public key and sign a release first. Nothing was changed.';; esac
 for command in curl python3 openssl base64; do command -v "$command" >/dev/null || die "Install prerequisite $command from Raspberry Pi OS packages first"; done

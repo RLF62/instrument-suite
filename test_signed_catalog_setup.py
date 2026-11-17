@@ -23,6 +23,8 @@ class SignedCatalogSetupTests(unittest.TestCase):
    calls=[];failed=[False]
    def run(*args,**kwargs):
     calls.append(args)
+    if args==('systemctl','stop','fischer-suite-manager') and not unit.exists() and kwargs.get('check',True):
+     raise subprocess.CalledProcessError(5,args)
     if fail and args==('systemctl','restart','fischer-suite-manager') and not failed[0]:
      failed[0]=True;sudoers.chmod(0o600);raise subprocess.CalledProcessError(1,args)
     return subprocess.CompletedProcess(args,0)
@@ -40,6 +42,7 @@ class SignedCatalogSetupTests(unittest.TestCase):
      self.assertFalse((root/'activate.py').exists())
     else:self.assertFalse(root.exists());self.assertFalse(unit.exists());self.assertFalse(sudoers.exists())
    else:
+    if not existing:self.assertNotIn(('systemctl','stop','fischer-suite-manager'),calls)
     self.assertEqual((root/'activate.py').read_text(),'# signed fixture activate.py\n')
     self.assertIn('install-signed',sudoers.read_text());self.assertIn('remove-signed',sudoers.read_text())
     if existing:self.assertEqual(json.loads((root/'catalog.json').read_text())['version'],'previous')
