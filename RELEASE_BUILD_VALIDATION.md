@@ -54,3 +54,25 @@ Ten isolated tests use actual Git repositories and temporary Ed25519 keys. They 
 The complete regression suite passed on development .108: 217 tests in 18.368 seconds, exit status 0. No live services or instrument settings changed.
 
 The existing-HTTPS attended enrollment implementation, production signing-key custody and authenticated bootstrap pinning, approved real release builds, fresh-card acceptance and production deployment remain unfinished. This tool does not remove any of those gates.
+
+
+## Real repository-source package check on .108
+
+After the fixture tests, clean public GitHub checkouts were downloaded at:
+
+| Component | Source commit |
+| --- | --- |
+| Suite development branch | b684c4f1b76790410f4bdd325446650bcf6e737f |
+| HP 6033A | 2a021127d07d9af8ed6e3e829c23f867b80b9850 |
+| HP 34401A | 754066c340c0f200bf2db5784feba4b3c7a5f8d3 |
+| Tektronix | e9a338e7869e01376a2a4161180821e045f9365c |
+
+All four published requirements files resolved successfully into exact wheel/hash locks on aarch64 Raspberry Pi OS with Python 3.13.5. No dependency was installed into a live controller environment during this check.
+
+The CLI builder then completed a full four-component build with a newly generated private TEST_ONLY Ed25519 key and synthetic version v0.1.99. These are private validation artifacts, not an approved release, and must never be uploaded to public releases or used to enroll a production updater.
+
+A separate inspection verified the signed manifest, all four archive sizes and SHA-256 values, safe extraction, and the existing payload file policy. All 88 Python files across the four extracted packages compiled without importing or executing controller applications. Both supply HTML templates matched the approved production-source SHA-256 values exactly, and the Classic mobile CSS was present.
+
+Private test manifest SHA-256: 020d8cf426c56d49dd14553ec99b26ee15e8984112277808525186fc743d6b45.
+
+This verifies real-source packaging on .108, not dependency installation in a fresh runtime, running-service activation, fresh-card installation, or production enrollment. The private test key, generated packages, machine-specific lock files and local logs were not published.
