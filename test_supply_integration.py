@@ -67,3 +67,19 @@ class SupplyIntegrationTests(unittest.TestCase):
         actual=host.refine_affected({'suite':source},['suite','meter','scope'])
         self.assertEqual(actual,['suite'])
         self.assertFalse(host.restart_broker)
+
+    def test_new_controller_has_no_existing_service_to_quiesce(self):
+        source=self.root/'new-suite';(source/'integration').mkdir(parents=True)
+        (source/'integration/supply_standalone.py').write_text('reviewed build asset')
+        host=LinuxHost(self.root/'state',self.root/'home')
+        affected=host.refine_affected({'suite':source,'supply':self.payload},['suite','meter','scope'])
+        self.assertEqual(affected,['suite'])
+        self.assertFalse(host.restart_broker)
+
+    def test_existing_changed_controller_still_requires_its_safety_lease(self):
+        source=self.root/'existing-suite';(source/'integration').mkdir(parents=True)
+        (source/'integration/supply_standalone.py').write_text('reviewed build asset')
+        host=LinuxHost(self.root/'state',self.root/'home')
+        affected=host.refine_affected({'suite':source,'supply':self.payload},['suite','meter','scope','supply'])
+        self.assertEqual(affected,['suite','supply'])
+        self.assertFalse(host.restart_broker)

@@ -168,7 +168,7 @@ class LinuxHost:
                 if not target.is_file() or target.read_bytes()!=p.read_bytes():changed.append(rel.as_posix())
             if changed and set(changed)<=allowed:
                 self.restart_broker=False
-                self.actual_affected=sorted((set(conservative)-{'meter','supply','scope'})|(set(stages)-{'suite'}))
+                self.actual_affected=sorted((set(conservative)-{'meter','supply','scope'})|((set(stages)-{'suite'})&set(conservative)))
                 return self.actual_affected
         self.actual_affected=conservative
         return conservative
