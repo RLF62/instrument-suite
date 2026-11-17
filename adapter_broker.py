@@ -75,6 +75,12 @@ class Coordinator:
                     'configured': self.configured, 'last_error': self.last_error,
                     'meter_read_only': self.config.get('meter_read_only', True),
                     'meter_retry_after': max(0, round(self.cooldown_until-time.monotonic(), 1))}}
+        gate=Path('/var/lib/fischer-suite-updater/pending.flag')
+        try:
+            if gate.exists() and 'firmware' in json.loads(gate.read_text()):
+                return {'ok':False,'error':'USB-GPIB firmware maintenance in progress; finish verification before instrument access'}
+        except (OSError,ValueError,TypeError):
+            return {'ok':False,'error':'Maintenance gate unreadable; hardware access paused'}
         if target not in OPERATIONS or action not in OPERATIONS[target] or not isinstance(req.get('data', {}), dict):
             return {'ok': False, 'error': 'Unsupported transaction'}
         if not self.config.get('hardware_enabled'):

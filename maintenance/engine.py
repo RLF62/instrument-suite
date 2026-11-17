@@ -38,12 +38,14 @@ def plan(manifest, installed, requested=None, installing=False):
     return result
 
 @contextmanager
-def exclusive(path):
+def exclusive(path, allow_firmware=False):
     path = Path(path); path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o660)
     try:
         try: fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError: raise MaintenanceError('Another install, update or removal is running') from None
+        if not allow_firmware and Path('/var/lib/fischer-suite-updater/firmware-pending.json').exists():
+            raise MaintenanceError('Finish or cancel USB-GPIB firmware maintenance before software operations')
         yield
     finally: os.close(fd)
 

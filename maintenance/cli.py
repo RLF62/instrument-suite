@@ -12,7 +12,7 @@ from .security import MaintenanceError
 
 ROOT = Path('/var/lib/fischer-suite-updater')
 CONFIG = Path('/etc/fischer-suite-updater.json')
-ACTIONS = ('install','update','status','check','backup','rollback','configure-web-updates','configure-catalog','audit')
+ACTIONS = ('install','update','status','check','backup','rollback','configure-web-updates','configure-catalog','audit','firmware-status','firmware-prepare','firmware-flash','firmware-resume','firmware-cancel')
 
 def config():
     if not CONFIG.is_file() or CONFIG.is_symlink(): raise MaintenanceError('Updater is not enrolled. Use the signed bootstrap or attended enrollment guide')
@@ -59,6 +59,13 @@ def menu():
 
 def execute(action, instruments=None, dry_run=False, release_url=None):
     if action not in ACTIONS:raise MaintenanceError('Unsupported maintenance action')
+    if action.startswith('firmware-'):
+        if os.geteuid()!=0:raise MaintenanceError('Run sudo instrument-suite '+action)
+        from .firmware import Firmware
+        firmware=Firmware(ROOT)
+        if action=='firmware-status':return firmware.status()
+        if dry_run:return {'action':action,'dry_run':True,'changes_performed':False}
+        return firmware.execute(action.removeprefix('firmware-'))
     host=LinuxHost(ROOT);engine=Engine(ROOT,host)
     if action=='audit':
         return host.audit(engine.state(),engine.pending.exists())

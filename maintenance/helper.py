@@ -11,10 +11,10 @@ from . import cli
 from .security import atomic_json
 from .web_policy import read_policy
 
-ALLOWED={'status','check','update','backup','rollback'}
+ALLOWED={'status','check','update','backup','rollback','firmware-status','firmware-prepare','firmware-flash','firmware-resume','firmware-cancel'}
 
 def validate(request):
-    if not isinstance(request,dict) or set(request)!={'schema','action'} or type(request['schema']) is not int or request['schema']!=1 or request['action'] not in ALLOWED:
+    if not isinstance(request,dict) or set(request)!={'schema','action'} or type(request['schema']) is not int or request['schema']!=1 or not isinstance(request['action'],str) or request['action'] not in ALLOWED:
         raise ValueError('Choose a fixed maintenance action; arguments are not accepted')
     return request['action']
 
@@ -26,6 +26,9 @@ class Queue:
             except (OSError,ValueError):pass
             if self.job and self.job.get('state')=='running':self.job.update(state='interrupted',message='Helper restarted; inspect sudo instrument-suite status and rollback if recovery is pending')
     def execute(self,action):
+        if action=='firmware-status':
+            from .firmware import Firmware
+            return {'firmware':Firmware().status(),'job':self.job}
         if action=='status':return {'software':cli.execute('status'),'job':self.job}
         if read_policy()['mode']=='disabled':raise PermissionError('Web updates are disabled by administrator policy')
         if not self.lock.acquire(blocking=False):raise RuntimeError('Another web maintenance operation is running')
@@ -33,7 +36,12 @@ class Queue:
         try:atomic_json(self.path,self.job)
         except BaseException:self.lock.release();raise
         def work():
-            try:self.job.update(state='succeeded',result=cli.execute(action),message='Maintenance action completed')
+            try:
+                if action.startswith('firmware-'):
+                    from .firmware import Firmware
+                    result=Firmware().execute(action.removeprefix('firmware-'))
+                else:result=cli.execute(action)
+                self.job.update(state='succeeded',result=result,message='Maintenance action completed')
             except Exception as exc:self.job.update(state='failed',message=str(exc)[:1000])
             finally:
                 try:atomic_json(self.path,self.job)

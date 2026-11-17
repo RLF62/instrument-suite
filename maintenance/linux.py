@@ -32,7 +32,7 @@ FILES = {'suite': {'activate.py', 'adapter_broker.py', 'adapter_worker.py', 'cat
               'index.html', 'setup.html', 'tool_registration.py'}}
 COMMON = {'requirements.txt', 'requirements.lock', 'config.example.json', 'README.md', 'ONE_COMMAND_UPDATER.md','INSTALL.md',
           'STANDALONE.md', 'CATALOG.md', 'GATEWAY_MIGRATION.md', 'DEPLOYMENT.md', 'INSTRUMENT_SUITE.md', 'PROJECT_HANDOFF.md',
-          'HTTPS_MIGRATION_VALIDATION.md'}
+          'HTTPS_MIGRATION_VALIDATION.md','GPIB_FIRMWARE.md'}
 SYSTEM = (Path('/etc/nginx'), Path('/etc/systemd/system'), Path('/etc/sudoers.d'),
           Path('/etc/fischer-suite'), Path('/etc/udev/rules.d'), Path('/opt/fischer-suite-manager'),
           Path('/etc/ssl'), Path('/etc/letsencrypt'),
@@ -159,7 +159,7 @@ class LinuxHost:
 
     def refine_affected(self,stages,conservative):
         allowed={'test_build_release.py','test_supply_integration.py','integration/supply_standalone.py','README.md','ONE_COMMAND_UPDATER.md','HTTPS_MIGRATION_VALIDATION.md','test_web_update_policy.py','test_maintenance.py','test_https_migration.py'}|{'maintenance/'+n for n in (
-            'landing.py','web_updates.py','web_policy.py','helper.py','cli.py','bootstrap_setup.py',
+            'landing.py','web_updates.py','web_policy.py','helper.py','cli.py','bootstrap_setup.py','firmware.py','firmware_web.py',
             'engine.py','linux.py','candidate.py','security.py')}
         if 'suite' in stages:
             stage=stages['suite'];changed=[]

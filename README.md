@@ -81,3 +81,7 @@ sudo instrument-suite update && sudo instrument-suite configure-catalog
 ```
 
 Fresh v1.0.2 bootstraps configure the helper automatically.
+
+## USB-GPIB V2 firmware maintenance
+
+The suite landing page includes an attended [USB-GPIB firmware updater](GPIB_FIRMWARE.md) with pinned firmware verification, application/EEPROM backups, readback checks, recovery gates and running-version verification. The complete attended update was verified on a Raspberry Pi test installation: firmware write/readback, unchanged EEPROM, physical power cycle, V2.5 runtime verification, controller restart and cleared maintenance gates.

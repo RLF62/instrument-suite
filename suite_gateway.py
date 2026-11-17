@@ -21,8 +21,10 @@ def install_updater_routes(application):
     # Older standalone gateways do not ship the updater package.
     if not Path('/etc/fischer-suite-updater.json').is_file():
         return
+    from maintenance.firmware_web import install as install_firmware
     from maintenance.web_updates import install
     install(application)
+    install_firmware(application)
 
 install_updater_routes(app)
 
@@ -57,7 +59,7 @@ def authorize():
 @app.get('/api/suite/navigation.js')
 def navigation():
     records=installed_records()
-    cfg={'current':'auto','instruments':list(records),'records':records,'meterPort':None,'basePort':None}
+    cfg={'current':'auto','instruments':list(records),'records':records,'meterPort':None,'basePort':None,'firmwareUpdater':Path('/etc/fischer-suite-updater.json').is_file()}
     return Response('window.fischerSuite='+json.dumps(cfg)+';\n'+(SUITE/'navigation.js').read_text(),mimetype='application/javascript',headers={'Cache-Control':'no-store'})
 
 def target_for(path):

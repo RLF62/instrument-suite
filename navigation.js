@@ -35,6 +35,13 @@
       group.append(a);
     });
     const add=document.createElement('a');add.className='suite-tool-link';add.textContent='Add instruments';add.href='/api/suite/manager';group.append(add);
+    if (cfg.firmwareUpdater) {
+      const firmware = document.createElement('a');
+      firmware.className = 'suite-tool-link';
+      firmware.textContent = 'USB-GPIB Firmware';
+      firmware.href = '/gpib-firmware';
+      group.append(firmware);
+    }
     if(cfg.current==='meter') nav.prepend(group); // Keep the title in the middle grid column even when meter-only.
     else if(group.children.length) nav.append(group);
   }
