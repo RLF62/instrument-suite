@@ -96,6 +96,7 @@ class SignedCatalogTests(unittest.TestCase):
    root=Path(tmp);home=root/'home';target=home/'hp34401a';target.mkdir(parents=True)
    (target/'standalone_app.py').write_text('fixture application')
    archive=root/'catalog/removed/meter'/('e'*32)/'app';archive.mkdir(parents=True)
+   (root/'catalog').chmod(0o700)
    (archive/'appearance.json').write_text('{"saved":"exact"}')
    retained=root/'catalog/retained';retained.mkdir()
    (retained/'meter.json').write_text(json.dumps({'job':'e'*32,'keep_settings':True}))
