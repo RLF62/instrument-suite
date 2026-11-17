@@ -70,3 +70,24 @@ removal protections or authorize adoption.
 
 No production updater enrollment, new signing identity, stable release or
 connected-instrument validation is implied by the isolated fixtures passing.
+
+## Gateway lifecycle validation follow-up
+
+The protected HTTPS deployment now resolves suite lifecycle operations and
+service backups to `fischer-suite-web`, not the fresh HTTP dashboard service.
+Its `gateway-venv` link is tracked and restored separately from the shared GPIB
+runtime. Gateway health uses the existing Unix socket and navigation endpoint;
+no additional HTTP listener is created. Dashboard-only maintenance that excludes
+the broker also excludes broker start commands. Missing gateway service files
+fail closed.
+
+All 200 regression tests passed on the development Raspberry Pi, including the
+seven-selection isolated filesystem matrix and four new gateway service,
+runtime, recovery and missing-service tests. Live development controller and
+broker process IDs were unchanged during this batch. These changes are staged
+development code, not a production enrollment or a clean-card installation test.
+
+A private production recovery archive was created and fully read back; its
+checksum and service-state metadata are stored beside it on the server. All
+production service process IDs were unchanged. Actual production recovery has
+not been performed. See `PRODUCTION_MIGRATION_REVIEW.md` for the comparison gate.
