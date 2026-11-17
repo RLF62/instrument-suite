@@ -70,4 +70,14 @@ These downloads support the original catalog workflow. They are distinct from th
 
 ## Validation
 
-All 230 regression tests passed for the signed release. Fresh-card HTTP installation, attended HTTPS production activation, dashboard routes, public artifact verification, backups and a no-op update passed. Settings and credentials were retained. Actual production rollback and unexpected power-loss recovery were not performed; see the acceptance record for limits.
+The v1.0.2 suite ran 241 regression tests successfully, with 21 expected skips in the unprivileged run. The preceding 237-test removal-manager build also passed with root privileges. Public v1.0.2 signature verification and all four archive/hash/length checks passed; controller archives are unchanged.
+
+Fresh-card HTTP installation, attended HTTPS production activation, backups and a no-op update passed for the earlier baseline. The v1.0.2 real removal/reinstall test on spare hardware is still pending. Actual production rollback and unexpected power-loss recovery were not performed; see the acceptance record for limits.
+
+When upgrading from v1.0.1, run the one-time verified helper setup after updating:
+
+```sh
+sudo instrument-suite update && sudo instrument-suite configure-catalog
+```
+
+Fresh v1.0.2 bootstraps configure the helper automatically.
