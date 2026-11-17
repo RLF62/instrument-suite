@@ -12,7 +12,7 @@ from .security import MaintenanceError
 
 ROOT = Path('/var/lib/fischer-suite-updater')
 CONFIG = Path('/etc/fischer-suite-updater.json')
-ACTIONS = ('install','update','status','check','backup','rollback','configure-web-updates','audit')
+ACTIONS = ('install','update','status','check','backup','rollback','configure-web-updates','configure-catalog','audit')
 
 def config():
     if not CONFIG.is_file() or CONFIG.is_symlink(): raise MaintenanceError('Updater is not enrolled. Use the signed bootstrap or attended enrollment guide')
@@ -76,6 +76,16 @@ def execute(action, instruments=None, dry_run=False, release_url=None):
     if action=='backup':return engine.backup(dry_run)
     if action=='rollback':return engine.rollback(dry_run)
     cfg=config();manifest=engine.release(release_url or latest_url(),cfg['key'])
+    if action=='configure-catalog':
+        if dry_run:return {'action':'configure-catalog','release':manifest['release'],'instrument_services_restarted':False}
+        from .engine import exclusive
+        import uuid
+        with exclusive(host.lock_path):
+            if engine.pending.exists():raise MaintenanceError('Finish pending update recovery before catalog setup')
+            work=ROOT/'catalog-setup'/uuid.uuid4().hex;work.mkdir(parents=True,mode=0o700)
+            stages=engine.prepare(manifest,['suite'],work)
+            host.run(['/usr/bin/python3','-I',str(stages['suite']/'deploy_manager.py'),'--signed-only'],timeout=180)
+            return {'catalog_configured':True,'release':manifest['release'],'instrument_services_restarted':False}
     if action=='check':return engine.describe(manifest,instruments)
     if action=='install' and instruments is None:instruments=menu()
     report=engine.describe(manifest,instruments)
