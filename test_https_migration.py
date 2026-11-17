@@ -223,6 +223,32 @@ class HttpsFilesystemTests(unittest.TestCase):
             self.host.stop(['suite'])
         self.assertFalse(self.commands)
 
+    def test_meter_https_activation_keeps_forwarded_scheme_and_rollback_restores_code(self):
+        import importlib.util
+        meter=self.host.folder('meter');meter.mkdir()
+        original="from flask import Flask,request\napp=Flask('old')\n"
+        (meter/'standalone_app.py').write_text(original)
+        (self.source/'standalone_app.py').write_text(
+            "from flask import Flask,request\napp=Flask('new')\n"
+            "@app.get('/scheme')\ndef scheme():return {'secure':request.is_secure}\n")
+        backup=self.backup('meter')
+        self.host.activate({'meter':self.source},self.job)
+        path=meter/'standalone_app.py'
+        spec=importlib.util.spec_from_file_location('inert_meter_https_fixture',path)
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        response=module.app.test_client().get('/scheme',headers={'X-Forwarded-Proto':'https'})
+        self.assertEqual(response.get_json(),{'secure':True})
+        self.assertEqual(path.read_text().count('# FISCHER_GATEWAY_PROXY:'),1)
+        self.host.restore(backup)
+        self.assertEqual(path.read_text(),original)
+
+    def test_direct_scope_listener_is_not_flagged_as_a_proxied_https_backend(self):
+        scope=self.host.folder('scope');scope.mkdir()
+        (self.root/'etc/systemd/system/tektronix-controller.service').write_text(
+            'ExecStart=/scope/gunicorn --bind 0.0.0.0:8081 maintenance_entry:app\n')
+        report=self.host.audit({'schema':1,'components':{}},False)
+        self.assertFalse(any(reason.startswith('scope: HTTPS backend') for reason in report['blocking_reasons']))
+
 
 class RealTlsAuthorizationTests(unittest.TestCase):
     """Exercise HTTPS, browser cookie and CSRF behavior without a privileged helper."""
