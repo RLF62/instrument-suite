@@ -22,6 +22,7 @@ class ReleaseBuildTests(unittest.TestCase):
             if name=='suite':
                 (source/'patch_hp.py').write_text('from pathlib import Path\nimport sys\np=Path(sys.argv[1]);p.write_text(p.read_text()+"\\n# FISCHER_SHARED_ADAPTER_V1\\n")\n')
                 templates=source/'integration/templates';templates.mkdir(parents=True)
+                (source/'hp33120a').mkdir();(source/'hp33120a/protocol.py').write_text('# suite development copy')
                 (source/'integration/supply_standalone.py').write_text('# inert fixture entry wrapper\n')
                 (templates/'index.html').write_text('reviewed modern chart')
                 (templates/'classic_dual_preview.html').write_text('reviewed classic mobile proportions')
@@ -69,6 +70,8 @@ class ReleaseBuildTests(unittest.TestCase):
             self.assertEqual(item['commit'],self.command('git','-C',str(source),'rev-parse','HEAD').decode().strip())
             self.assertEqual(item['sha256'],hashlib.sha256(archive.read_bytes()).hexdigest())
             self.assertEqual(result['build_inputs'][name]['dependency_lock_sha256'],hashlib.sha256(self.lock).hexdigest())
+        suite_payload=extract(self.output/'suite.tar.gz',self.root/'suite-extracted')
+        self.assertFalse((suite_payload/'hp33120a').exists())
         payload=extract(self.output/'supply.tar.gz',self.root/'extracted')
         self.assertEqual((payload/'templates/index.html').read_text(),'reviewed modern chart')
         self.assertEqual((payload/'templates/classic_dual_preview.html').read_text(),'reviewed classic mobile proportions')

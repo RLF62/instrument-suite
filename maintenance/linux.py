@@ -20,7 +20,7 @@ SPECS = {'suite': ('instrument-suite', 'fischer-suite-dashboard', 8090, 'mainten
          'supply': ('hp6033a', 'hp6033a', 8083, 'supply_standalone'),
          'scope': ('tektronix-controller', 'tektronix-controller', 8081, 'app'),
          'generator': ('hp33120a', 'hp33120a', 8084, 'generator_app')}
-DIRECTORIES = {'suite': {'hp34401a', 'hp33120a', 'integration', 'deploy', 'maintenance'},
+DIRECTORIES = {'suite': {'hp34401a', 'integration', 'deploy', 'maintenance'},
                'meter': {'hp34401a'}, 'supply': {'templates', 'static', 'docs', 'deploy', 'screenshots', 'tests'},
                'scope': {'docs', 'static'}, 'generator': {'hp33120a'}}
 FILES = {'suite': {'activate.py', 'adapter_broker.py', 'adapter_worker.py', 'catalog.html', 'catalog_cli.py',
