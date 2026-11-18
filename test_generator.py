@@ -29,4 +29,16 @@ class GeneratorViews(unittest.TestCase):
         self.assertEqual(response.status_code,200)
         self.assertEqual(response.get_json()['configuration']['frequency'],2000)
 
+
+    def test_static_apply_after_sweep_stop_uses_waveform_token(self):
+        read=self.client.post('/api/control/generator/sweep_configuration',json={},headers={'Origin':self.origin}).get_json()['configuration']
+        started=self.client.post('/api/control/generator/sweep_start',json={'expected_token':read['token'],'confirm_output_change':True},headers={'Origin':self.origin}).get_json()['configuration']
+        stopped=self.client.post('/api/control/generator/sweep_stop',json={'expected_token':started['stop_token'],'confirm_output_change':True},headers={'Origin':self.origin}).get_json()['configuration']
+        self.assertEqual(stopped['modes']['SWE'],'0')
+        self.assertIn('configuration_token',stopped)
+        settings={'function':'SIN','frequency':2000,'amplitude':1,'offset':0,'load':'50'}
+        response=self.client.post('/api/control/generator/apply',json={'settings':settings,'expected_token':stopped['configuration_token'],'confirm_output_change':True},headers={'Origin':self.origin})
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.get_json()['configuration']['frequency'],2000)
+
 if __name__=='__main__':unittest.main()
