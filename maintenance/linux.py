@@ -20,7 +20,7 @@ SPECS = {'suite': ('instrument-suite', 'fischer-suite-dashboard', 8090, 'mainten
          'supply': ('hp6033a', 'hp6033a', 8083, 'supply_standalone'),
          'scope': ('tektronix-controller', 'tektronix-controller', 8081, 'app'),
          'generator': ('hp33120a', 'hp33120a', 8084, 'generator_app')}
-DIRECTORIES = {'suite': {'hp34401a', 'integration', 'deploy', 'maintenance'},
+DIRECTORIES = {'suite': {'hp34401a', 'hp33120a', 'integration', 'deploy', 'maintenance'},
                'meter': {'hp34401a'}, 'supply': {'templates', 'static', 'docs', 'deploy', 'screenshots', 'tests'},
                'scope': {'docs', 'static'}, 'generator': {'hp33120a'}}
 FILES = {'suite': {'activate.py', 'adapter_broker.py', 'adapter_worker.py', 'catalog.html', 'catalog_cli.py',
@@ -143,7 +143,7 @@ class LinuxHost:
                 blockers.append(name+': service layout is missing, unreadable or a legacy symlink; attended review required')
             if not guarded:
                 blockers.append(name+': verified maintenance guard must be installed before controller replacement')
-            if gateway and name in ('meter','supply') and not loopback:
+            if gateway and name in ('meter','supply','generator') and not loopback:
                 blockers.append(name+': HTTPS backend must remain bound to loopback')
             if runtime.exists() and not permanent_runtime:
                 blockers.append(name+': preserve the in-directory runtime until a permanent runtime migration is verified')
@@ -392,11 +392,11 @@ class LinuxHost:
             if not unit.exists():
                 meta['created_units'].append(str(unit));atomic_json(backup/'backup.json',meta)
                 module='maintenance.landing' if name=='suite' else 'maintenance_entry'
-                dependencies='Requires=fischer-gpib.service\nAfter=fischer-gpib.service\n' if name in ('meter','supply') else ''
+                dependencies='Requires=fischer-gpib.service\nAfter=fischer-gpib.service\n' if name in ('meter','supply','generator') else ''
                 text=f'[Unit]\nDescription=Fischer {name} controller\nAfter=network.target\n{dependencies}[Service]\nUser=pi\nGroup=www-data\nWorkingDirectory={target}\nEnvironment=PYTHONPATH={self.folder("suite")}\nRuntimeDirectory=fischer-maintenance-{name}\nRuntimeDirectoryMode=0700\nExecStart={target}/venv/bin/gunicorn --workers 1 --threads 4 --bind {"127.0.0.1" if name=="suite" or gateway and name in ("meter","supply") else "0.0.0.0"}:{SPECS[name][2]} {module}:app\nRestart=on-failure\nTimeoutStopSec=20\n[Install]\nWantedBy=multi-user.target\n'
                 unit.write_text(text);unit.chmod(0o644)
         if 'suite' in stages:self.shared_setup(stages['suite'],job,meta)
-        if set(stages)&{'meter','supply'}:
+        if set(stages)&{'meter','supply','generator'}:
             broker=Path('/etc/systemd/system/fischer-gpib.service')
             if not broker.exists():
                 meta['created_units'].append(str(broker));atomic_json(backup/'backup.json',meta)
@@ -406,7 +406,7 @@ class LinuxHost:
                     meta['created_files'].append(str(rule));atomic_json(backup/'backup.json',meta)
                     rule.write_text('SUBSYSTEM=="usb", ATTR{idVendor}=="03eb", ATTR{idProduct}=="2065", MODE="0660", GROUP="www-data"\n');rule.chmod(0o644)
                     self.run(['udevadm','control','--reload-rules'])
-                    # No USB trigger/reset: ask user to unplug/replug for permissions.
+                    self.run(['udevadm','trigger','--action=change','--subsystem-match=usb','--attr-match=idVendor=03eb','--attr-match=idProduct=2065'])
         self.run(['systemctl','daemon-reload'])
 
     def entry(self,name,job,meta):
