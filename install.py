@@ -57,7 +57,7 @@ def main():
     instruments=None
     if args.instruments:
         instruments=list(dict.fromkeys(args.instruments.split(',')))
-        if not {'meter','supply'} <= set(instruments) or any(x not in ('meter','supply','scope') for x in instruments):
+        if not {'meter','supply'} <= set(instruments) or any(x not in ('meter','supply','scope','generator') for x in instruments):
             p.error('Integrated mode requires meter,supply; optionally add scope. For meter only use install.sh.')
         if 'scope' in instruments and not (HOME/'tektronix-controller/app.py').exists():
             p.error('Install the optional scope controller before selecting its link')

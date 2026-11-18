@@ -18,11 +18,11 @@ def secure_gateway():
     return True
 
 def bind_host(tool):
-    return '127.0.0.1' if secure_gateway() and tool in ('meter','supply') else '0.0.0.0'
+    return '127.0.0.1' if secure_gateway() and tool in ('meter','supply','generator') else '0.0.0.0'
 
 def public_records(records):
     if secure_gateway():
-        for tool in ('meter','supply'):
+        for tool in ('meter','supply','generator'):
             if tool in records:records[tool].update(scheme='https',port=None)
     return records
 
@@ -55,7 +55,7 @@ controller.proxy_control_auth_mode=lambda: '2' if request.remote_addr=='127.0.0.
 ''')
 
 def guarded_entry(tool):
-    module={'meter':'standalone_app','supply':'supply_standalone','scope':'app'}[tool]
+    module={'meter':'standalone_app','supply':'supply_standalone','scope':'app','generator':'generator_app'}[tool]
     text=f'import {module} as controller\nfrom maintenance.guard import install\napp=controller.app\n'
     if tool=='supply':text+='controller=controller.controller\n'
     extras=''

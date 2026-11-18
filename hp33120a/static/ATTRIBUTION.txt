@@ -1,0 +1,7 @@
+Front-panel source: Rick Fischer, user-supplied original 20261117_145025.jpg.
+Used unchanged in this controller at the owner's request. No public reuse license is asserted.
+Library reference: libfile_08e6588a268c81918b0d5c3f3ef2e8b7.
+The edge-cleaned AI preview was compared but not used because it alters fine texture
+and lettering. Original labels and geometry are preserved. HTML masks the sample
+numeric reading and ERROR lamp. Hotspots only stage four waveforms or focus
+frequency/amplitude/offset fields. No photographic state is live instrument state.

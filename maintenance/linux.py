@@ -18,7 +18,8 @@ from .security import MaintenanceError, atomic_json, safe_member
 SPECS = {'suite': ('instrument-suite', 'fischer-suite-dashboard', 8090, 'maintenance.landing'),
          'meter': ('hp34401a', 'hp34401a', 8082, 'standalone_app'),
          'supply': ('hp6033a', 'hp6033a', 8083, 'supply_standalone'),
-         'scope': ('tektronix-controller', 'tektronix-controller', 8081, 'app')}
+         'scope': ('tektronix-controller', 'tektronix-controller', 8081, 'app'),
+         'generator': ('hp33120a', 'hp33120a', 8084, 'generator_app')}
 DIRECTORIES = {'suite': {'hp34401a', 'integration', 'deploy', 'maintenance'},
                'meter': {'hp34401a'}, 'supply': {'templates', 'static', 'docs', 'deploy', 'screenshots', 'tests'},
                'scope': {'docs', 'static'}}
@@ -168,7 +169,7 @@ class LinuxHost:
                 if not target.is_file() or target.read_bytes()!=p.read_bytes():changed.append(rel.as_posix())
             if changed and set(changed)<=allowed:
                 self.restart_broker=False
-                self.actual_affected=sorted((set(conservative)-{'meter','supply','scope'})|((set(stages)-{'suite'})&set(conservative)))
+                self.actual_affected=sorted((set(conservative)-{'meter','supply','scope','generator'})|((set(stages)-{'suite'})&set(conservative)))
                 return self.actual_affected
         self.actual_affected=conservative
         return conservative
@@ -327,7 +328,7 @@ class LinuxHost:
         self.restart_broker=metadata.get('restart_broker',True)
         if type(self.restart_broker) is not bool:raise MaintenanceError('Invalid broker recovery policy')
         if self.restart_broker and 'suite' in metadata['affected']:
-            required=self.discover()&{'meter','supply','scope'}
+            required=self.discover()&{'meter','supply','scope','generator'}
             if not required<=set(metadata['affected']):raise MaintenanceError('Recovery would interrupt a shared broker without controller safety checks')
 
     def stop(self, affected):

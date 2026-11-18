@@ -16,7 +16,7 @@ class GatewayDeploymentTests(unittest.TestCase):
    for name in installer.WEB:(source/name).write_text('new '+name)
    (source/'approved/packages').mkdir(parents=True)
    tools={}
-   for key in ('meter','supply','scope'):
+   for key in ('meter','supply','scope','generator'):
     data=('fixture archive '+key).encode();(source/'approved/packages'/(key+'.zip')).write_bytes(data);tools[key]={'sha256':hashlib.sha256(data).hexdigest()}
    (source/'approved/catalog.json').write_text(json.dumps({'tools':tools}))
    (root/'manager_engine.py').write_text('previous manager')

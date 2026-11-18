@@ -39,7 +39,7 @@ def install(app):
         if request.headers.get('Origin')!=request.host_url.rstrip('/'):
             return jsonify(error='Request origin did not match the controller'),403
         data=request.get_json(silent=True)
-        if not isinstance(data,dict) or set(data)!={'tool'} or data['tool'] not in ('meter','supply','scope'):
+        if not isinstance(data,dict) or set(data)!={'tool'} or data['tool'] not in ('meter','supply','scope','generator'):
             return jsonify(error='Choose one approved instrument'),400
         try:return jsonify(helper({'action':'install','tool':data['tool']})),202
         except (OSError,ValueError,RuntimeError) as exc:return jsonify(error=str(exc)),409
@@ -49,7 +49,7 @@ def install(app):
         if request.headers.get('Origin')!=request.host_url.rstrip('/'):
             return jsonify(error='Request origin did not match the controller'),403
         data=request.get_json(silent=True)
-        if not isinstance(data,dict) or set(data)!={'tool','keep_settings','confirm'} or data['tool'] not in ('meter','supply','scope') or type(data['keep_settings']) is not bool or data['confirm'] is not True:
+        if not isinstance(data,dict) or set(data)!={'tool','keep_settings','confirm'} or data['tool'] not in ('meter','supply','scope','generator') or type(data['keep_settings']) is not bool or data['confirm'] is not True:
             return jsonify(error='Choose an approved instrument and explicitly confirm removal'),400
         try:return jsonify(helper({'action':'remove',**data})),202
         except (OSError,ValueError,RuntimeError) as exc:return jsonify(error=str(exc)),409

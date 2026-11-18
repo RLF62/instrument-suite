@@ -29,7 +29,7 @@ If a recognized broker is already installed, standalone reuses it without replac
 
 ## Instrument links
 
-Standalone defaults to `{"instruments":["meter"]}` in `/home/pi/hp34401a/tools.json`: no supply/scope links. Optional `--instruments meter,supply,scope` advertises other controllers **already installed** on the same Pi; it does not install them. Missing selected controllers fail preflight. Classic/Modern/documentation and layout controls stay available; hide/show layout preferences remain unchanged. An instrument being powered off does not change navigation.
+Standalone defaults to `{"instruments":["meter"]}` in `/home/pi/hp34401a/tools.json`: no supply/scope/generator links. Optional `--instruments meter,supply,scope,generator` advertises other controllers **already installed** on the same Pi; it does not install them. Missing selected controllers fail preflight. Classic/Modern/documentation and layout controls stay available; hide/show layout preferences remain unchanged. An instrument being powered off does not change navigation.
 
 For the existing integrated host use:
 

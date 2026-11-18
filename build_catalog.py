@@ -51,10 +51,16 @@ def origin_guard():
         scope=staging/'scope';shutil.copytree(args.scope_source,scope,ignore=shutil.ignore_patterns('__pycache__','.git','venv'))
         s=(scope/'scope_io.py').read_text();s=s.replace("        s = BoundedInstrument(c['address'])","        if c['address']=='scope-not-configured.invalid':raise ScopeError('Open Setup and enter the scope IP address before connecting.',409)\n        s = BoundedInstrument(c['address'])")
         (scope/'scope_io.py').write_text(s)
+        generator=staging/'generator';generator.mkdir()
+        for name in ('generator_app.py','gpib_client.py','suite_navigation.py','navigation.js','catalog_web.py','catalog.html','test_generator.py'):
+            shutil.copy2(SOURCE/name,generator/name)
+        shutil.copy2(SOURCE/'hp33120a-requirements.txt',generator/'requirements.txt')
+        shutil.copytree(SOURCE/'hp33120a',generator/'hp33120a',ignore=shutil.ignore_patterns('__pycache__','*.orig','*.before-*','*.pre-*','hp33120a-panel-updated.png','front-panel-original.jpg'))
+        shutil.copy2(SOURCE/'tool_registration.py',generator/'tool_registration.py')
         for target in (supply,scope):shutil.copy2(SOURCE/'tool_registration.py',target/'tool_registration.py')
-        for key,root,name,description in [('meter',meter,'HP 34401A Multimeter','Photographic Classic and Modern meter views, shared GPIB backend and local manual.'),('supply',supply,'HP 6033A Supply','Classic and Modern supply views with coordinated GPIB access. Hardware control stays disabled until configured.'),('scope',scope,'Tektronix Ethernet','Scope dashboard, captures and setup over Ethernet. Enter the scope IP after installing.')]:
+        for key,root,name,description in [('meter',meter,'HP 34401A Multimeter','Photographic Classic and Modern meter views, shared GPIB backend and local manual.'),('supply',supply,'HP 6033A Supply','Classic and Modern supply views with coordinated GPIB access. Hardware control stays disabled until configured.'),('scope',scope,'Tektronix Ethernet','Scope dashboard, captures and setup over Ethernet. Enter the scope IP after installing.'),('generator',generator,'HP 33120A Function Generator','Photographic Classic and Modern views, verified waveform readback, staged rotary control, and sweep setup.')]:
             rows[key]={'name':name,'description':description,'sha256':bundle(root,output/'packages'/(key+'.zip'))}
-    (output/'catalog.json').write_text(json.dumps({'version':'development-2026-11-15','tools':rows},indent=2)+'\n')
+    (output/'catalog.json').write_text(json.dumps({'version':'development-2026-11-18','tools':rows},indent=2)+'\n')
     print('Built checksum-pinned catalog:',json.dumps({k:v['sha256'] for k,v in rows.items()}))
 
 if __name__=='__main__':main()

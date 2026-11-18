@@ -46,7 +46,7 @@ class SignedCatalogSetupTests(unittest.TestCase):
     self.assertEqual((root/'activate.py').read_text(),'# signed fixture activate.py\n')
     self.assertIn('install-signed',sudoers.read_text());self.assertIn('remove-signed',sudoers.read_text())
     if existing:self.assertEqual(json.loads((root/'catalog.json').read_text())['version'],'previous')
-    else:self.assertEqual(set(json.loads((root/'catalog.json').read_text())['tools']),{'meter','supply','scope'})
+    else:self.assertEqual(set(json.loads((root/'catalog.json').read_text())['tools']),{'meter','supply','scope','generator'})
  def test_fresh_setup_needs_no_legacy_zip_assets(self):self.exercise(existing=False)
  def test_existing_gateway_and_controllers_are_not_restarted(self):self.exercise()
  def test_failed_refresh_restores_helper_unit_and_authorization(self):self.exercise(fail=True)

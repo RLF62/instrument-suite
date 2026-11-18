@@ -3,7 +3,7 @@
 > This page describes the original approved ZIP catalog. For signed installation and updates, use the [signed suite installer](https://github.com/RLF62/instrument-suite/blob/main/ONE_COMMAND_UPDATER.md). Existing legacy installations need attended migration. Commands below do not replace signed-updater maintenance.
 
 
-Every dashboard has an **Add instruments** link when the approved catalog is enabled. The same catalog is available from the meter, supply, and scope; it always installs on the Pi hosting that page.
+Every dashboard has an **Add instruments** link when the approved catalog is enabled. The same catalog is available from the meter, supply, scope, and function generator; it always installs on the Pi hosting that page.
 
 1. Open **Add instruments**.
 2. Choose **Install** for an approved controller that is not installed. Installed controllers show **Open**.
@@ -20,6 +20,7 @@ Successful installations register themselves and update the navigation in all in
 | HP 34401A | `/home/pi/hp34401a` | 8082 |
 | HP 6033A | `/home/pi/hp6033a` | 8083 |
 | Tektronix Ethernet | `/home/pi/tektronix-controller` | 8081 |
+| HP 33120A | `/home/pi/hp33120a` | 8084 |
 
 Existing controllers retain their existing addresses, services and security configuration. For example, an existing supply on the main HTTPS address stays there. The registry records the correct address and port for cross-tool links on that host.
 
@@ -27,9 +28,9 @@ New catalog controllers use trusted-LAN HTTP without login or encryption. Do not
 
 ## Coordination and installation boundaries
 
-Meter and supply use the single shared GPIB broker. Installation does not reset an instrument or change its output/setpoints. Existing adapter configuration is preserved. A new adapter configuration starts disabled/read-only; newly added supply access remains disabled until configured. New scope installations require a scope IP in Setup. Installing software is not a hardware connection or accuracy verification.
+Meter, supply, and function generator use the single shared GPIB broker. Installation does not reset an instrument or change its output/setpoints. Existing adapter configuration is preserved. A new adapter configuration starts disabled/read-only; newly added supply access remains disabled until configured. New scope installations require a scope IP in Setup. Installing software is not a hardware connection or accuracy verification.
 
-Packages are local, administrator-approved ZIPs with pinned SHA-256 checksums. The browser accepts only the three approved tool IDs; arbitrary download URLs, scripts, shell commands and service names are not accepted. Dependencies may require internet access. Application preparation and package code run as `pi`. A root-owned activation helper permits only fixed activation, rollback and removal operations for these three services. It never runs package code as root.
+Packages are local, administrator-approved ZIPs with pinned SHA-256 checksums. The browser accepts only the four approved tool IDs; arbitrary download URLs, scripts, shell commands and service names are not accepted. Dependencies may require internet access. Application preparation and package code run as `pi`. A root-owned activation helper permits only fixed activation, rollback and removal operations for these four services. It never runs package code as root.
 
 Existing app folders/services are not overwritten by the add-tool flow. An installation failure stops and quarantines only the newly created controller and reports the failure; prior controllers are preserved. Interrupted work is reconciled on manager restart.
 
@@ -55,7 +56,7 @@ The shared broker is retained. If it uses the selected controller's Python envir
 
 Legacy controllers sharing one web service are protected: their Remove button explains that standalone migration is required. The remover does not edit shared application code, authentication or Nginx configuration to split them apart.
 
-If removing the dashboard currently showing the catalog, the page switches to another installed controller for progress. Removing the last dashboard closes web access; the confirmation gives this SSH reinstall command (choose `meter`, `supply` or `scope`):
+If removing the dashboard currently showing the catalog, the page switches to another installed controller for progress. Removing the last dashboard closes web access; the confirmation gives this SSH reinstall command (choose `meter`, `supply`, `scope` or `generator`):
 
 ```sh
 python3 /opt/fischer-suite-manager/catalog_cli.py install meter
@@ -65,6 +66,6 @@ Interrupted removals either restore the stopped controller or finish an already-
 
 ## Test evidence
 
-The catalog passed 78 Python tests, including approved-ID validation, package tampering/path rejection, installation admission, existing-service preservation and activation rollback. On the fresh meter-only test Pi, the Tektronix controller was installed from the meter's catalog page, then the supply was installed from the scope's catalog page. Both opened automatically and registered cross-tool links. Shared adapter configuration remained byte-identical. These checks did not enable new supply access or certify measurement accuracy.
+The suite passed 269 Python tests, plus four dedicated HP 33120A controller tests, including approved-ID validation, package tampering/path rejection, installation admission, existing-service preservation and activation rollback. On the fresh meter-only test Pi, the Tektronix controller was installed from the meter's catalog page, then the supply was installed from the scope's catalog page. Both opened automatically and registered cross-tool links. Shared adapter configuration remained byte-identical. These checks did not enable new supply access or certify measurement accuracy.
 
-On 192.168.1.178, browser removal and reinstall succeeded for the scope and meter, including removal from the meter’s own catalog page. Saved scope, supply and shared adapter configuration remained byte-identical. The broker process stayed unchanged throughout removal and reinstall; its shared Python environment was retained. All three dashboards were restored. A further 22 permission regression checks passed.
+On 192.168.1.178, browser removal and reinstall succeeded for the scope and meter, including removal from the meter’s own catalog page. Saved scope, supply and shared adapter configuration remained byte-identical. The broker process stayed unchanged throughout removal and reinstall; its shared Python environment was retained. All existing dashboards were restored. A further 22 permission regression checks passed.

@@ -46,6 +46,10 @@ class Manager:
         for key,item in catalog['tools'].items():
             allowed,reason=engine.removal_policy(key) if key in installed else (False,'')
             rows.append({'id':key,**{k:item[k] for k in ('name','description')},'installed':key in installed,'removable':allowed,'removal_reason':reason,**installed.get(key,{})})
+        if 'generator' in installed:
+            allowed,reason=engine.removal_policy('generator')
+            rows.append({'id':'generator','name':'HP 33120A Function Generator','description':'15 MHz function/arbitrary waveform generator controller',
+                         'installed':True,'removable':allowed,'removal_reason':reason,**installed['generator']})
         job=dict(self.current) if self.current else None
         if job:
             log=engine.STATE/job['id']/'install.log'
@@ -86,6 +90,8 @@ class Manager:
         action=data.get('action');keys={'action','tool','keep_settings','confirm'} if action=='remove' else {'action','tool'}
         if set(data)!=keys or data.get('tool') not in engine.APP_DIRS or action not in ('install','register','remove'):
             raise ValueError('Choose one approved instrument')
+        if action=='install' and data.get('tool')=='generator':
+            raise ValueError('Reinstall the HP 33120A with its signed updater')
         if action=='remove' and (type(data['keep_settings']) is not bool or data['confirm'] is not True):raise ValueError('Explicit confirmation is required')
         if data['action']=='register':
             if not self.lock.acquire(blocking=False):raise RuntimeError('Installation is running; registration follows completion')

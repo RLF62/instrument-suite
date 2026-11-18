@@ -12,7 +12,7 @@ from .security import MaintenanceError,verify_manifest,atomic_json
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('directory',type=Path);p.add_argument('--key',type=Path,required=True)
-    p.add_argument('--instruments',default='meter,supply,scope');p.add_argument('--dry-run',action='store_true')
+    p.add_argument('--instruments',default='meter,supply,scope,generator');p.add_argument('--dry-run',action='store_true')
     a=p.parse_args(argv)
     if os.geteuid()!=0:raise MaintenanceError('Signed-candidate testing requires the local administrator')
     directory=a.directory.resolve()

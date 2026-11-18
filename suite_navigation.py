@@ -5,7 +5,7 @@ from pathlib import Path
 from flask import Response
 
 CONFIG = Path(os.environ.get('FISCHER_SUITE_TOOLS', '/home/pi/instrument-suite/tools.json'))
-TOOLS = ('meter', 'supply', 'scope')
+TOOLS = ('meter', 'supply', 'scope', 'generator')
 REGISTRY=Path('/home/pi/instrument-suite/registry.json')
 
 def installed_records():
