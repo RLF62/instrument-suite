@@ -9,6 +9,7 @@ import re
 import sys
 import time
 import traceback
+from pathlib import Path
 CURRENT_PHASE = 'worker startup'
 
 
@@ -376,6 +377,12 @@ def dispatch_instrument(dev, target, action, data):
     if target == 'meter': return meter(dev, action, data)
     if target == 'supply': return supply(dev, action, data)
     if target == 'generator':
+        component_root = Path(__file__).resolve().parent.parent / 'hp33120a'
+        component_protocol = component_root / 'hp33120a' / 'protocol.py'
+        if component_protocol.is_file():
+            component_path = str(component_root)
+            if component_path not in sys.path:
+                sys.path.insert(0, component_path)
         from hp33120a.protocol import execute
         return execute(dev, action, data)
     raise ValueError('Unsupported instrument target')
