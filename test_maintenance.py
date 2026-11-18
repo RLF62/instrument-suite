@@ -165,9 +165,14 @@ class SafetyTests(unittest.TestCase):
     def test_supply_read_only_verification(self):
         c=types.SimpleNamespace(remote_control_enabled=False,read_gpib=MagicMock(return_value={'OUT':0.0}))
         self.assertTrue(Guard('supply',c).check()['verified']);c.read_gpib.assert_called_once_with()
-    def test_disconnected_supply_blocks(self):
-        c=types.SimpleNamespace(remote_control_enabled=False,read_gpib=MagicMock(side_effect=OSError()))
-        with self.assertRaises(OSError):Guard('supply',c).check()
+    def test_explicitly_disabled_supply_allows_software_update(self):
+        error=RuntimeError('Supply queries are paused until the supply is connected to the test bus')
+        c=types.SimpleNamespace(remote_control_enabled=False,read_gpib=MagicMock(side_effect=error))
+        self.assertEqual(Guard('supply',c).check(),{'connected':False,'remote_control_enabled':False,'verified':True})
+    def test_disconnected_or_unexpected_supply_error_blocks(self):
+        for error in (OSError(),RuntimeError('adapter unavailable')):
+            c=types.SimpleNamespace(remote_control_enabled=False,read_gpib=MagicMock(side_effect=error))
+            with self.assertRaises(type(error)):Guard('supply',c).check()
     def test_meter_polling_and_queued_operations_block(self):
         for state in ({'polling':True,'pending_controls':0},{'polling':False,'pending_controls':1},{'polling':False}):
             meter=types.SimpleNamespace(snapshot=lambda:state)
