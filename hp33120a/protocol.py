@@ -130,6 +130,7 @@ def validate_sweep(data, function='SIN'):
 
 def sweep_snapshot(dev):
     result=snapshot(dev)
+    result['configuration_token']=result['token']
     result['sweep']={k:read_number(dev,c) for k,c in [('start','FREQ:STAR?'),('stop','FREQ:STOP?'),('time','SWE:TIME?')]}
     result['sweep']['spacing']=dev.query('SWE:SPAC?').strip()
     del result['token']
