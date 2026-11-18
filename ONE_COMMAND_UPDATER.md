@@ -34,6 +34,10 @@ The shared dashboard uses port 8080. Independent controllers retain ports 8081
 HTTP. Existing TLS, authentication and deployment wrappers are preserved;
 unrecognized or legacy installations require attended enrollment and are never
 silently adopted. No legacy removal protection is disabled by this updater.
+The generator connection starts disabled on a fresh installation. After the adapter
+and GPIB address are configured and identity/readback succeed, enabling the
+generator connection makes Apply available without a second read-only setting.
+Apply still requires a fresh configuration token and explicit confirmation.
 
 ## Release trust and independent versions
 
