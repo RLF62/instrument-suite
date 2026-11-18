@@ -9,5 +9,5 @@
   "meter_read_only": true,
   "supply_enabled": false,
   "generator_enabled": false,
-  "generator_read_only": true
+  "generator_read_only": false
 }

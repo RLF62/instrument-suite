@@ -75,7 +75,7 @@ class InstallMatrixTests(unittest.TestCase):
             files = {'requirements.lock': b'# inert dependency fixture\n'}
             if name == 'suite':
                 files.update({'maintenance/__init__.py': b'# inert updater fixture\n',
-                              'config.example.json': b'{"hardware_enabled":false}'})
+                              'config.example.json': Path(__file__).with_name('config.example.json').read_bytes()})
             elif name == 'supply':
                 files.update({'app.py': b'# FISCHER_SHARED_ADAPTER_V1\n',
                               'supply_standalone.py': b'# inert supply fixture\n',
@@ -121,6 +121,9 @@ class InstallMatrixTests(unittest.TestCase):
                     self.assertEqual(result['result'], 'Updated and health checked')
                     registry = json.loads((f.host.folder('suite')/'registry.json').read_text())
                     self.assertEqual(set(registry['instruments']), set(selected))
+                    cfg = json.loads((f.host.folder('suite')/'config.json').read_text())
+                    self.assertFalse(cfg['generator_enabled'])
+                    self.assertFalse(cfg['generator_read_only'])
                     self.assertFalse(engine.pending.exists())
                     self.assertFalse(engine.flag.exists())
                     before = list(f.commands)
