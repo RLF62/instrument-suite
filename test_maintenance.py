@@ -172,6 +172,10 @@ class SafetyTests(unittest.TestCase):
         for state in ({'polling':True,'pending_controls':0},{'polling':False,'pending_controls':1},{'polling':False}):
             meter=types.SimpleNamespace(snapshot=lambda:state)
             with self.assertRaises(RuntimeError):Guard('meter',None,meter=meter).check()
+    def test_generator_quiesce_never_sends_instrument_commands(self):
+        controller=MagicMock()
+        self.assertEqual(Guard('generator',controller).check(),{'requests':0,'verified':True})
+        controller.assert_not_called()
     def test_scope_running_or_busy_blocks(self):
         for running,busy in [('1','0'),('0','1'),('UNKNOWN','0')]:
             @contextmanager
