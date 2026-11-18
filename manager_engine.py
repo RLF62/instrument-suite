@@ -19,9 +19,9 @@ ROOT=Path('/opt/fischer-suite-manager')
 STATE=HOME/'.instrument-suite-manager'
 UNITS=Path('/etc/systemd/system')
 REGISTRY=SUITE/'registry.json'
-APP_DIRS={'meter':'hp34401a','supply':'hp6033a','scope':'tektronix-controller'}
-SERVICES={'meter':'hp34401a','supply':'hp6033a','scope':'tektronix-controller'}
-PORTS={'meter':8082,'supply':8083,'scope':8081}
+APP_DIRS={'meter':'hp34401a','supply':'hp6033a','scope':'tektronix-controller','generator':'hp33120a'}
+SERVICES={'meter':'hp34401a','supply':'hp6033a','scope':'tektronix-controller','generator':'hp33120a'}
+PORTS={'meter':8082,'supply':8083,'scope':8081,'generator':8084}
 
 def atomic(path,data):
     path.parent.mkdir(parents=True,exist_ok=True)
@@ -41,7 +41,7 @@ def command(args,log,as_pi=False,timeout=180):
 
 def catalog():
     data=json.loads((ROOT/'catalog.json').read_text())
-    if set(data['tools'])!={'meter','supply','scope'}:raise RuntimeError('Invalid approved catalog')
+    if set(data['tools'])!={'meter','supply','scope','generator'}:raise RuntimeError('Invalid approved catalog')
     return data
 
 def unpack(tool,destination):
@@ -96,6 +96,8 @@ def scan():
         result['meter']={'port':8082,'scheme':'http','path':'/multimeter/classic','folder':str(HOME/'hp34401a')}
     if (HOME/'tektronix-controller/app.py').exists() and (active('tektronix-controller') or active('tektronix-controller',True)) and healthy(8081,'/api/config'):
         result['scope']={'port':8081,'scheme':'http','path':'/','folder':str(HOME/'tektronix-controller')}
+    if (HOME/'hp33120a/generator_app.py').exists() and active('hp33120a') and healthy(8084,'/api/generator/status'):
+        result['generator']={'port':8084,'scheme':'http','path':'/generator/classic','folder':str(HOME/'hp33120a')}
     return public_records(result)
 
 def register(force=False):
@@ -106,7 +108,7 @@ def register(force=False):
     return tools
 
 def unit_text(tool):
-    folder=HOME/APP_DIRS[tool];module='standalone_app' if tool=='meter' else 'supply_standalone' if tool=='supply' else 'app'
+    folder=HOME/APP_DIRS[tool];module={'meter':'standalone_app','supply':'supply_standalone','scope':'app','generator':'generator_app'}[tool]
     return f'''[Unit]
 Description=Fischer {tool} web controller
 After=network.target
@@ -185,12 +187,17 @@ def provision(tool,job,notify):
             shutil.copy2(source/'supply_standalone.py',target/'supply_standalone.py')
             shutil.copy2(source/'config.example.json',target/'config.json')
             tests=[]
-        else:
+        elif tool=='scope':
             for name in ('app.py','archive_tools.py','ethernet_transport.py','example_catalog.py','scope_io.py','screen_effect.py','index.html','setup.html','requirements.txt'):
                 shutil.copy2(source/name,target/name)
             shutil.copytree(source/'docs',target/'docs')
             if (source/'static').is_dir():shutil.copytree(source/'static',target/'static')
             atomic(target/'connection.json',{'address':'scope-not-configured.invalid','timeout':6})
+            tests=['discover','-s',str(source),'-p','test_*.py']
+        else:
+            for name in ('generator_app.py','gpib_client.py','suite_navigation.py','navigation.js','catalog_web.py','catalog.html','requirements.txt'):
+                shutil.copy2(source/name,target/name)
+            shutil.copytree(source/'hp33120a',target/'hp33120a')
             tests=['discover','-s',str(source),'-p','test_*.py']
         shutil.copy2(source/'tool_registration.py',target/'tool_registration.py')
         pi_owned(target)
@@ -204,7 +211,7 @@ def provision(tool,job,notify):
             command([python,'-m','pip','install','-r',source/'requirements.txt'],log,as_pi=True,timeout=420)
         notify('Checking software before starting the controller')
         if tests:
-            command([python,'-m','unittest',*tests],log,as_pi=True,timeout=120) if tool=='scope' else command([python,'-m','unittest','discover','-s',source,'-p','test_views.py'],log,as_pi=True,timeout=120)
+            command([python,'-m','unittest',*tests],log,as_pi=True,timeout=120) if tool in ('scope','generator') else command([python,'-m','unittest','discover','-s',source,'-p','test_views.py'],log,as_pi=True,timeout=120)
         restore_settings(tool,target)
         configure_app(tool,target)
         if tool!='scope':
@@ -212,7 +219,7 @@ def provision(tool,job,notify):
             ensure_broker(meter_source,python,log)
         notify('Starting web service; instrument communication stays unconfigured')
         activate(tool,'start',job,log)
-        endpoint='/api/multimeter/status' if tool=='meter' else '/api/config' if tool=='scope' else '/'
+        endpoint={'meter':'/api/multimeter/status','scope':'/api/config','generator':'/api/generator/status','supply':'/'}[tool]
         for attempt in range(30):
             if healthy(PORTS[tool],endpoint):break
             if attempt==29:raise RuntimeError('Controller did not become ready within the startup limit')
@@ -248,7 +255,8 @@ def rollback(tool,job):
 
 SETTINGS={'meter':('appearance.json','presets.json'),
           'supply':('config.json','config.example.json','presets.json','.hp6033a-version.json','.control_auth_mode','.control_htpasswd'),
-          'scope':('connection.json','appearance.json','measurement-selection.json','presets.json','captures','setup-backups','personal-examples')}
+          'scope':('connection.json','appearance.json','measurement-selection.json','presets.json','captures','setup-backups','personal-examples'),
+          'generator':()}
 
 def is_runtime_stub(tool):
     target=HOME/APP_DIRS[tool];marker=target/'.shared-broker-runtime.json'
@@ -266,7 +274,7 @@ def removal_policy(tool):
             return False,'This instrument is integrated into another web host. Migrate it to standalone before removal.'
     except FileNotFoundError:pass
     except (OSError,ValueError,TypeError,AttributeError):return False,'Repair controller registration before removal.'
-    module='standalone_app' if tool=='meter' else 'supply_standalone' if tool=='supply' else 'app'
+    module={'meter':'standalone_app','supply':'supply_standalone','scope':'app','generator':'generator_app'}[tool]
     if target.is_symlink() or not unit.is_file() or unit.is_symlink():return False,'Removal is available for standalone/catalog services; this legacy or shared installation is protected.'
     try:text=unit.read_text()
     except OSError:return False,'Service definition is not readable; administrator setup must repair its permissions.'

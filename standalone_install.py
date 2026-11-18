@@ -22,7 +22,7 @@ def run(*args,**kw):
 
 def selection(text):
     result=list(dict.fromkeys(text.split(',')))
-    if 'meter' not in result or any(x not in ('meter','supply','scope') for x in result):
+    if 'meter' not in result or any(x not in ('meter','supply','scope','generator') for x in result):
         raise argparse.ArgumentTypeError('Choose meter, optionally supply and/or scope')
     return result
 

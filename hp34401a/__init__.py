@@ -123,7 +123,7 @@ def install(app):
     from suite_navigation import install as install_navigation
     standalone = app.config.get('SUITE_STANDALONE', False)
     install_navigation(app, current='meter' if standalone else 'auto',
-                       default=('meter',) if standalone else ('meter','supply','scope'))
+                       default=('meter',) if standalone else ('meter','supply','scope','generator'))
 
     @app.get('/api/multimeter/status')
     def meter_status():

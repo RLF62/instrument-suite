@@ -372,6 +372,15 @@ def recover_usb(rm, dev):
     raise TimeoutError('USBTMC recovery exceeded its deadline')
 
 
+def dispatch_instrument(dev, target, action, data):
+    if target == 'meter': return meter(dev, action, data)
+    if target == 'supply': return supply(dev, action, data)
+    if target == 'generator':
+        from hp33120a.protocol import execute
+        return execute(dev, action, data)
+    raise ValueError('Unsupported instrument target')
+
+
 def hardware(payload):
     trace('import PyVISA')
     import pyvisa
@@ -502,7 +511,7 @@ def hardware(payload):
             return {'local_requested':True, 'adapter_acknowledged':True, 'instrument_mode_verified':False}
         trace('run ' + target + ' action ' + action)
         traced = TracedDevice(dev,target)
-        return meter(traced, action, data) if target == 'meter' else supply(traced, action, data)
+        return dispatch_instrument(traced, target, action, data)
     finally:
         try:
             if dev is not None:
