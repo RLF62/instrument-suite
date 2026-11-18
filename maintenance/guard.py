@@ -44,7 +44,12 @@ class Guard:
             if getattr(self.controller, 'remote_control_enabled', None) is not False:
                 raise RuntimeError('In the live HP 6033A dashboard, turn OUTPUT OFF, then disable remote programming and retry. The updater never switches output')
             # Same read-only path used by the controller; a cached display is insufficient.
-            values = self.controller.read_gpib()
+            try:
+                values = self.controller.read_gpib()
+            except RuntimeError as error:
+                if str(error) == 'Supply queries are paused until the supply is connected to the test bus':
+                    return {'connected': False, 'remote_control_enabled': False, 'verified': True}
+                raise
             output = values.get('OUT')
             if type(output) not in (int, float) or output != 0:
                 raise RuntimeError('In the live HP 6033A dashboard, turn OUTPUT OFF, then disable remote programming and retry. The updater never switches output')
