@@ -11,7 +11,7 @@ import time
 ROOT = Path(__file__).resolve().parent
 OPERATIONS = {'adapter': {'inspect', 'discover', 'usb-recover'}, 'supply': {'snapshot', 'set', 'output_off'},
               'meter': {'identify', 'configuration', 'prepare', 'sample', 'single', 'function', 'range', 'digits', 'math', 'menu-read', 'menu-set', 'local'},
-              'arduino': {'probe'}}
+              'generator': {'identify', 'configuration', 'apply', 'sweep_configuration', 'sweep_apply', 'sweep_start', 'sweep_stop'}, 'arduino': {'probe'}}
 
 
 class Coordinator:
@@ -87,6 +87,14 @@ class Coordinator:
             return {'ok': False, 'error': 'Hardware access is disabled pending coordination checks'}
         if target == 'supply' and not self.config.get('supply_enabled', True):
             return {'ok': False, 'error': 'Supply queries are paused until the supply is connected to the test bus'}
+        if target == 'generator':
+            if not self.config.get('generator_enabled', False):
+                return {'ok':False,'error':'Generator access is disabled pending attended verification'}
+            address=self.config.get('addresses',{}).get('generator')
+            if type(address) is not int or not 1 <= address <= 30 or list(self.config['addresses'].values()).count(address) != 1:
+                return {'ok':False,'error':'Generator requires an explicitly configured unique GPIB address'}
+            if action in ('apply','sweep_apply','sweep_start','sweep_stop') and self.config.get('generator_read_only', True):
+                return {'ok':False,'error':'Generator is read-only; Apply is disabled'}
         wait = 3.2 if target == 'supply' else .05
         if not self.lock.acquire(timeout=wait):
             return {'ok': False, 'error': 'Shared adapter busy; try again shortly'}
@@ -112,7 +120,7 @@ class Coordinator:
                 if action not in ('identify', 'configuration') and not self.configured:
                     return {'ok': False, 'error': 'Read initial meter configuration first'}
             # Includes a fresh Python/PyVISA startup on the Pi Zero 2 W.
-            deadline = 3.0
+            deadline = {'identify':7.0,'configuration':17.0,'apply':30.0,'sweep_configuration':19.0,'sweep_apply':35.0,'sweep_start':35.0,'sweep_stop':35.0}[action] if target=='generator' else 3.0
             response = self.runner({'request': req, 'config': self.config, 'recover': self.recover}, deadline)
             self.recover = not response.get('ok') and response.get('io_failed', True)
             if response.get('ok'):

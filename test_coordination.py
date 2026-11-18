@@ -9,7 +9,7 @@ from adapter_broker import Coordinator
 from adapter_worker import meter, supply, function_key, pulse, menu_read, menu_set
 
 
-CFG = {'hardware_enabled': True, 'addresses': {'supply': 10, 'meter': 22}, 'resource': 'FAKE'}
+CFG = {'hardware_enabled': True, 'addresses': {'supply': 10, 'meter': 22, 'generator': 20}, 'resource': 'FAKE'}
 
 
 def req(target, action, **data):
@@ -33,6 +33,21 @@ class CoordinationTests(unittest.TestCase):
     def test_disconnected_supply_is_not_queried_during_meter_only_setup(self):
         runner=Mock();c=Coordinator({**CFG,'supply_enabled':False},runner)
         self.assertFalse(c.execute(req('supply','snapshot'))['ok'])
+        runner.assert_not_called()
+
+    def test_generator_transactions_are_allowlisted_with_operation_deadlines(self):
+        runner=Mock(return_value={'ok':True,'result':{}})
+        c=Coordinator({**CFG,'generator_enabled':True,'generator_read_only':False},runner)
+        self.assertTrue(c.execute(req('generator','identify'))['ok'])
+        self.assertEqual(runner.call_args.args[1],7.0)
+        self.assertTrue(c.execute(req('generator','sweep_start'))['ok'])
+        self.assertEqual(runner.call_args.args[1],35.0)
+
+    def test_generator_read_only_and_unique_address_guards(self):
+        runner=Mock();c=Coordinator({**CFG,'generator_enabled':True,'generator_read_only':True},runner)
+        self.assertFalse(c.execute(req('generator','apply'))['ok'])
+        bad={**CFG,'addresses':{'supply':10,'meter':22,'generator':10},'generator_enabled':True,'generator_read_only':False}
+        self.assertFalse(Coordinator(bad,runner).execute(req('generator','identify'))['ok'])
         runner.assert_not_called()
 
     def test_identity_then_configuration_required_before_measurements(self):
