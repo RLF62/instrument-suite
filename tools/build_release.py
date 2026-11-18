@@ -85,7 +85,7 @@ def archive_payload(payload, archive):
 
 def build(sources, locks, versions, release, sequence, key, public_key, output):
     if set(sources)!=set(REPOS) or set(versions)!=set(REPOS):
-        raise MaintenanceError('Provide source paths and versions for all four components')
+        raise MaintenanceError('Provide source paths and versions for all five components')
     if not VERSION.fullmatch(release) or any(not isinstance(v,str) or not VERSION.fullmatch(v) for v in versions.values()):
         raise MaintenanceError('Release and component versions must use vMAJOR.MINOR.PATCH')
     if versions['suite']!=release or type(sequence) is not int or sequence<1:

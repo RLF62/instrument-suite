@@ -1,6 +1,6 @@
 # Fischer Instrument Suite
 
-Raspberry Pi web controllers for the HP 6033A power supply, HP 34401A multimeter and Tektronix Ethernet oscilloscope. Install any supported combination and use the shared navigation to switch between instruments.
+Raspberry Pi web controllers for the HP 6033A power supply, HP 34401A multimeter, Tektronix Ethernet oscilloscope and HP 33120A function generator. Install any supported combination and use the shared navigation to switch between instruments.
 
 ## Install and update
 
@@ -29,6 +29,7 @@ HTTPS web maintenance reuses the existing dashboard credentials. Trusted-LAN HTT
 | HP 6033A power supply | [Source and operating guide](https://github.com/RLF62/hp6033a-web-controller) | 8083 |
 | HP 34401A multimeter | [Source and operating guide](https://github.com/RLF62/hp34401a-web-controller) | 8082 |
 | Tektronix Ethernet oscilloscope | [Source and operating guide](https://github.com/RLF62/tektronix-ethernet-controller) | 8081 |
+| HP 33120A function generator | [Source and operating guide](https://github.com/RLF62/hp33120a-web-controller) | 8084 |
 
 The fresh suite dashboard uses port 8080. Existing HTTPS installations retain their configured URLs and authentication. Navigation uses the current browser host. Supply and meter share one adapter broker; do not run a direct-adapter application against that same adapter.
 
@@ -65,12 +66,13 @@ These downloads support the original catalog workflow. They are distinct from th
 | HP 34401A | [meter.zip](approved/packages/meter.zip) |
 | HP 6033A | [supply.zip](approved/packages/supply.zip) |
 | Tektronix | [scope.zip](approved/packages/scope.zip) |
+| HP 33120A | [generator.zip](approved/packages/generator.zip) |
 
 [Catalog checksums](approved/catalog.json) · [Original standalone installation](STANDALONE.md) · [Original integrated installation](INSTALL.md)
 
 ## Validation
 
-The v1.0.2 suite ran 241 regression tests successfully, with 21 expected skips in the unprivileged run. The preceding 237-test removal-manager build also passed with root privileges. Public v1.0.2 signature verification and all four archive/hash/length checks passed; controller archives are unchanged.
+The four-controller suite ran 269 regression tests successfully, with 21 expected skips in the unprivileged run. The preceding 237-test removal-manager build also passed with root privileges. Public v1.0.2 signature verification and all four archive/hash/length checks passed; controller archives are unchanged.
 
 Fresh-card HTTP installation, attended HTTPS production activation, backups and a no-op update passed for the earlier baseline. The v1.0.2 real removal/reinstall test on spare hardware is still pending. Actual production rollback and unexpected power-loss recovery were not performed; see the acceptance record for limits.
 

@@ -54,9 +54,10 @@ def main():
     # Prior publication commit IDs identify the reviewed package sources. The
     # candidate engine's own changes are recorded in the local development commit.
     commits={'suite':subprocess.check_output(['git','-C',str(suite),'rev-parse','HEAD'],text=True).strip(),
-             'meter':'41044eb725a22c2da7ee2dfd8a573365eebcff8a','supply':'2bc023a181feb84071f422a3336f4691e604ff5e','scope':'1a934f730ee6c54e1ed5191f79e043fe38195834'}
+             'meter':'41044eb725a22c2da7ee2dfd8a573365eebcff8a','supply':'2bc023a181feb84071f422a3336f4691e604ff5e','scope':'1a934f730ee6c54e1ed5191f79e043fe38195834',
+             'generator':'f68871ddfab48cd06ac1772ef15bd97122934ce5'}
     with tempfile.TemporaryDirectory() as tmp:
-        for name in ('suite','meter','supply','scope'):
+        for name in REPOS:
             source=suite
             if name!='suite':
                 package=suite/'approved/packages'/(name+'.zip')

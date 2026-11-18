@@ -30,6 +30,9 @@ class ReleaseBuildTests(unittest.TestCase):
                 (source/'templates').mkdir()
                 (source/'templates/index.html').write_text('old view')
             elif name=='meter':(source/'standalone_app.py').write_text('# inert meter fixture\n')
+            elif name=='generator':
+                (source/'generator_app.py').write_text('# inert generator fixture\n')
+                (source/'hp33120a').mkdir()
             else:(source/'app.py').write_text('# inert scope fixture\n')
             self.commit(source)
         self.locks=self.root/'locks';self.locks.mkdir()

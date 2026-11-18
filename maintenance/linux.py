@@ -22,7 +22,7 @@ SPECS = {'suite': ('instrument-suite', 'fischer-suite-dashboard', 8090, 'mainten
          'generator': ('hp33120a', 'hp33120a', 8084, 'generator_app')}
 DIRECTORIES = {'suite': {'hp34401a', 'integration', 'deploy', 'maintenance'},
                'meter': {'hp34401a'}, 'supply': {'templates', 'static', 'docs', 'deploy', 'screenshots', 'tests'},
-               'scope': {'docs', 'static'}}
+               'scope': {'docs', 'static'}, 'generator': {'hp33120a'}}
 FILES = {'suite': {'activate.py', 'adapter_broker.py', 'adapter_worker.py', 'catalog.html', 'catalog_cli.py',
     'catalog_service.py', 'catalog_web.py', 'deploy_manager.py', 'deployment_profile.py', 'gpib_client.py',
     'manager_engine.py', 'navigation.js', 'suite_gateway.py', 'suite_navigation.py', 'tool_registration.py',
@@ -30,7 +30,9 @@ FILES = {'suite': {'activate.py', 'adapter_broker.py', 'adapter_worker.py', 'cat
     'meter': {'standalone_app.py', 'gpib_client.py', 'suite_navigation.py', 'navigation.js', 'catalog_web.py', 'catalog.html', 'tool_registration.py', 'suite_gateway.py'},
     'supply': {'app.py', 'supply_standalone.py', 'tool_registration.py'},
     'scope': {'app.py', 'scope_io.py', 'ethernet_transport.py', 'screen_effect.py', 'archive_tools.py', 'example_catalog.py',
-              'index.html', 'setup.html', 'tool_registration.py'}}
+              'index.html', 'setup.html', 'tool_registration.py'},
+    'generator': {'generator_app.py', 'gpib_client.py', 'suite_navigation.py', 'navigation.js',
+                  'catalog_web.py', 'catalog.html'}}
 COMMON = {'requirements.txt', 'requirements.lock', 'config.example.json', 'README.md', 'ONE_COMMAND_UPDATER.md','INSTALL.md',
           'STANDALONE.md', 'CATALOG.md', 'GATEWAY_MIGRATION.md', 'DEPLOYMENT.md', 'INSTRUMENT_SUITE.md', 'PROJECT_HANDOFF.md',
           'HTTPS_MIGRATION_VALIDATION.md','GPIB_FIRMWARE.md'}
