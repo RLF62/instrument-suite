@@ -57,6 +57,7 @@ border:1px solid #466b71;border-radius:5px;background:transparent;color:#a7e9eb;
 text-decoration:none;font:13px system-ui,sans-serif;white-space:nowrap}
 #suite-unified-header a[aria-current=page],#suite-unified-header a:hover{background:#31494f;border-color:#8de0e6;color:#fff}
 body[data-suite-page=scope]>header:first-of-type{display:none!important}
+body[data-suite-page=scope] nav.suite-direct-header{display:none!important}
 body[data-suite-page=supply] nav:not(#suite-unified-header),
 body[data-suite-page=meter] nav[aria-label="Instrument navigation"]:not(#suite-unified-header),
 body[data-suite-page=generator] nav[aria-label="Instrument navigation"]:not(#suite-unified-header),

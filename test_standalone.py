@@ -55,10 +55,13 @@ class StandaloneTests(unittest.TestCase):
 
     def test_file_served_scope_page_gets_navigation_without_stale_etag(self):
         with tempfile.TemporaryDirectory() as d:
-            page=Path(d)/'index.html';page.write_text('<html><body>Scope</body></html>')
+            page=Path(d)/'index.html';page.write_text('<html><body><nav class="suite-direct-header">OLD</nav><main>Scope</main></body></html>')
             app=Flask('scope-test')
             app.add_url_rule('/',view_func=lambda:send_file(page))
             suite_navigation.install(app,current='scope')
             response=app.test_client().get('/')
             self.assertIn('/api/suite/navigation.js',response.text)
+            self.assertEqual(response.text.count('id="suite-unified-header"'),1)
+            self.assertIn('body[data-suite-page=scope] nav.suite-direct-header{display:none!important}',response.text)
+            self.assertIn('<nav class="suite-direct-header">OLD</nav>',response.text)
             self.assertNotIn('ETag',response.headers)
