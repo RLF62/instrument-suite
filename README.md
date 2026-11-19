@@ -48,6 +48,10 @@ sudo instrument-suite rollback --dry-run
 
 After reviewing the preview, `sudo instrument-suite rollback` performs recovery. Keep private backup archives and credentials off GitHub.
 
+## New instruments
+
+Start with the [instrument starter template and development checklist](instrument_starter/README.md). It includes a no-hardware page preview, the shared header pattern, Android layout rules, and the steps for reviewing, registering, and packaging a new controller.
+
 ## Documentation
 
 - [Documentation index](DOCUMENTATION.md)

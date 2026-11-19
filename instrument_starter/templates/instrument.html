@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New instrument · {{ view }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='starter.css') }}">
+</head>
+<body>
+  <!-- The suite injects the one shared sticky header here; do not add a second nav. -->
+  <main class="instrument-page">
+    <div class="page-intro"><p>{{ view }} view · development preview</p><span class="status">Hardware disconnected</span></div>
+    <div class="instrument-grid">
+      <section class="instrument-panel" aria-label="Instrument display">
+        <h1>New instrument</h1>
+        <div class="front-panel" role="img" aria-label="Placeholder for instrument front panel">
+          Replace with a responsive instrument image or display
+        </div>
+      </section>
+      <section class="controls-panel" aria-label="Controls">
+        <h2>Controls</h2>
+        <p>Map the instrument's real controls here after its hardware behavior is reviewed.</p>
+        <button type="button" disabled>Example control (disabled)</button>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

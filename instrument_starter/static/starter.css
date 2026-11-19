@@ -1,0 +1,11 @@
+*{box-sizing:border-box}
+html{background:#101723;color:#eff5f9;font:16px/1.5 system-ui,sans-serif}
+body{margin:0;min-width:0}
+.instrument-page{width:min(100%,1340px);margin:auto;padding:0 20px 30px}
+.page-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.status{border:1px solid #4b7380;border-radius:6px;padding:6px 10px;color:#b4d7e4}
+.instrument-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:18px}
+.instrument-panel,.controls-panel{min-width:0;padding:18px;border:1px solid #3a4e60;border-radius:14px;background:#1b2939}
+h1,h2{margin-top:0}.front-panel{width:100%;aspect-ratio:1.8;min-height:150px;display:grid;place-items:center;text-align:center;padding:14px;background:#2d3b49;border:2px solid #738896;border-radius:10px}
+button{font:inherit;min-height:44px;padding:8px 14px}button:disabled{opacity:.7}
+@media(max-width:700px){.instrument-page{padding:0 10px 20px}.instrument-grid{grid-template-columns:minmax(0,1fr);gap:10px}.instrument-panel,.controls-panel{padding:12px}.front-panel{max-width:100%;min-height:120px}img,canvas,svg,video{max-width:100%;height:auto}}
