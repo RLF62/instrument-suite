@@ -124,6 +124,21 @@ def install_helper():
     subprocess.run(['systemctl','reset-failed','fischer-suite-updater-web'],check=False)
     subprocess.run(['systemctl','enable','--now','fischer-suite-updater-web'],check=True)
 
+def fresh_lan_network(interfaces, addresses):
+    """Use the interface prefix for the Pi's first private IPv4 LAN address."""
+    for value in addresses:
+        try:ip=ipaddress.ip_address(value)
+        except ValueError:continue
+        if not isinstance(ip,ipaddress.IPv4Address):continue
+        for interface in interfaces:
+            for entry in interface.get('addr_info',[]):
+                if entry.get('family')!='inet' or entry.get('local')!=value:continue
+                try:network=ipaddress.ip_network(f"{value}/{entry['prefixlen']}",strict=False)
+                except (ValueError,KeyError,TypeError):continue
+                if any(network.subnet_of(private) for private in RFC1918):
+                    return str(network)
+    raise MaintenanceError('No private IPv4 LAN could be identified; pass --trusted-lan CIDR explicitly')
+
 def fresh_lan_origin(networks, addresses):
     """Select a local IPv4 address inside the explicitly trusted network."""
     ranges=[ipaddress.ip_network(value,strict=True) for value in networks]
