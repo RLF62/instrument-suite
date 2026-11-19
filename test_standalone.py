@@ -53,6 +53,15 @@ class StandaloneTests(unittest.TestCase):
         self.assertIn('<nav aria-label="Instrument navigation"><strong>OLD</strong></nav>',html)
         self.assertNotIn('<nav id="suite-unified-header"',html)
 
+    def test_counter_modern_navigation_uses_fresh_url(self):
+        app=Flask('counter-nav-test')
+        with app.test_request_context('http://192.168.1.108:8085/classic'):
+            html=suite_navigation.header_html('counter','/classic','192.168.1.108',{})
+        self.assertIn('href="http://192.168.1.108:8085/modern?header=2"',html)
+        with app.test_request_context('http://192.168.1.108:8082/multimeter/modern'):
+            html=suite_navigation.header_html('meter','/multimeter/modern','192.168.1.108',{'counter':{'scheme':'http','port':8085}})
+        self.assertIn('href="http://192.168.1.108:8085/modern?header=2"',html)
+
     def test_file_served_scope_page_gets_navigation_without_stale_etag(self):
         with tempfile.TemporaryDirectory() as d:
             page=Path(d)/'index.html';page.write_text('<html><body><nav class="suite-direct-header">OLD</nav><main>Scope</main></body></html>')

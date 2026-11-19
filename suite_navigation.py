@@ -66,7 +66,7 @@ body[data-suite-page=supply] main.wrap>header.head>div:first-child{display:none!
 @media(max-width:1349px){#suite-unified-header{display:flex;flex-direction:column;align-items:stretch}
 #suite-unified-header strong{order:-1;align-self:center;white-space:normal}
 #suite-unified-header .suite-actions{justify-content:flex-end}}
-@media(max-width:700px){
+@media(max-width:700px), (hover:none) and (pointer:coarse) and (max-width:1200px){
 #suite-unified-header{display:flex!important;flex-direction:column!important;align-items:stretch!important;
 position:sticky!important;top:0!important;width:100%!important;max-width:100%!important;min-height:0!important;
 margin:0 0 10px!important;margin-left:0!important;padding:10px 8px!important;gap:8px!important;overflow:hidden!important}
@@ -89,6 +89,8 @@ body[data-suite-page=supply] #classic-layout-grid .instrument{width:100%!importa
 
 def header_html(current, path, hostname, records):
     if current not in TITLES:return ''
+    def view_href(tool, view):
+        return view+('?header=2' if tool=='counter' and view=='/modern' else '')
     classic=path=='/classic-dual' or path=='/classic' or path.endswith('/classic')
     def origin(record):
         scheme=record.get('scheme','http')
@@ -99,14 +101,14 @@ def header_html(current, path, hostname, records):
     left=[]
     for tool,record in records.items():
         if tool==current or tool not in TITLES:continue
-        target=VIEWS.get(tool,('/', '/'))[0 if classic else 1]
+        target=view_href(tool,VIEWS.get(tool,('/', '/'))[0 if classic else 1])
         left.append(link(LABELS[tool],origin(record)+target))
     here=urlsplit(request.host_url)
     base=here.scheme+'://'+hostname+(':'+str(here.port) if here.port else '')
     left.append(link('Add instruments',base+'/api/suite/manager'))
     right=[link('Suite Home',here.scheme+'://'+hostname+':8080/')]
     if current in VIEWS:
-        right.extend(link(label,base+view,path==view) for label,view in zip(('Classic','Modern'),VIEWS[current]))
+        right.extend(link(label,base+view_href(current,view),path==view) for label,view in zip(('Classic','Modern'),VIEWS[current]))
     elif current=='scope':right.append(link('Setup',base+'/setup'))
     right.append(link('Documentation',base+DOCS[current]))
     return HEADER_CSS+'<div id="suite-unified-header" role="navigation" aria-label="Instrument navigation"><div class="suite-links">'+''.join(left)+'</div><strong>'+TITLES[current]+'</strong><div class="suite-actions">'+''.join(right)+'</div></div>'
