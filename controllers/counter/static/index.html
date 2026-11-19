@@ -1,0 +1,70 @@
+<!doctype html><html lang="en"><head><link rel="icon" type="image/png" sizes="192x192" href="/static/hp-logo-192.png"><link rel="apple-touch-icon" href="/static/hp-logo-192.png"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HP 5385A Frequency Counter</title><style>
+:root{font-family:system-ui,sans-serif;color:#e8edf5;background:#1e2226}*{box-sizing:border-box}body{margin:0}button{font:inherit}
+a{color:#a7e9eb;text-decoration:none}button,a{touch-action:manipulation}button{cursor:pointer}
+.suite-topbar{display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:center;min-height:75px;padding:.85rem 2.2%;border-bottom:1px solid #394550}
+.suite-topbar strong{grid-column:2;grid-row:1;white-space:nowrap;letter-spacing:.04em}.suite-tool-links{grid-column:1;grid-row:1;display:flex;flex-wrap:wrap;gap:.45rem}.suite-actions{grid-column:3;grid-row:1;display:flex;justify-content:flex-end;flex-wrap:wrap;gap:.5rem}
+.suite-topbar a,.toolbar button{border:1px solid #466b71;border-radius:5px;padding:.65rem .8rem;font-size:.82rem;color:#a7e9eb}.suite-topbar a:hover,.toolbar button:hover{background:#2b4348}
+.suite-actions a[aria-current]{border-color:#8de0e6;color:white;background:#31494f}
+.hero{text-align:center;margin:1rem auto}.hero-badge{display:inline-block;padding:.6rem .9rem;border:1px solid #667787;border-radius:5px;color:#c8e0e5}
+.toolbar{display:flex;align-items:center;justify-content:center;gap:.7rem;flex-wrap:wrap;margin:1rem auto 1.2rem}.toolbar button{background:#303c44;color:#eef6f7;font-size:.92rem}
+main{max-width:1170px;margin:auto;padding:0 1rem 3rem}.lead{color:#aebfc8;text-align:center}
+.panel{position:relative;container-type:inline-size;width:100%;aspect-ratio:1923/817;margin:1rem auto;background:transparent}.panel img{display:block;width:100%;height:100%}
+.lcd{position:absolute;left:12.3%;top:24%;width:56%;height:20%;display:flex;align-items:center;justify-content:center;gap:.45rem;color:#202f2d;font-family:'Courier New',monospace;font-size:5.6cqw;font-weight:bold;letter-spacing:.04em;text-shadow:0 0 2px #5b6d62;overflow:hidden;white-space:nowrap}
+.lcd small{font-size:.34em;letter-spacing:0}.annunciator{position:absolute;top:37.8%;width:2.35%;height:2.25%;clip-path:polygon(0 0,100% 0,50% 100%);background:#263732;opacity:.05;pointer-events:none;filter:blur(.3px)}.annunciator.active{opacity:.85}.ann-rem{left:13.45%}.ann-addr{left:17.85%}.ann-gate{left:64.55%}.modern-annunciators{display:flex;justify-content:center;gap:1.5rem;margin:.5rem auto;color:#9db6b9;font:12px system-ui}.modern-annunciators .modern-lamp{display:inline-flex;gap:.3rem;align-items:center;opacity:.35}.modern-annunciators .modern-lamp.active{opacity:1;color:#ade6cc}.modern-annunciators .modern-lamp::before{content:"";width:11px;height:7px;background:currentColor;clip-path:polygon(0 0,100% 0,50% 100%)}.hit{position:absolute;border:0;background:transparent;border-radius:6px}.hit:focus-visible{outline:3px solid #2487c2;background:#328ac033}
+body.modern .panel{display:none}.modern-display{display:none;background:#25333a;border:1px solid #596e72;border-radius:12px;text-align:center;margin:1.2rem 0;padding:2rem}
+body.modern .modern-display{display:block}.modern-display .caption{color:#98c2ca;letter-spacing:.16em;text-transform:uppercase;font-size:.8rem}.modern-display .reading{--counter-text-color:#ade6cc;font-family:'Courier New',monospace;font-size:clamp(2.3rem,8vw,5.5rem);font-weight:bold;color:var(--counter-text-color);overflow-wrap:anywhere}.modern-display .reading small{font:normal .3em system-ui;color:inherit}.display-color{display:inline-flex;align-items:center;gap:.55rem;margin-top:1rem;color:#c5d8db;font-size:.9rem}.display-color input{width:3.5rem;height:2.2rem;background:transparent;border:1px solid #758b90;border-radius:5px;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.card{background:#29323a;border:1px solid #45545b;padding:1rem;border-radius:11px;min-width:0}.card[hidden]{display:none}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.9rem;cursor:grab}.card h2{font-size:1.1rem;margin:0}.move{display:flex;gap:.25rem}.move button{padding:.15rem .4rem}
+.card button{border:1px solid #71868e;background:#34434c;color:#fff;border-radius:6px;padding:.55rem .8rem;margin:.2rem}.card button.active{background:#2575a6;border-color:#a6d8ef}.card button:hover{background:#3e6174}
+#status{min-height:2rem;text-align:center;color:#b3d9f5}#status.error{color:#ffb5a7}.muted{font-size:.84rem;color:#b2c1c8}
+#chart{width:100%;height:220px;display:block;background:#172126;border-radius:7px}.chart-tools{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}.chart-tools button{font-size:.8rem}.layout-editor{background:#26343c;border:1px solid #53646c;padding:1rem;border-radius:9px;margin:1rem 0}.layout-editor[hidden]{display:none}.layout-editor label{display:inline-block;margin:.3rem .8rem .3rem 0}
+body.half .panel{max-width:580px}body.half .grid{max-width:850px;margin:auto}body.modern .grid{grid-template-columns:repeat(3,minmax(0,1fr))}body.modern .card[data-panel="chart"]{grid-column:span 2}
+@media(max-width:800px){.suite-topbar{display:flex;flex-direction:column;gap:.6rem}.suite-tool-links,.suite-actions{justify-content:center}.grid,body.modern .grid{grid-template-columns:1fr}body.modern .card[data-panel="chart"]{grid-column:auto}.lcd{font-size:5.6cqw}}
+.suite-layoutbar button,.suite-grid .tile-tools button,.suite-grid .tile-resize{font:14px system-ui,sans-serif;color:#eef6f7;background:#303b42;border:1px solid #6c7c87;border-radius:5px;min-height:44px;padding:8px 12px;cursor:pointer}
+.suite-layoutbar button:hover,.suite-grid .tile-tools button:hover{background:#40535c}
+.suite-layoutbar button:focus-visible,.suite-grid .tile-tools button:focus-visible,.suite-grid .tile-tools select:focus-visible,.suite-grid .tile-resize:focus-visible{outline:3px solid #62ded0;outline-offset:3px}
+.suite-grid{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:18px!important;align-items:start}
+.suite-grid>.meter-tile{grid-column:span var(--tile-span,12)!important;position:relative;min-width:0;margin-top:0!important;margin-bottom:0!important;resize:none!important;height:auto!important}
+.suite-grid>.meter-tile[data-user-hidden=true]{display:none!important}
+body.layout-editing .suite-grid>.meter-tile[data-user-hidden=true]{display:block!important;opacity:.55}
+body.layout-editing .suite-grid>.readings[data-user-hidden=true]{display:grid!important}
+.suite-grid .tile-tools,.suite-grid .tile-resize{display:none}
+body.layout-editing .suite-grid>.meter-tile{outline:1px dashed #7598a6;outline-offset:3px;padding-bottom:48px}
+body.layout-editing .suite-grid .tile-tools{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:12px;background:#202b32;padding:8px;border-radius:6px;grid-column:1/-1}
+.suite-grid .tile-tools label{display:flex;flex-direction:row;align-items:center;gap:6px;min-height:44px;color:#dce5ee;font:13px system-ui,sans-serif;margin:0}
+.suite-grid .tile-tools select{width:auto;min-height:44px;font:13px system-ui,sans-serif;color:#eef6f7;background:#303b42;border:1px solid #6c7c87;border-radius:5px;padding:5px;margin:0}
+.suite-grid .tile-tools button{padding:6px 10px}.suite-grid .tile-drag{cursor:grab;touch-action:none;flex:1 1 160px;text-align:left}
+body.layout-editing .suite-grid .tile-resize{display:block;position:absolute;right:3px;bottom:3px;min-width:44px;min-height:44px;touch-action:none;cursor:nwse-resize}
+.suite-grid .tile-moving{opacity:.65}.suite-grid .tile-target{outline:3px solid #62ded0!important}
+.suite-grid>.head,.suite-grid>nav,.suite-grid>footer,.suite-grid>#layout-toolbar{grid-column:1/-1}
+.suite-classic-root{max-width:1120px;margin:0 auto}.suite-classic-root>.meter-tile>.instrument{width:100%;max-width:none;margin:0}.suite-classic-root>.meter-tile>details.extra{max-width:none;margin:0}
+@media(max-width:700px){.suite-grid>.meter-tile{grid-column:1/-1!important}.suite-grid .tile-tools label{width:100%}.suite-grid .tile-tools label:after{content:'(full width on phones)';font-size:11px;color:#b3bec6}}
+#panel-wrap{background:transparent;border:0;padding:0}#panel-wrap #status{margin:1rem 0}#counter-layout-grid>.card{margin:0}#counter-layout-grid>.card h2{margin:.15rem 0 1rem}.layout-toolbar{display:inline-flex;align-items:center;gap:.55rem;flex-wrap:wrap;justify-content:center}.layout-toolbar #layout-note{max-width:600px;font-size:.8rem;color:#b8cbd0}.toolbar .layout-toolbar button{background:#303c44;color:#eef6f7}.suite-grid>.meter-tile .tile-tools{z-index:2}
+</style></head><body>
+<nav class="suite-topbar" aria-label="Instrument navigation"><strong>HP 5385A FREQUENCY COUNTER</strong><div class="suite-actions"><a href="http://192.168.1.108:8080/" id="suite-home">Suite Home</a><a href="/classic" data-view="classic">Classic</a><a href="/modern" data-view="modern">Modern</a><a href="/docs/">Documentation</a></div></nav>
+<div class="hero"><span id="badge" class="hero-badge">CONNECTING · NO LIVE DATA</span></div>
+<div class="toolbar"><button id="half">Half size</button><div class="layout-toolbar"></div><button id="read-now">Refresh reading</button></div>
+<main><p class="lead">GPIB address 03 · Shared USB-GPIB adapter<br><span id="control-note">Remote buttons enabled. 10 MHz Check first selects A Frequency to prevent entering diagnostics on repeated clicks.</span></p>
+<div id="counter-layout-grid"><section id="panel-wrap" aria-label="Front panel and live reading">
+<div class="panel" aria-label="HP 5385A front panel"><img src="/static/hp5385a.png" alt="HP 5385A front panel with blank LCD">
+<div class="lcd" aria-live="polite"><span id="display">--------</span><small id="unit"></small></div><span class="annunciator ann-rem" data-ann="rem" role="img" aria-label="Remote"></span><span class="annunciator ann-addr" data-ann="addr" role="img" aria-label="Addressed"></span><span class="annunciator ann-gate" data-ann="gate" role="img" aria-label="Gate activity"></span>
+<button class="hit" style="left:17%;top:56%;width:5%;height:12%" data-control="mode" data-value="freq_a" aria-label="Input A frequency"></button>
+<button class="hit" style="left:24%;top:56%;width:5%;height:12%" data-control="mode" data-value="period_a" aria-label="Input A period"></button>
+<button class="hit" style="left:31%;top:56%;width:5%;height:12%" data-control="mode" data-value="freq_b" aria-label="Input B frequency"></button>
+<button class="hit" style="left:38%;top:56%;width:5%;height:12%" data-control="gate" data-value="0.1" aria-label="0.1 second gate"></button>
+<button class="hit" style="left:45%;top:56%;width:5%;height:12%" data-control="gate" data-value="1" aria-label="1 second gate"></button>
+<button class="hit" style="left:52%;top:56%;width:5%;height:12%" data-control="gate" data-value="10" aria-label="10 second gate"></button>
+<button class="hit" style="left:59%;top:56%;width:5%;height:12%" data-control="reset" data-value="now" aria-label="Reset"></button>
+<button class="hit" style="left:17%;top:74%;width:5%;height:12%" data-control="attenuation" data-value="on" aria-label="Input A 20x attenuation"></button>
+<button class="hit" style="left:24%;top:74%;width:5%;height:12%" data-control="filter" data-value="on" aria-label="Input A filter"></button>
+<button class="hit" style="left:59%;top:74%;width:5%;height:12%" data-control="mode" data-value="check" aria-label="10 MHz check"></button></div>
+<div class="modern-display"><div class="caption">Live frequency counter</div><div class="modern-annunciators" aria-label="Counter activity"><span class="modern-lamp" data-ann="rem">REM</span><span class="modern-lamp" data-ann="addr">ADDR</span><span class="modern-lamp" data-ann="gate">GATE</span></div><div class="reading"><span id="modern-reading">--------</span> <small id="modern-unit"></small></div><label class="display-color" for="modern-text-color">Display text color <input id="modern-text-color" type="color" value="#ade6cc"></label></div>
+<p id="status">Connecting…</p>
+</section>
+<section class="card" data-panel="measurement"><h2>Measurement</h2><button data-control="mode" data-value="check">10 MHz Check</button><button data-control="mode" data-value="freq_a">A Frequency</button><button data-control="mode" data-value="period_a">A Period</button><button data-control="mode" data-value="freq_b">B Frequency</button></section>
+<section class="card" data-panel="gate"><h2>Gate time</h2><button data-control="gate" data-value="0.1">0.1 s</button><button data-control="gate" data-value="1">1 s</button><button data-control="gate" data-value="10">10 s</button></section>
+<section class="card" data-panel="input"><h2>Input A</h2><button data-control="attenuation" data-value="on">20× attenuation on</button><button data-control="attenuation" data-value="off">Off</button><button data-control="filter" data-value="on">100 kHz filter on</button><button data-control="filter" data-value="off">Off</button></section>
+<section class="card" data-panel="chart"><h2>Live chart</h2><canvas id="chart" role="img" aria-label="Recent live readings"></canvas><div class="chart-tools"><span id="chart-count" class="muted">Waiting for readings</span><button id="clear-chart">Clear chart</button></div></section>
+<section class="card" data-panel="other"><h2>Other</h2><button data-control="reset" data-value="now">Reset gate</button><p class="muted">Blue choices show the last commands sent here. Physical front-panel changes are not read back.</p></section>
+</div></main><script src="/static/counter.js?v=8" defer></script><script src="/static/layout.js?v=3" defer></script></body></html>

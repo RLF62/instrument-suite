@@ -1,6 +1,6 @@
 # Fischer Instrument Suite
 
-Raspberry Pi web controllers for the HP 6033A power supply, HP 34401A multimeter, Tektronix Ethernet oscilloscope and HP 33120A function generator. Install any supported combination and use the shared navigation to switch between instruments.
+Raspberry Pi web controllers for the HP 6033A power supply, HP 34401A multimeter, Tektronix Ethernet oscilloscope, HP 33120A function generator and HP 5385A frequency counter. Install any supported combination and use the shared navigation to switch between instruments.
 
 ## Install and update
 
@@ -30,6 +30,7 @@ HTTPS web maintenance reuses the existing dashboard credentials. Trusted-LAN HTT
 | HP 34401A multimeter | [controllers/meter](controllers/meter) | 8082 |
 | Tektronix Ethernet oscilloscope | [controllers/scope](controllers/scope) | 8081 |
 | HP 33120A function generator | [controllers/generator](controllers/generator) | 8084 |
+| HP 5385A frequency counter | [controllers/counter](controllers/counter) | 8085 |
 
 The fresh suite dashboard uses port 8080. Existing HTTPS installations retain their configured URLs and authentication. Navigation uses the current browser host. Supply and meter share one adapter broker; do not run a direct-adapter application against that same adapter.
 
@@ -67,12 +68,13 @@ These downloads support the original catalog workflow. They are distinct from th
 | HP 6033A | [supply.zip](approved/packages/supply.zip) |
 | Tektronix | [scope.zip](approved/packages/scope.zip) |
 | HP 33120A | [generator.zip](approved/packages/generator.zip) |
+| HP 5385A | [counter.zip](approved/packages/counter.zip) |
 
 [Catalog checksums](approved/catalog.json) · [Original standalone installation](STANDALONE.md) · [Original integrated installation](INSTALL.md)
 
 ## Validation
 
-The four-controller suite ran 269 regression tests successfully, with 21 expected skips in the unprivileged run. The preceding 237-test removal-manager build also passed with root privileges. Public v1.0.2 signature verification and all four archive/hash/length checks passed; controller archives are unchanged.
+The five-controller suite ran 276 regression tests successfully, with 21 expected skips in the unprivileged run. The preceding 237-test removal-manager build also passed with root privileges. Public v1.0.2 signature verification and all four archive/hash/length checks passed; controller archives are unchanged.
 
 Fresh-card HTTP installation, attended HTTPS production activation, backups and a no-op update passed for the earlier baseline. The v1.0.2 real removal/reinstall test on spare hardware is still pending. Actual production rollback and unexpected power-loss recovery were not performed; see the acceptance record for limits.
 
@@ -90,4 +92,4 @@ The suite landing page includes an attended [USB-GPIB firmware updater](GPIB_FIR
 
 ## HP 5385A Frequency Counter
 
-The counter source is in [hp5385a](hp5385a/) and the checksum-verified approved package is [counter.zip](approved/packages/counter.zip). The suite manager presents it as a fifth instrument on port 8085. After installation, configure the shared adapter and GPIB address 03 in /home/pi/instrument-suite/config.json; enable counter controls only when the physical instrument is ready.
+The counter source is in [controllers/counter](controllers/counter/) (also available at [hp5385a](hp5385a/) for the approved package) and the checksum-verified approved package is [counter.zip](approved/packages/counter.zip). The suite manager presents it as a fifth instrument on port 8085. After installation, configure the shared adapter and GPIB address 03 in /home/pi/instrument-suite/config.json; enable counter controls only when the physical instrument is ready.
