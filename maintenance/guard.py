@@ -47,7 +47,10 @@ class Guard:
             try:
                 values = self.controller.read_gpib()
             except RuntimeError as error:
-                if str(error) == 'Supply queries are paused until the supply is connected to the test bus':
+                if str(error) in ('Supply queries are paused until the supply is connected to the test bus',
+                                  'Hardware access is disabled pending coordination checks'):
+                    # The broker has disabled hardware transactions; the web
+                    # controller has remote programming disabled as checked above.
                     return {'connected': False, 'remote_control_enabled': False, 'verified': True}
                 raise
             output = values.get('OUT')

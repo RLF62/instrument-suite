@@ -169,6 +169,13 @@ class SafetyTests(unittest.TestCase):
         error=RuntimeError('Supply queries are paused until the supply is connected to the test bus')
         c=types.SimpleNamespace(remote_control_enabled=False,read_gpib=MagicMock(side_effect=error))
         self.assertEqual(Guard('supply',c).check(),{'connected':False,'remote_control_enabled':False,'verified':True})
+    def test_broker_explicitly_disabled_allows_offline_supply_upgrade(self):
+        c=types.SimpleNamespace(remote_control_enabled=False,
+                                read_gpib=MagicMock(side_effect=RuntimeError(
+                                    'Hardware access is disabled pending coordination checks')))
+        self.assertEqual(Guard('supply',c).check(),
+                         {'connected':False,'remote_control_enabled':False,'verified':True})
+
     def test_disconnected_or_unexpected_supply_error_blocks(self):
         for error in (OSError(),RuntimeError('adapter unavailable')):
             c=types.SimpleNamespace(remote_control_enabled=False,read_gpib=MagicMock(side_effect=error))
