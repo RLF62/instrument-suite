@@ -101,6 +101,7 @@ controllers = [
     ('HP 34401A Meter', '/home/pi/hp34401a', 8082, '/multimeter/classic'),
     ('Tektronix Scope', '/home/pi/tektronix-controller', 8081, '/'),
     ('HP 33120A Generator', '/home/pi/hp33120a', 8084, '/generator/classic'),
+    ('HP 5385A Counter', '/home/pi/hp5385a', 8085, '/classic'),
 ]
 manager = None
 for name, folder, port, path in controllers:

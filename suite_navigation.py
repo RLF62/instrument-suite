@@ -5,7 +5,7 @@ from pathlib import Path
 from flask import Response
 
 CONFIG = Path(os.environ.get('FISCHER_SUITE_TOOLS', '/home/pi/instrument-suite/tools.json'))
-TOOLS = ('meter', 'supply', 'scope', 'generator')
+TOOLS = ('meter', 'supply', 'scope', 'generator', 'counter')
 REGISTRY=Path('/home/pi/instrument-suite/registry.json')
 
 def installed_records():
@@ -53,7 +53,7 @@ def install(app, current='meter', default=('meter',)):
             response.direct_passthrough = False  # Scope pages are served with send_file.
             body = response.get_data(as_text=True)
             if '</body>' in body:
-                body = body.replace('</body>', '<script defer src="/api/suite/navigation.js"></script></body>')
+                body = body.replace('</body>', '<script defer src="/api/suite/navigation.js?v=20261119-header7"></script></body>')
                 response.set_data(body)
                 response.headers.pop('ETag', None)
                 response.headers['Cache-Control'] = 'no-cache'

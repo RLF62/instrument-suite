@@ -9,7 +9,6 @@ import re
 import sys
 import time
 import traceback
-from pathlib import Path
 CURRENT_PHASE = 'worker startup'
 
 
@@ -373,16 +372,100 @@ def recover_usb(rm, dev):
     raise TimeoutError('USBTMC recovery exceeded its deadline')
 
 
+def counter_line(dev):
+    # The 5385A sends at most 17 data characters plus CR/LF. Requesting the
+    # default large PyVISA chunk makes UsbGpib wait past the instrument reply.
+    parts = bytearray()
+    for _ in range(32):
+        chunk = dev.read_bytes(1)
+        parts.extend(chunk)
+        if chunk == b'\n':
+            break
+    else:
+        raise RuntimeError('Counter reply exceeded 32 bytes without LF')
+    return parts.decode('ascii').strip()
+
+
 def dispatch_instrument(dev, target, action, data):
+    if target == 'counter' and action == 'control':
+        choices = {'mode': {'check': 'CK', 'freq_a': 'FU1', 'period_a': 'FU2', 'freq_b': 'FU3'},
+                   'gate': {'0.1': 'GA1', '1': 'GA2', '10': 'GA3'},
+                   'attenuation': {'off': 'AT0', 'on': 'AT1'},
+                   'filter': {'off': 'FI0', 'on': 'FI1'},
+                   'reset': {'now': 'RE'}, 'initialize': {'now': 'IN'}}
+        if set(data) != {'control', 'value'} or data['control'] not in choices or data['value'] not in choices[data['control']]:
+            raise ValueError('Unsupported counter control')
+        command = choices[data['control']][data['value']]
+        interface = dev.device.visalib.sessions[dev.device.session].interface
+        before = interface.usb_dev.ctrl_transfer(0xa1, 0x80, 1, interface.usb_intf.index, 3, timeout=1800)
+        if len(before) != 3 or before[0] != 1 or before[1] != 1:
+            raise RuntimeError('Counter status unavailable before command')
+        if int(before[2]) & 4:
+            raise RuntimeError('Counter ERROR is on; press physical RESET/LOCAL before sending commands')
+        # CHECK twice enters a diagnostic sequence on this model. Select a
+        # measurement function first so every web CHECK is a single CHECK.
+        commands = ('FU1', 'CK') if command == 'CK' else (command,)
+        for item in commands:
+            dev.write(item)
+            time.sleep(.2)
+            poll = interface.usb_dev.ctrl_transfer(0xa1, 0x80, 1, interface.usb_intf.index, 3, timeout=1800)
+            if len(poll) != 3 or poll[0] != 1 or poll[1] != 1:
+                raise RuntimeError('Counter status unavailable after command')
+            if int(poll[2]) & 4:
+                raise RuntimeError('Counter rejected ' + item + '; press physical RESET/LOCAL and inspect the displayed error')
+        return {'command': ', '.join(commands), 'control': data['control'], 'value': data['value']}
+    if target == 'counter' and action == 'error':
+        dev.write('SE')
+        return {'error_code': counter_line(dev)}
+    if target == 'counter' and action == 'id_request':
+        dev.write('ID')
+        return {'id_requested': True}
+    if target == 'counter' and action == 'status':
+        import usb.core
+        interface = dev.device.visalib.sessions[dev.device.session].interface
+        reply = interface.usb_dev.ctrl_transfer(0xa1, 0x80, 1, interface.usb_intf.index, 3, timeout=1800)
+        if len(reply) != 3 or reply[0] != 1 or reply[1] != 1:
+            raise RuntimeError('Unexpected USB488 status response: ' + repr(list(reply)))
+        return {'status_byte': int(reply[2])}
+    if target == 'counter' and action == 'check':
+        dev.write('CK')
+        return {'check_requested': True}
+    if target == 'counter' and action == 'sample':
+        interface = dev.device.visalib.sessions[dev.device.session].interface
+        poll = interface.usb_dev.ctrl_transfer(0xa1, 0x80, 1, interface.usb_intf.index, 3, timeout=1800)
+        if len(poll) != 3 or poll[0] != 1 or poll[1] != 1:
+            raise RuntimeError('Unexpected counter status response')
+        status = int(poll[2])
+        if status & 4:
+            return {'ready': False, 'status_byte': status, 'error': 'Counter ERROR is on; press physical RESET/LOCAL and check the display'}
+        # The 5385A can return a current measurement even with DATA READY clear.
+        # A direct addressed read follows the manual's measurement example.
+        if data.get('mode') == 'freq_b' and not status & 1:
+            return {'ready': False, 'status_byte': status, 'message': 'Waiting for Input B measurement'}
+        try:
+            raw = counter_line(dev)
+        except Exception as exc:
+            import pyvisa
+            if isinstance(exc, pyvisa.errors.VisaIOError) and exc.error_code == pyvisa.constants.StatusCode.error_timeout:
+                return {'ready': False, 'status_byte': status, 'message': 'Waiting for counter measurement'}
+            raise
+        match = re.fullmatch(r'([FP])\s*([+-]\d+(?:\.\d+)?E[+-]\d+)', raw)
+        if not match:
+            raise RuntimeError('Unexpected counter reading: ' + repr(raw))
+        value = float(match.group(2))
+        if not math.isfinite(value):
+            raise RuntimeError('Counter returned a non-finite reading')
+        return {'ready': True, 'status_byte': status, 'raw': raw, 'kind': 'frequency' if match.group(1) == 'F' else 'period',
+                'value': value, 'unit': 'Hz' if match.group(1) == 'F' else 's'}
+    if target == 'counter' and action == 'identify':
+        dev.write('ID')
+        identity = counter_line(dev)
+        if identity.replace(' ', '').upper() != 'HP5385A':
+            raise RuntimeError('Unexpected counter identity: ' + repr(identity))
+        return {'identity': identity}
     if target == 'meter': return meter(dev, action, data)
     if target == 'supply': return supply(dev, action, data)
     if target == 'generator':
-        component_root = Path(__file__).resolve().parent.parent / 'hp33120a'
-        component_protocol = component_root / 'hp33120a' / 'protocol.py'
-        if component_protocol.is_file():
-            component_path = str(component_root)
-            if component_path not in sys.path:
-                sys.path.insert(0, component_path)
         from hp33120a.protocol import execute
         return execute(dev, action, data)
     raise ValueError('Unsupported instrument target')
@@ -489,10 +572,13 @@ def hardware(payload):
             raise RuntimeError('Ambiguous USB adapter identity; refusing hardware access')
         trace('open VISA resource: rm.open_resource')
         dev = rm.open_resource(resource, open_timeout=600)
-        dev.timeout = 1800 if target == 'meter' and action in ('sample', 'single') else 600
-        dev.query_delay = .005
-        dev.write_termination = '\n'
-        dev.read_termination = '\n'
+        dev.timeout = 3000 if target == 'counter' else (1800 if target == 'meter' and action in ('sample', 'single') else 600)
+        dev.query_delay = .25 if target == 'counter' else .005
+        dev.write_termination = '\r' if target == 'counter' else '\n'
+        dev.read_termination = '\r' if target == 'counter' else '\n'
+        if target == 'counter':
+            dev.set_visa_attribute(pyvisa.constants.VI_ATTR_TERMCHAR, ord('\r'))
+            dev.set_visa_attribute(pyvisa.constants.VI_ATTR_TERMCHAR_EN, True)
         if payload.get('recover'):
             trace('recover existing USBTMC transfer')
             trace('retry with fresh session; no USB reset or device clear')
@@ -503,6 +589,12 @@ def hardware(payload):
         match = re.search(r'V?(\d+)\.(\d+)', version)
         if not match or tuple(map(int, match.groups())) < (2, 4):
             raise RuntimeError('Shared adapter requires UsbGpib firmware 2.4 or later; got ' + version)
+        if target == 'counter':
+            trace('set adapter volatile CR read termination for counter')
+            pulse(rm, dev)
+            dev.write('!term cr')
+            pulse(rm, dev)
+            trace('adapter read termination: ' + dev.query('!term?').strip())
         if target == 'adapter':
             return {'firmware': version, 'resource': resource}
         address = cfg['addresses'][target]

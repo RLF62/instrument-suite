@@ -19,7 +19,7 @@ SYSTEMD=Path('/etc/systemd/system')
 BACKUPS=Path('/var/backups/fischer-suite-manager')
 UPDATER_CONFIG=Path('/etc/fischer-suite-updater.json')
 MANAGER_SOCKET=Path('/run/fischer-suite-manager/install.sock')
-WEB_SERVICES=('hp6033a','hp34401a','tektronix-controller','hp33120a','fischer-suite-web')
+WEB_SERVICES=('hp6033a','hp34401a','tektronix-controller','hp33120a','hp5385a','fischer-suite-web')
 FILES=('catalog_service.py','manager_engine.py','activate.py','catalog_cli.py','deployment_profile.py')
 WEB=('suite_navigation.py','navigation.js','catalog_web.py','catalog.html','tool_registration.py','suite_gateway.py')
 
@@ -41,12 +41,13 @@ def main(signed_only=False):
             'meter':{'name':'HP 34401A Multimeter','description':'Signed HP multimeter controller'},
             'supply':{'name':'HP 6033A Supply','description':'Signed HP power supply controller'},
             'scope':{'name':'Tektronix Ethernet','description':'Signed oscilloscope controller'},
-            'generator':{'name':'HP 33120A Function Generator','description':'Signed function generator controller'}}}
+            'generator':{'name':'HP 33120A Function Generator','description':'Signed function generator controller'},
+            'counter':{'name':'HP 5385A Frequency Counter','description':'Frequency counter controller'}}}
         for name in FILES:compile((SOURCE/name).read_bytes(),name,'exec')
         active_web={};active_user_scope=False
     else:
         metadata=json.loads((SOURCE/'approved/catalog.json').read_text())
-        if set(metadata['tools'])!={'meter','supply','scope','generator'}:raise RuntimeError('Unapproved catalog entries')
+        if set(metadata['tools'])!={'meter','supply','scope','generator','counter'}:raise RuntimeError('Unapproved catalog entries')
         for key,item in metadata['tools'].items():
             if hashlib.sha256((SOURCE/'approved/packages'/(key+'.zip')).read_bytes()).hexdigest()!=item['sha256']:
                 raise RuntimeError('Package checksum mismatch: '+key)
@@ -62,7 +63,8 @@ def main(signed_only=False):
         if path.is_dir():shutil.copytree(path,backup/name)
         elif path.exists():shutil.copy2(path,backup/name)
     targets=[] if signed_only else [HOME/'instrument-suite']
-    if not signed_only and (HOME/'hp34401a').exists():targets.append(HOME/'hp34401a')
+    if not signed_only:
+        targets += [HOME/name for name in ('hp34401a','hp6033a','tektronix-controller','hp33120a','hp5385a') if (HOME/name).is_dir()]
     managed=[]
     for target in targets:
         for name in WEB:
@@ -83,10 +85,10 @@ def main(signed_only=False):
         for folder,dirs,files in os.walk(ROOT):
             os.chown(folder,0,0);os.chmod(folder,0o755)
             for name in files:os.chown(Path(folder)/name,0,0);os.chmod(Path(folder)/name,0o644)
-        commands=[f'/usr/bin/python3 -I {ROOT}/activate.py {tool} {action}' for tool in ('meter','supply','scope','generator') for action in ('start','commit','rollback','remove','commit-remove','restore-remove','remove-signed','recover-signed','install-signed')]
+        commands=[f'/usr/bin/python3 -I {ROOT}/activate.py {tool} {action}' for tool in ('meter','supply','scope','generator','counter') for action in ('start','commit','rollback','remove','commit-remove','restore-remove','remove-signed','recover-signed','install-signed')]
         temporary=backup/'sudoers.new';temporary.write_text('pi ALL=(root) NOPASSWD: '+', '.join(commands)+'\n');temporary.chmod(0o440)
         run('visudo','-cf',temporary);shutil.copy2(temporary,SUDOERS);SUDOERS.chmod(0o440)
-        for name in ('hp34401a','hp6033a','tektronix-controller','hp33120a','fischer-gpib'):
+        for name in ('hp34401a','hp6033a','tektronix-controller','hp33120a','hp5385a','fischer-gpib'):
             path=SYSTEMD/(name+'.service')
             if path.is_file() and not path.is_symlink():path.chmod(0o644)
         uid=pwd.getpwnam('pi').pw_uid;gid=pwd.getpwnam('pi').pw_gid

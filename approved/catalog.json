@@ -1,5 +1,5 @@
 {
-  "version": "development-2026-11-18",
+  "version": "development-2026-11-19",
   "tools": {
     "meter": {
       "name": "HP 34401A Multimeter",
@@ -20,6 +20,11 @@
       "name": "HP 33120A Function Generator",
       "description": "Photographic Classic and Modern views, verified waveform readback, staged rotary control, and sweep setup.",
       "sha256": "e8eba9abef7295bfadf73d4a0a5a11b0f66c5e7e4f871ea390f63f596d6ef7fc"
+    },
+    "counter": {
+      "name": "HP 5385A Frequency Counter",
+      "description": "Classic and Modern frequency counter, shared GPIB measurements, live chart and remote controls.",
+      "sha256": "9c06459c689f2e6b83bb9b980164b37ce8323a0af7b0066be449862137451ec8"
     }
   }
 }

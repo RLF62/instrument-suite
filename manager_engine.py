@@ -19,9 +19,9 @@ ROOT=Path('/opt/fischer-suite-manager')
 STATE=HOME/'.instrument-suite-manager'
 UNITS=Path('/etc/systemd/system')
 REGISTRY=SUITE/'registry.json'
-APP_DIRS={'meter':'hp34401a','supply':'hp6033a','scope':'tektronix-controller','generator':'hp33120a'}
-SERVICES={'meter':'hp34401a','supply':'hp6033a','scope':'tektronix-controller','generator':'hp33120a'}
-PORTS={'meter':8082,'supply':8083,'scope':8081,'generator':8084}
+APP_DIRS={'meter':'hp34401a','supply':'hp6033a','scope':'tektronix-controller','generator':'hp33120a','counter':'hp5385a'}
+SERVICES={'meter':'hp34401a','supply':'hp6033a','scope':'tektronix-controller','generator':'hp33120a','counter':'hp5385a'}
+PORTS={'meter':8082,'supply':8083,'scope':8081,'generator':8084,'counter':8085}
 
 def atomic(path,data):
     path.parent.mkdir(parents=True,exist_ok=True)
@@ -41,7 +41,7 @@ def command(args,log,as_pi=False,timeout=180):
 
 def catalog():
     data=json.loads((ROOT/'catalog.json').read_text())
-    if set(data['tools'])!={'meter','supply','scope','generator'}:raise RuntimeError('Invalid approved catalog')
+    if set(data['tools'])!={'meter','supply','scope','generator','counter'}:raise RuntimeError('Invalid approved catalog')
     return data
 
 def unpack(tool,destination):
@@ -98,6 +98,8 @@ def scan():
         result['scope']={'port':8081,'scheme':'http','path':'/','folder':str(HOME/'tektronix-controller')}
     if (HOME/'hp33120a/generator_app.py').exists() and active('hp33120a') and healthy(8084,'/api/generator/status'):
         result['generator']={'port':8084,'scheme':'http','path':'/generator/classic','folder':str(HOME/'hp33120a')}
+    if (HOME/'hp5385a/counter_app.py').exists() and active('hp5385a') and healthy(8085,'/api/counter/state'):
+        result['counter']={'port':8085,'scheme':'http','path':'/classic','folder':str(HOME/'hp5385a')}
     return public_records(result)
 
 def register(force=False):
@@ -108,7 +110,7 @@ def register(force=False):
     return tools
 
 def unit_text(tool):
-    folder=HOME/APP_DIRS[tool];module={'meter':'standalone_app','supply':'supply_standalone','scope':'app','generator':'generator_app'}[tool]
+    folder=HOME/APP_DIRS[tool];module={'meter':'standalone_app','supply':'supply_standalone','scope':'app','generator':'generator_app','counter':'counter_app'}[tool]
     return f'''[Unit]
 Description=Fischer {tool} web controller
 After=network.target
@@ -161,7 +163,7 @@ def provision(tool,job,notify):
     hp=HOME/'hp6033a/app.py'
     if tool!='scope' and hp.exists() and 'FISCHER_SHARED_ADAPTER_V1' not in hp.read_text():
         raise RuntimeError('Existing supply uses direct adapter access; integrate coordination before adding a GPIB tool')
-    if UPDATER_CONFIG.exists():
+    if UPDATER_CONFIG.exists() and tool!='counter':
         notify('Installing through the signed updater with retained settings and safety checks')
         result=activate(tool,'install-signed',job,job/'install.log')
         register(force=True)
@@ -194,6 +196,11 @@ def provision(tool,job,notify):
             if (source/'static').is_dir():shutil.copytree(source/'static',target/'static')
             atomic(target/'connection.json',{'address':'scope-not-configured.invalid','timeout':6})
             tests=['discover','-s',str(source),'-p','test_*.py']
+        elif tool=='counter':
+            for name in ('counter_app.py','gpib_client.py','suite_navigation.py','navigation.js','requirements.txt'):
+                shutil.copy2(source/name,target/name)
+            shutil.copytree(source/'static',target/'static')
+            tests=[]
         else:
             for name in ('generator_app.py','gpib_client.py','suite_navigation.py','navigation.js','catalog_web.py','catalog.html','requirements.txt'):
                 shutil.copy2(source/name,target/name)
@@ -215,11 +222,11 @@ def provision(tool,job,notify):
         restore_settings(tool,target)
         configure_app(tool,target)
         if tool!='scope':
-            meter_source=source if tool=='meter' else unpack('meter',job/'shared-meter')
+            meter_source=source if tool in ('meter','counter') else unpack('meter',job/'shared-meter')
             ensure_broker(meter_source,python,log)
         notify('Starting web service; instrument communication stays unconfigured')
         activate(tool,'start',job,log)
-        endpoint={'meter':'/api/multimeter/status','scope':'/api/config','generator':'/api/generator/status','supply':'/'}[tool]
+        endpoint={'meter':'/api/multimeter/status','scope':'/api/config','generator':'/api/generator/status','supply':'/','counter':'/api/counter/state'}[tool]
         for attempt in range(30):
             if healthy(PORTS[tool],endpoint):break
             if attempt==29:raise RuntimeError('Controller did not become ready within the startup limit')
@@ -256,7 +263,7 @@ def rollback(tool,job):
 SETTINGS={'meter':('appearance.json','presets.json'),
           'supply':('config.json','config.example.json','presets.json','.hp6033a-version.json','.control_auth_mode','.control_htpasswd'),
           'scope':('connection.json','appearance.json','measurement-selection.json','presets.json','captures','setup-backups','personal-examples'),
-          'generator':()}
+          'generator':(),'counter':()}
 
 def is_runtime_stub(tool):
     target=HOME/APP_DIRS[tool];marker=target/'.shared-broker-runtime.json'
@@ -274,7 +281,7 @@ def removal_policy(tool):
             return False,'This instrument is integrated into another web host. Migrate it to standalone before removal.'
     except FileNotFoundError:pass
     except (OSError,ValueError,TypeError,AttributeError):return False,'Repair controller registration before removal.'
-    module={'meter':'standalone_app','supply':'supply_standalone','scope':'app','generator':'generator_app'}[tool]
+    module={'meter':'standalone_app','supply':'supply_standalone','scope':'app','generator':'generator_app','counter':'counter_app'}[tool]
     if target.is_symlink() or not unit.is_file() or unit.is_symlink():return False,'Removal is available for standalone/catalog services; this legacy or shared installation is protected.'
     try:text=unit.read_text()
     except OSError:return False,'Service definition is not readable; administrator setup must repair its permissions.'
@@ -303,7 +310,7 @@ def restore_settings(tool,target):
         elif source.is_file():shutil.copy2(source,destination)
 
 def remove(tool,job,keep_settings,notify):
-    if UPDATER_CONFIG.exists():
+    if UPDATER_CONFIG.exists() and tool!='counter':
         notify('Verifying signed controller safety before removal')
         return activate(tool,'remove-signed',job,job/'install.log',keep_settings)
     return _remove(tool,job,keep_settings,notify)

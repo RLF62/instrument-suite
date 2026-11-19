@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 SOCKET='/run/fischer-suite-manager/install.sock'
 SUITE=Path('/home/pi/instrument-suite')
-TOOLS=('meter','supply','scope','generator')
+TOOLS=('meter','supply','scope')
 
 def register_installed(tool):
     if tool not in TOOLS:raise ValueError('Unknown instrument')

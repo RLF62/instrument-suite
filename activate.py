@@ -17,7 +17,8 @@ SIGNED_ACTIVE=Path('/run/fischer-suite-catalog-removal.json')
 APPS={'meter':('hp34401a','hp34401a',8082,'standalone_app'),
       'supply':('hp6033a','hp6033a',8083,'supply_standalone'),
       'scope':('tektronix-controller','tektronix-controller',8081,'app'),
-      'generator':('hp33120a','hp33120a',8084,'generator_app')}
+      'generator':('hp33120a','hp33120a',8084,'generator_app'),
+      'counter':('hp5385a','hp5385a',8085,'counter_app')}
 
 def run(*args,check=True):
     return subprocess.run(list(args),check=check,timeout=25,stdout=sys.stderr,stderr=sys.stderr)
@@ -186,7 +187,7 @@ def signed_operation(tool,action,data):
                 try:result=manager._remove(tool,job,data['keep_settings'],lambda message:None,verified=True)
                 finally:SIGNED_ACTIVE.unlink(missing_ok=True)
         # Preserve sequence anti-replay state, but stop reporting a removed app installed.
-        if not (host.folder(tool)/({'meter':'standalone_app.py','supply':'app.py','scope':'app.py','generator':'generator_app.py'}[tool])).exists():
+        if not (host.folder(tool)/({'meter':'standalone_app.py','supply':'app.py','scope':'app.py','generator':'generator_app.py','counter':'counter_app.py'}[tool])).exists():
             state=engine.state();state['components'].pop(tool,None);atomic_json(engine.state_path,state)
         # HTTPS gateway fallback credentials must retain application ownership.
         from deployment_profile import SECURITY,AUTH_NAMES

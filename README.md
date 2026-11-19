@@ -87,3 +87,7 @@ Fresh v1.0.2 bootstraps configure the helper automatically.
 ## USB-GPIB V2 firmware maintenance
 
 The suite landing page includes an attended [USB-GPIB firmware updater](GPIB_FIRMWARE.md) with pinned firmware verification, application/EEPROM backups, readback checks, recovery gates and running-version verification. The complete attended update was verified on a Raspberry Pi test installation: firmware write/readback, unchanged EEPROM, physical power cycle, V2.5 runtime verification, controller restart and cleared maintenance gates.
+
+## HP 5385A Frequency Counter
+
+The counter source is in [hp5385a](hp5385a/) and the checksum-verified approved package is [counter.zip](approved/packages/counter.zip). The suite manager presents it as a fifth instrument on port 8085. After installation, configure the shared adapter and GPIB address 03 in /home/pi/instrument-suite/config.json; enable counter controls only when the physical instrument is ready.
