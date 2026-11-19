@@ -1,7 +1,14 @@
 /* Shared instrument header. Dashboard panels and controls are left in place. */
 (function () {
   function render() {
-    if(document.getElementById('suite-unified-header'))return;
+    if(document.getElementById('suite-unified-header')){
+      // The Classic supply page moves its layout toolbar into the legacy nav.
+      // Keep the controls visible while that old nav stays hidden.
+      const bar=document.getElementById('classic-layoutbar');
+      const grid=document.getElementById('classic-layout-grid');
+      if(bar && grid && bar.closest('nav'))grid.parentNode.insertBefore(bar,grid);
+      return;
+    }
     const cfg=window.fischerSuite;
     if(!cfg || !Array.isArray(cfg.instruments))return;
     const pathname=location.pathname;

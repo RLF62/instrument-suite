@@ -43,6 +43,16 @@ class StandaloneTests(unittest.TestCase):
             suite_navigation.CONFIG.write_text('{"instruments":["unknown"]}')
             self.assertIn('"instruments": []',self.client.get('/api/suite/navigation.js').text)
 
+    def test_shared_header_does_not_become_the_legacy_page_nav(self):
+        app=Flask('legacy-nav-test')
+        app.add_url_rule('/',view_func=lambda:'<html><body><nav aria-label="Instrument navigation"><strong>OLD</strong></nav><main>Controls</main></body></html>')
+        suite_navigation.install(app,current='supply')
+        html=app.test_client().get('/').text
+        self.assertIn('<div id="suite-unified-header" role="navigation"',html)
+        self.assertIn('<body data-suite-page="supply"><style>',html)
+        self.assertIn('<nav aria-label="Instrument navigation"><strong>OLD</strong></nav>',html)
+        self.assertNotIn('<nav id="suite-unified-header"',html)
+
     def test_file_served_scope_page_gets_navigation_without_stale_etag(self):
         with tempfile.TemporaryDirectory() as d:
             page=Path(d)/'index.html';page.write_text('<html><body>Scope</body></html>')

@@ -89,7 +89,7 @@ def header_html(current, path, hostname, records):
         right.extend(link(label,base+view,path==view) for label,view in zip(('Classic','Modern'),VIEWS[current]))
     elif current=='scope':right.append(link('Setup',base+'/setup'))
     right.append(link('Documentation',base+DOCS[current]))
-    return HEADER_CSS+'<nav id="suite-unified-header" aria-label="Instrument navigation"><div class="suite-links">'+''.join(left)+'</div><strong>'+TITLES[current]+'</strong><div class="suite-actions">'+''.join(right)+'</div></nav>'
+    return HEADER_CSS+'<div id="suite-unified-header" role="navigation" aria-label="Instrument navigation"><div class="suite-links">'+''.join(left)+'</div><strong>'+TITLES[current]+'</strong><div class="suite-actions">'+''.join(right)+'</div></div>'
 
 def install(app, current='meter', default=('meter',)):
     from catalog_web import install as install_catalog
@@ -119,7 +119,7 @@ def install(app, current='meter', default=('meter',)):
                 host=urlsplit(request.host_url).hostname or request.host.split(':')[0]
                 top=header_html(tool,request.path,host,records)
                 body=re.sub(r'<body(\s[^>]*)?>',lambda m:m.group(0)[:-1]+' data-suite-page="'+tool+'">'+top,body,count=1,flags=re.I)
-                body = body.replace('</body>', '<script defer src="/api/suite/navigation.js?v=20261119-header8"></script></body>')
+                body = body.replace('</body>', '<script defer src="/api/suite/navigation.js?v=20261119-header9"></script></body>')
                 response.set_data(body)
                 response.headers.pop('ETag', None)
                 response.headers['Cache-Control'] = 'no-cache'
