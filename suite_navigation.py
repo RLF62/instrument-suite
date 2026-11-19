@@ -66,6 +66,25 @@ body[data-suite-page=supply] main.wrap>header.head>div:first-child{display:none!
 @media(max-width:1349px){#suite-unified-header{display:flex;flex-direction:column;align-items:stretch}
 #suite-unified-header strong{order:-1;align-self:center;white-space:normal}
 #suite-unified-header .suite-actions{justify-content:flex-end}}
+@media(max-width:700px){
+#suite-unified-header{display:flex!important;flex-direction:column!important;align-items:stretch!important;
+position:sticky!important;top:0!important;width:100%!important;max-width:100%!important;min-height:0!important;
+margin:0 0 10px!important;margin-left:0!important;padding:10px 8px!important;gap:8px!important;overflow:hidden!important}
+#suite-unified-header>strong{order:0!important;width:100%;min-width:0;text-align:center!important;
+font:700 13px system-ui,sans-serif!important;line-height:1.25!important;white-space:normal!important}
+#suite-unified-header .suite-links,#suite-unified-header .suite-actions{display:flex!important;
+flex-wrap:nowrap!important;justify-content:flex-start!important;align-self:stretch!important;
+width:100%!important;min-width:0!important;max-width:100%!important;overflow-x:auto!important;
+scrollbar-width:thin;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+#suite-unified-header .suite-links{order:1!important}
+#suite-unified-header .suite-actions{order:2!important}
+#suite-unified-header a{flex:none!important;min-height:36px!important;padding:5px 9px!important;font-size:12px!important}
+body[data-suite-page=supply] #classic-layout-grid.suite-grid{width:100%!important;max-width:none!important;
+grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+body[data-suite-page=supply] #classic-layout-grid.suite-grid>.meter-tile{grid-column:1/-1!important;
+width:100%!important;max-width:none!important}
+body[data-suite-page=supply] #classic-layout-grid .instrument{width:100%!important;max-width:none!important}
+}
 </style>"""
 
 def header_html(current, path, hostname, records):
