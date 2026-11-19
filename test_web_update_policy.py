@@ -16,6 +16,13 @@ def lan():
     value=policy.disabled();value.update(mode='trusted-lan',origins=['http://bench:8080'],trusted_lans=['192.168.1.0/24'],trusted_proxies=['127.0.0.1/32']);return policy.validate(value)
 
 class PolicyTests(unittest.TestCase):
+    def test_fresh_lan_origin_selects_only_a_trusted_ipv4_address(self):
+        self.assertEqual(policy.fresh_lan_origin(['192.168.1.0/24'],
+                         ['fdca::1','192.168.2.9','192.168.1.178']),
+                         'http://192.168.1.178:8080')
+        with self.assertRaisesRegex(Exception,'--update-origin'):
+            policy.fresh_lan_origin(['192.168.1.0/24'],['192.168.2.9'])
+
     def test_real_unix_socket_accepts_pathlib_address(self):
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp)/'helper.sock'

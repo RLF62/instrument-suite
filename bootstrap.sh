@@ -69,7 +69,15 @@ with tarfile.open(archive,'r:gz') as t:
 PY
 # The following module is from the authenticated suite payload, not a branch.
 cd "$staging/verified"
-/usr/bin/python3 -I -c 'import sys;sys.path.insert(0,sys.argv.pop(1));from maintenance.bootstrap_setup import main;raise SystemExit(main())' "$staging/verified" --manifest-url "$manifest_url" --key "$staging/release.pub" "$@"
+/usr/bin/python3 -I -c 'import sys
+sys.path.insert(0,sys.argv.pop(1))
+from maintenance.bootstrap_setup import main
+from maintenance.security import MaintenanceError
+try:
+    raise SystemExit(main())
+except (MaintenanceError, ValueError, OSError) as exc:
+    print("Instrument Suite: "+str(exc),file=sys.stderr)
+    raise SystemExit(1)' "$staging/verified" --manifest-url "$manifest_url" --key "$staging/release.pub" "$@"
 
 # Show browser-ready links only after a successful real installation.
 if [[ ! " $* " == *" --dry-run "* ]]; then

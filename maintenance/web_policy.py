@@ -124,6 +124,16 @@ def install_helper():
     subprocess.run(['systemctl','reset-failed','fischer-suite-updater-web'],check=False)
     subprocess.run(['systemctl','enable','--now','fischer-suite-updater-web'],check=True)
 
+def fresh_lan_origin(networks, addresses):
+    """Select a local IPv4 address inside the explicitly trusted network."""
+    ranges=[ipaddress.ip_network(value,strict=True) for value in networks]
+    for value in addresses:
+        try:ip=ipaddress.ip_address(value)
+        except ValueError:continue
+        if isinstance(ip,ipaddress.IPv4Address) and any(ip in network for network in ranges):
+            return f'http://{ip}:8080'
+    raise MaintenanceError('No Pi IPv4 address is inside the trusted LAN; pass --update-origin http://PI_ADDRESS:8080')
+
 def installation_choice(mode=None,networks=None,origins=None,credential=None):
     if POLICY.exists():return {'preserved_existing_policy':True}
     if mode is None:
