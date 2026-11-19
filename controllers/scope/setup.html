@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tektronix · Setup</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0c111b;color:#e8edf6}*{box-sizing:border-box}body{margin:0}header{padding:22px;background:#131c2b;border-bottom:1px solid #29364a}h1{font-size:24px;margin:0 0 6px}main{max-width:720px;margin:30px auto;padding:0 16px}.card{padding:24px;border:1px solid #2a374c;background:#151e2c;border-radius:14px}h2{font-size:18px;margin-top:0}label{display:block;font-size:14px;color:#b4c4d9}input{display:block;width:100%;margin:9px 0;padding:12px;border:1px solid #40536e;border-radius:6px;background:#0d1522;color:#e8edf6;font-size:16px}p{font-size:14px;line-height:1.6;color:#a9bad1}button,a{display:inline-block;border:1px solid #40536e;background:#25364d;color:#eef4ff;padding:11px 16px;border-radius:7px;cursor:pointer;text-decoration:none;font-size:14px;min-height:43px}button.primary{background:#167969}button:disabled{opacity:.5}details{margin:25px 0}summary{cursor:pointer;padding:8px 0}.row{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}#result{white-space:pre-wrap;overflow-wrap:anywhere;min-height:60px;padding:14px;background:#0d1522;border-radius:8px;line-height:1.6;font-size:14px}.eyebrow{color:#51d8c6;font-size:11px;letter-spacing:2px;margin-bottom:8px}
+[hidden]{display:none!important}
+</style>
+<link rel="icon" type="image/x-icon" href="/static/icons/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/icons/icon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/icons/icon-180.png">
+<link rel="manifest" href="/static/manifest.webmanifest?v=branding-1">
+<meta name="apple-mobile-web-app-title" content="TDS 3032B">
+</head><body>
+<header><div class="eyebrow">FISCHER LAB / TEKTRONIX</div><h1>Controller setup</h1><p>Connect the web controller to your oscilloscope.</p><a id="suiteLink" href="/">Back to instrument suite</a></header>
+<main><div class="card"><h2>Scope connection address</h2>
+<p>This tells the controller where to find the scope. Changing this field <strong>doesn't change the IP address configured on the scope itself</strong>.</p>
+<form id="connectionForm">
+<label for="address">Scope IP address or hostname</label><input id="address" name="address" type="text" required maxlength="253" spellcheck="false" autocomplete="off" placeholder="192.168.1.78">
+<p>Use an IPv4 address or hostname, without http://, a port number, or a page path.</p>
+<details><summary>Advanced settings</summary><label for="timeout">Connection timeout · seconds</label><input id="timeout" name="timeout" type="number" min="1" max="30" step="1" value="6" required><p>Maximum wait for each scope operation. Default: 6 seconds. A slow or unavailable connection may take several operations to report a result.</p></details>
+<div class="row"><button id="test" type="button">Test Connection</button><button id="save" class="primary" type="submit">Save</button><a href="/">Dashboard</a></div>
+</form><div id="result" role="status" aria-live="polite">Loading saved connection settings…</div>
+<p>Test Connection checks the values in this form without saving them. Save retains the address and timeout across Pi restarts and applies them to the next request. You may save an offline scope's address.</p>
+</div><div class="card" style="margin-top:22px"><h2>Dashboard channel colors</h2>
+<p>Choose separate colors for CH1 and CH2. These customize channel panels, measurement labels, and traces and channel-colored text in the displayed capture. <strong>Trace recoloring is a dashboard display effect. The physical scope and original capture retain their own colors.</strong></p>
+<form id="paletteForm"><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div><label for="ch1Color">CH1 color</label><input id="ch1Color" type="color" value="#f2d56a" style="height:52px;padding:4px"><div id="ch1Preview" style="border-top:3px solid #f2d56a;padding-top:10px">CH1 preview</div></div>
+<div><label for="ch2Color">CH2 color</label><input id="ch2Color" type="color" value="#79b8ff" style="height:52px;padding:4px"><div id="ch2Preview" style="border-top:3px solid #79b8ff;padding-top:10px">CH2 preview</div></div></div>
+<div class="row"><button id="saveColors" class="primary" type="submit">Save channel colors</button><button id="resetColors" type="button">Reset to default colors</button></div></form>
+<div id="colorResult" role="status" aria-live="polite">Loading saved channel colors…</div>
+<p>Colors are saved on the controller and retained across restarts. Changes appear on the dashboard's next settings refresh. This does not change scope configuration or CSV values. Use Show original capture or Save original PNG on the dashboard for the unmodified image. Recoloring uses the capture's channel intensity palette inside the plot; it cannot recover a trace hidden beneath another trace. Unexpected palettes are shown unmodified.</p></div><div class="card" style="margin-top:22px"><h2>Setup backup and restore</h2>
+<p>Export the scope connection address and timeout, channel colors, saved measurement entries, and named presets. This backup does not change or restore settings inside the physical scope.</p>
+<div class="row"><a href="/api/setup/backup" download>Download setup backup</a></div>
+<label for="setupBackupFile">Choose a controller setup-backup JSON file</label><input id="setupBackupFile" type="file" accept=".json,application/json">
+<div class="row"><button id="previewRestore" type="button">Review backup</button><button id="restoreSetup" class="primary" type="button" disabled>Restore reviewed settings</button></div>
+<div id="restorePreview" style="white-space:pre-wrap;line-height:1.7"></div><div id="restoreStatus" role="status" aria-live="polite">No restore requested.</div>
+<p>Restore replaces those four controller preferences. Instrument network settings, acquisition state and browser layout are unchanged. Previous controller settings are backed up automatically before applying a restore.</p>
+<a id="previousSetupBackup" hidden>Download previous settings</a></div></main><script>
+const $=id=>document.getElementById(id);
+$('suiteLink').href=location.protocol+'//'+location.hostname+':8080/';
+let busy=false;
+async function call(url,body){const r=await fetch(url,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(90000)}:{});const d=await r.json();if(!r.ok)throw Error(d.error||r.statusText);return d}
+function fields(){return {address:$('address').value.trim(),timeout:Number($('timeout').value)}}
+function setBusy(b){busy=b;$('save').disabled=b;$('test').disabled=b}
+for(const el of [$('address'),$('timeout')])el.oninput=()=>{$('result').textContent='Unsaved changes. Test the connection or Save.'};
+$('test').onclick=async()=>{if(busy||!$('connectionForm').reportValidity())return;setBusy(true);const d=fields();$('result').textContent='Testing '+d.address+'…';try{const r=await call('/api/config/test',d);$('result').textContent='Connected to '+r.address+'\nReported identity: '+r.identity+'\nThese values have not been saved.'}catch(e){$('result').textContent='Connection test failed: '+e.message}finally{setBusy(false)}};
+$('connectionForm').onsubmit=async e=>{e.preventDefault();if(busy||!$('connectionForm').reportValidity())return;setBusy(true);try{const r=await call('/api/config',fields());$('result').textContent='Saved: '+r.address+'\nTimeout: '+r.timeout+' seconds\nThe controller will use these settings on its next request.'}catch(e){$('result').textContent='Save failed: '+e.message}finally{setBusy(false)}};
+call('/api/config').then(d=>{$('address').value=d.address;$('timeout').value=d.timeout;$('result').textContent='Saved scope connection address: '+d.address}).catch(e=>$('result').textContent='Unable to load settings: '+e.message);
+
+function previewColors(){for(const ch of ['ch1','ch2']){$(ch+'Preview').style.color=$(ch+'Color').value;$(ch+'Preview').style.borderColor=$(ch+'Color').value}}
+function showColors(d){$('ch1Color').value=d.ch1;$('ch2Color').value=d.ch2;previewColors()}
+for(const ch of ['ch1','ch2'])$(ch+'Color').oninput=()=>{previewColors();$('colorResult').textContent='Unsaved channel colors.'};
+let savingColors=false;
+async function storeColors(colors){if(savingColors)return;savingColors=true;$('saveColors').disabled=true;$('resetColors').disabled=true;
+try{const d=await call('/api/appearance',colors);showColors(d);$('colorResult').textContent='Channel colors saved. Trace recoloring is a dashboard display effect; the original capture remains available.'}
+catch(e){$('colorResult').textContent='Unable to save colors: '+e.message}
+finally{savingColors=false;$('saveColors').disabled=false;$('resetColors').disabled=false}}
+$('paletteForm').onsubmit=e=>{e.preventDefault();storeColors({ch1:$('ch1Color').value,ch2:$('ch2Color').value})};
+$('resetColors').onclick=()=>storeColors({ch1:'#f2d56a',ch2:'#79b8ff'});
+call('/api/appearance').then(d=>{showColors(d);$('colorResult').textContent='Saved dashboard channel colors loaded.'}).catch(e=>$('colorResult').textContent='Unable to load colors: '+e.message);
+
+let restoreDraft=null,restorePlan=null,restoring=false;
+$('setupBackupFile').onchange=()=>{restoreDraft=null;restorePlan=null;$('restoreSetup').disabled=true;$('restorePreview').textContent='';$('restoreStatus').textContent='Review the selected file before restoring.'};
+$('previewRestore').onclick=async()=>{
+ if(restoring)return;restoreDraft=null;restorePlan=null;$('restoreSetup').disabled=true;
+ try{const file=$('setupBackupFile').files[0];if(!file)throw Error('Choose a setup-backup JSON file.');if(file.size>262144)throw Error('Backup must be smaller than 256 KiB.');
+ const draft=JSON.parse(await file.text()),plan=await call('/api/setup/restore/preview',{backup:draft});
+ restoreDraft=draft;restorePlan=plan;$('restorePreview').textContent='Scope connection address: '+plan.scope_address+(plan.scope_address_changes?' (will change)':'')+
+ '\nTimeout: '+plan.timeout+' seconds\nCH1 color: '+plan.colors.ch1+'\nCH2 color: '+plan.colors.ch2+
+ '\nMeasurement entries: '+plan.measurement_entries+'\nNamed presets: '+(plan.preset_names.join(', ')||'none')+
+ '\n\nReplaces: '+plan.replaces.join('; ')+'.\nUnchanged: '+plan.unchanged.join('; ')+'.';
+ $('restoreStatus').textContent='Backup validated. Review the replacements above, then choose Restore reviewed settings.';$('restoreSetup').disabled=false;
+ }catch(e){$('restoreStatus').textContent='Backup review failed: '+e.message}
+};
+$('restoreSetup').onclick=async()=>{
+ if(restoring||!restoreDraft||!restorePlan)return;restoring=true;$('restoreSetup').disabled=true;$('previewRestore').disabled=true;
+ try{const d=await call('/api/setup/restore',{backup:restoreDraft,expected_current_fingerprint:restorePlan.expected_current_fingerprint});
+ $('restoreStatus').textContent='Controller settings restored. The physical scope configuration was not changed.';
+ const previous=$('previousSetupBackup');previous.href=d.previous_backup;previous.hidden=false;previous.download='';
+ const c=await call('/api/config');$('address').value=c.address;$('timeout').value=c.timeout;showColors(await call('/api/appearance'));
+ $('result').textContent='Restored scope connection address: '+c.address;$('colorResult').textContent='Restored channel colors loaded.';
+ restoreDraft=null;restorePlan=null;
+ }catch(e){$('restoreStatus').textContent='Restore failed: '+e.message+' Review the backup again before retrying.';restoreDraft=null;restorePlan=null}
+ finally{restoring=false;$('previewRestore').disabled=false}
+};
+</script></body></html>

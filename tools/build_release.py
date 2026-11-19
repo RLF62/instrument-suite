@@ -15,7 +15,7 @@ import tarfile
 import tempfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from maintenance.linux import LinuxHost
-from maintenance.security import canonical, safe_member, REPOS, VERSION, verify_manifest, MaintenanceError
+from maintenance.security import canonical, safe_member, REPOS, PUBLISH_REPO, VERSION, verify_manifest, MaintenanceError
 from tools.build_candidate import apply_suite_templates, apply_supply_wrapper
 
 def git(source, *args):
@@ -24,19 +24,22 @@ def git(source, *args):
 
 def checkout(source, name):
     source = Path(source).resolve()
-    if git(source, 'rev-parse', '--show-toplevel').decode().strip() != str(source):
-        raise MaintenanceError(name+': use the repository root')
-    remote = git(source, 'remote', 'get-url', 'origin').decode().strip()
-    repo = 'RLF62/'+REPOS[name]
+    root = Path(git(source, 'rev-parse', '--show-toplevel').decode().strip()).resolve()
+    expected = root if name == 'suite' else root/'controllers'/name
+    if source != expected:
+        raise MaintenanceError(name+': use the instrument-suite source folder')
+    remote = git(root, 'remote', 'get-url', 'origin').decode().strip()
+    repo = 'RLF62/'+PUBLISH_REPO
     if remote not in ('https://github.com/'+repo, 'https://github.com/'+repo+'.git',
                        'git@github.com:'+repo+'.git'):
         raise MaintenanceError(name+': unexpected source repository')
-    if git(source, 'status', '--porcelain', '--untracked-files=all').strip():
+    if git(root, 'status', '--porcelain', '--untracked-files=all').strip():
         raise MaintenanceError(name+': source checkout must be clean, including untracked files')
-    commit = git(source, 'rev-parse', 'HEAD').decode().strip()
+    commit = git(root, 'rev-parse', 'HEAD').decode().strip()
     if not re.fullmatch('[a-f0-9]{40}', commit):
         raise MaintenanceError(name+': invalid source commit')
-    tracked = set(git(source, 'ls-files', '-z').decode().split('\0'))-{''}
+    prefix = '' if name == 'suite' else 'controllers/'+name+'/'
+    tracked = {p[len(prefix):] for p in git(root, 'ls-files', '-z').decode().split('\0') if p.startswith(prefix) and p}
     # Also reject ignored files selected by the managed-file policy.
     files = {}
     for file in LinuxHost().managed(name, source):
@@ -45,7 +48,7 @@ def checkout(source, name):
         if rel not in tracked or not file.resolve().is_relative_to(source):
             raise MaintenanceError(name+': managed file is not a tracked source input')
         data = file.read_bytes()
-        if data != git(source, 'show', 'HEAD:'+rel):
+        if data != git(root, 'show', 'HEAD:'+prefix+rel):
             raise MaintenanceError(name+': managed file differs from committed bytes')
         files[rel] = hashlib.sha256(data).hexdigest()
     for rel in tracked:
@@ -91,6 +94,8 @@ def build(sources, locks, versions, release, sequence, key, public_key, output):
     if versions['suite']!=release or type(sequence) is not int or sequence<1:
         raise MaintenanceError('Suite version must equal the release; sequence must be positive')
     sources={n:Path(p).resolve() for n,p in sources.items()}
+    if any(sources[n] != sources['suite']/'controllers'/n for n in REPOS if n != 'suite'):
+        raise MaintenanceError('All controller sources must be inside the instrument-suite checkout')
     output=Path(output).absolute()
     if output.exists() or output.is_symlink():
         raise MaintenanceError('Output already exists; never overwrite release artifacts')
@@ -134,7 +139,7 @@ def build(sources, locks, versions, release, sequence, key, public_key, output):
             archive=artifacts/(name+'.tar.gz');archive_payload(payload,archive)
             manifest['components'][name]={'version':versions[name],'commit':inputs[name]['commit'],
                 'size':archive.stat().st_size,'sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),
-                'url':'https://github.com/RLF62/'+REPOS[name]+'/releases/download/'+versions[name]+'/'+archive.name,
+                'url':'https://github.com/RLF62/'+PUBLISH_REPO+'/releases/download/'+release+'/'+archive.name,
                 'requires':{} if name=='suite' else {'suite':release}}
         # Reject source changes during transformation or archive creation as well.
         for name,path in sources.items():

@@ -24,12 +24,12 @@ HTTPS web maintenance reuses the existing dashboard credentials. Trusted-LAN HTT
 
 ## Controllers
 
-| Controller | Repository | Fresh-install HTTP port |
+| Controller | Source in this repository | Fresh-install HTTP port |
 | --- | --- | --- |
-| HP 6033A power supply | [Source and operating guide](https://github.com/RLF62/hp6033a-web-controller) | 8083 |
-| HP 34401A multimeter | [Source and operating guide](https://github.com/RLF62/hp34401a-web-controller) | 8082 |
-| Tektronix Ethernet oscilloscope | [Source and operating guide](https://github.com/RLF62/tektronix-ethernet-controller) | 8081 |
-| HP 33120A function generator | [Source and operating guide](https://github.com/RLF62/hp33120a-web-controller) | 8084 |
+| HP 6033A power supply | [controllers/supply](controllers/supply) | 8083 |
+| HP 34401A multimeter | [controllers/meter](controllers/meter) | 8082 |
+| Tektronix Ethernet oscilloscope | [controllers/scope](controllers/scope) | 8081 |
+| HP 33120A function generator | [controllers/generator](controllers/generator) | 8084 |
 
 The fresh suite dashboard uses port 8080. Existing HTTPS installations retain their configured URLs and authentication. Navigation uses the current browser host. Supply and meter share one adapter broker; do not run a direct-adapter application against that same adapter.
 
@@ -55,7 +55,7 @@ After reviewing the preview, `sudo instrument-suite rollback` performs recovery.
 - [Add/remove instruments and approved catalog](CATALOG.md)
 - [Current acceptance record](FRESH_CARD_VALIDATION.md)
 
-Controllers retain their own source, operating manuals, screenshots and release history. The suite owns signed release coordination and the central ZIP catalog.
+All controller source, operating manuals and screenshots live in this repository. New controllers should be added under `controllers/<name>` and enrolled in the signed suite manifest. New signed release archives are published together on the suite release. Historic signed releases still refer to immutable assets in the earlier controller repositories; keep those assets available for recovery.
 
 ## Original ZIP installers
 

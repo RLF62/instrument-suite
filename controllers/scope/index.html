@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fischer Lab · Tektronix</title>
+<style>
+:root{--ch1:#f2d56a;--ch2:#79b8ff;color-scheme:dark;font-family:system-ui,"Segoe UI",sans-serif;background:#0c111b;color:#e8edf6}
+*{box-sizing:border-box}body{margin:0}header{padding:20px max(18px,calc((100vw - 1440px)/2));background:#131c2b;border-bottom:1px solid #29364a;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}h1{font-size:25px;margin:4px 0}h2{font-size:16px;margin:0}p{color:#a4b3c9;font-size:13px;line-height:1.6}.eyebrow{font-size:11px;letter-spacing:2px;color:#51d8c6;font-weight:700}.pill{background:#253147;border-radius:24px;padding:8px 13px;font-size:12px;white-space:nowrap}.online{color:#70e2bc}.offline{color:#ff9f9f}
+nav,.toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center}main{max-width:1440px;margin:auto;padding:22px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:18px;align-items:start}.card{grid-column:span 6;background:#151e2c;border:1px solid #2a374c;border-radius:14px;padding:20px;min-width:0}.wide{grid-column:span 7}.narrow{grid-column:span 5}.full{grid-column:span 12}.heading{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}.card.moving{opacity:.65;border-color:#51d8c6}#screen{display:block;width:100%;aspect-ratio:4/3;object-fit:contain;background:#05080c;border-radius:8px;border:1px solid #334159}
+button,.link{border:1px solid #40536e;background:#25364d;color:#eef4ff;padding:10px 14px;border-radius:7px;cursor:pointer;text-decoration:none;font-size:13px;min-height:40px}button:hover,.link:hover{background:#354c69}button.primary{background:#167969;border-color:#299f8a}button:disabled{opacity:.45;cursor:wait}label{font-size:12px;color:#adbcd1;display:block}input,select{width:100%;background:#0d1522;color:#e8edf6;border:1px solid #3e506a;border-radius:6px;padding:10px;margin:6px 0 0;min-height:40px}input[type=checkbox]{width:auto;min-height:0;margin:0 6px 0 0;accent-color:#52d3bd}.field{display:grid;grid-template-columns:1fr 65px;gap:8px;align-items:end;margin-top:12px}.field button{height:40px;padding:8px}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.ch1{border-top:3px solid var(--ch1)}.ch2{border-top:3px solid var(--ch2)}.ch1 h2{color:var(--ch1)}.ch2 h2{color:var(--ch2)}.readout{font-size:23px;font-weight:600}.muted{color:#a4b3c9;font-size:12px;line-height:1.5}.notice{padding:12px 14px;background:#101a29;border-radius:8px;font-size:13px;line-height:1.5;overflow-wrap:anywhere}details{margin-top:14px;font-size:12px;color:#adbed5}summary{cursor:pointer;min-height:30px}#identity{overflow-wrap:anywhere;line-height:1.6}.toolbar{margin:14px 0}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{padding:13px;background:#0e1724;border-radius:8px;min-width:0}.metric .readout{margin:4px 0;overflow-wrap:anywhere}.metric small{display:block;font-size:11px;color:#c4a782;min-height:30px}.metric label{color:var(--measurement-color,var(--ch1))}.layout-tools{display:none;gap:4px}.editing .layout-tools{display:flex}.layout-tools button{font-size:12px;padding:5px 9px;min-height:35px}.handle{touch-action:none;cursor:grab}.layoutbar{max-width:1440px;margin:16px auto 0;padding:0 22px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}table{border-collapse:collapse;width:100%;font-size:12px}td{padding:6px;border-bottom:1px solid #29364a;overflow-wrap:anywhere}footer{text-align:center;font-size:12px;color:#879ab6;padding:10px 20px 24px}#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:min(650px,92vw);z-index:10;border:1px solid #42627f;background:#192a3e;box-shadow:0 4px 22px #0009}#toast:empty{display:none}
+@media(max-width:900px){main{grid-template-columns:1fr;padding:14px;gap:14px}.card,.wide,.narrow,.full{grid-column:1}.card{padding:16px}header{padding:16px}h1{font-size:22px}.layoutbar{padding:0 14px}}
+@media(max-width:430px){.two{grid-template-columns:1fr}.readout{font-size:21px}.metrics{gap:7px}.metric{padding:10px}}
+.freshness{font-size:12px;color:#9fc5b5;margin:8px 0;line-height:1.5}.freshness.stale{color:#ffd18a}.card.stale{border-color:#a78040}.metric.warning{border:1px solid #a78040}.metric.warning small{color:#ffd18a}#metrics.stale .readout{opacity:.65}
+[hidden]{display:none!important}
+.metric.trigger-source{box-shadow:inset 4px 0 var(--measurement-color);outline:2px solid var(--measurement-color);outline-offset:-2px}.trigger-badge{display:inline-block;color:#e8fff9;background:#153d38;border:1px solid #51d8c6;border-radius:5px;padding:3px 6px;font-size:11px;font-weight:700;margin:5px 0}.trigger-badge[hidden]{display:none}.metric.warning{border:0}.metric.warning small{color:#ffd18a}#triggerSourceStatus{color:#bcece4;font-size:12px;margin:8px 0}
+
+/* Panel sizing is a dashboard preference; it never changes scope settings. */
+#panels>.card[data-panel-width="half"]{grid-column:span 6}
+#panels>.card[data-panel-width="full"]{grid-column:span 12}
+.layout-tools{flex-wrap:wrap;width:100%;align-items:center;margin-top:8px}
+.layout-tools label{display:flex;align-items:center;gap:6px;font-size:12px}
+.layout-tools select{width:auto;min-height:35px;margin:0;padding:6px;font-size:12px}
+.layout-tools button{min-height:40px}
+.layout-tools .height-controls{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.layout-tools .size-note{font-size:11px;color:#a4b3c9}
+.card.sized-height{overflow:auto;min-height:180px}
+.editing #panels>.card{resize:vertical;overflow:auto;min-height:180px}
+@media(max-width:900px){
+ #panels>.card[data-panel-width]{grid-column:1}
+ #panels>.card.sized-height,.editing #panels>.card{height:auto!important;resize:none;overflow:visible}
+ .layout-tools .desktop-sizing{display:none}
+}
+
+
+
+</style><style>
+/* Shared suite layout editor: presentation only, no instrument requests. */
+.suite-layoutbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px 0;color:#dce5ee;font:14px system-ui,sans-serif}
+.suite-layoutbar #layout-note{font-size:12px;line-height:1.5;color:#b3bec6}
+.suite-layoutbar button,.suite-grid .tile-tools button,.suite-grid .tile-resize{font:14px system-ui,sans-serif;color:#eef6f7;background:#303b42;border:1px solid #6c7c87;border-radius:5px;min-height:44px;padding:8px 12px;cursor:pointer}
+.suite-layoutbar button:hover,.suite-grid .tile-tools button:hover{background:#40535c}
+.suite-layoutbar button:focus-visible,.suite-grid .tile-tools button:focus-visible,.suite-grid .tile-tools select:focus-visible,.suite-grid .tile-resize:focus-visible{outline:3px solid #62ded0;outline-offset:3px}
+.suite-grid{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:18px!important;align-items:start}
+.suite-grid>.meter-tile{grid-column:span var(--tile-span,12)!important;position:relative;min-width:0;margin-top:0!important;margin-bottom:0!important;resize:none!important;height:auto!important}
+.suite-grid>.meter-tile[data-user-hidden=true]{display:none!important}
+body.layout-editing .suite-grid>.meter-tile[data-user-hidden=true]{display:block!important;opacity:.55}
+body.layout-editing .suite-grid>.readings[data-user-hidden=true]{display:grid!important}
+.suite-grid .tile-tools,.suite-grid .tile-resize{display:none}
+body.layout-editing .suite-grid>.meter-tile{outline:1px dashed #7598a6;outline-offset:3px;padding-bottom:48px}
+body.layout-editing .suite-grid .tile-tools{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:12px;background:#202b32;padding:8px;border-radius:6px;grid-column:1/-1}
+.suite-grid .tile-tools label{display:flex;flex-direction:row;align-items:center;gap:6px;min-height:44px;color:#dce5ee;font:13px system-ui,sans-serif;margin:0}
+.suite-grid .tile-tools select{width:auto;min-height:44px;font:13px system-ui,sans-serif;color:#eef6f7;background:#303b42;border:1px solid #6c7c87;border-radius:5px;padding:5px;margin:0}
+.suite-grid .tile-tools button{padding:6px 10px}.suite-grid .tile-drag{cursor:grab;touch-action:none;flex:1 1 160px;text-align:left}
+body.layout-editing .suite-grid .tile-resize{display:block;position:absolute;right:3px;bottom:3px;min-width:44px;min-height:44px;touch-action:none;cursor:nwse-resize}
+.suite-grid .tile-moving{opacity:.65}.suite-grid .tile-target{outline:3px solid #62ded0!important}
+.suite-grid>.head,.suite-grid>nav,.suite-grid>footer,.suite-grid>#layout-toolbar{grid-column:1/-1}
+.suite-classic-root{max-width:1120px;margin:0 auto}.suite-classic-root>.meter-tile>.instrument{width:100%;max-width:none;margin:0}.suite-classic-root>.meter-tile>details.extra{max-width:none;margin:0}
+@media(max-width:700px){.suite-grid>.meter-tile{grid-column:1/-1!important}.suite-grid .tile-tools label{width:100%}.suite-grid .tile-tools label:after{content:'(full width on phones)';font-size:11px;color:#b3bec6}}
+</style><style>
+/* Shared suite layout editor: presentation only, no instrument requests. */
+.suite-layoutbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px 0;color:#dce5ee;font:14px system-ui,sans-serif}
+.suite-layoutbar #layout-note{font-size:12px;line-height:1.5;color:#b3bec6}
+.suite-layoutbar button,.suite-grid .tile-tools button,.suite-grid .tile-resize{font:14px system-ui,sans-serif;color:#eef6f7;background:#303b42;border:1px solid #6c7c87;border-radius:5px;min-height:44px;padding:8px 12px;cursor:pointer}
+.suite-layoutbar button:hover,.suite-grid .tile-tools button:hover{background:#40535c}
+.suite-layoutbar button:focus-visible,.suite-grid .tile-tools button:focus-visible,.suite-grid .tile-tools select:focus-visible,.suite-grid .tile-resize:focus-visible{outline:3px solid #62ded0;outline-offset:3px}
+.suite-grid{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:18px!important;align-items:start}
+.suite-grid>.meter-tile{grid-column:span var(--tile-span,12)!important;position:relative;min-width:0;margin-top:0!important;margin-bottom:0!important;resize:none!important;height:auto!important}
+.suite-grid>.meter-tile[data-user-hidden=true]{display:none!important}
+body.layout-editing .suite-grid>.meter-tile[data-user-hidden=true]{display:block!important;opacity:.55}
+body.layout-editing .suite-grid>.readings[data-user-hidden=true]{display:grid!important}
+.suite-grid .tile-tools,.suite-grid .tile-resize{display:none}
+body.layout-editing .suite-grid>.meter-tile{outline:1px dashed #7598a6;outline-offset:3px;padding-bottom:48px}
+body.layout-editing .suite-grid .tile-tools{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:12px;background:#202b32;padding:8px;border-radius:6px;grid-column:1/-1}
+.suite-grid .tile-tools label{display:flex;flex-direction:row;align-items:center;gap:6px;min-height:44px;color:#dce5ee;font:13px system-ui,sans-serif;margin:0}
+.suite-grid .tile-tools select{width:auto;min-height:44px;font:13px system-ui,sans-serif;color:#eef6f7;background:#303b42;border:1px solid #6c7c87;border-radius:5px;padding:5px;margin:0}
+.suite-grid .tile-tools button{padding:6px 10px}.suite-grid .tile-drag{cursor:grab;touch-action:none;flex:1 1 160px;text-align:left}
+body.layout-editing .suite-grid .tile-resize{display:block;position:absolute;right:3px;bottom:3px;min-width:44px;min-height:44px;touch-action:none;cursor:nwse-resize}
+.suite-grid .tile-moving{opacity:.65}.suite-grid .tile-target{outline:3px solid #62ded0!important}
+.suite-grid>.head,.suite-grid>nav,.suite-grid>footer,.suite-grid>#layout-toolbar{grid-column:1/-1}
+.suite-classic-root{max-width:1120px;margin:0 auto}.suite-classic-root>.meter-tile>.instrument{width:100%;max-width:none;margin:0}.suite-classic-root>.meter-tile>details.extra{max-width:none;margin:0}
+@media(max-width:700px){.suite-grid>.meter-tile{grid-column:1/-1!important}.suite-grid .tile-tools label{width:100%}.suite-grid .tile-tools label:after{content:'(full width on phones)';font-size:11px;color:#b3bec6}}
+
+.suite-topbar{display:flex!important;align-items:center;justify-content:flex-start!important;flex-wrap:wrap;gap:8px!important;margin:0 0 16px!important;padding:0!important;max-width:1340px}
+.suite-topbar h1,.suite-topbar>strong{font:700 18px system-ui,sans-serif;white-space:nowrap;margin:0 8px 0 0;letter-spacing:.4px}
+.suite-topbar>a{display:inline-flex!important;align-items:center;min-height:40px!important;padding:6px 9px!important;font:13px system-ui,sans-serif!important;border-radius:5px!important;white-space:nowrap}
+.suite-topbar>.suite-layoutbar{display:contents}.suite-topbar #layout-note{flex-basis:100%}
+.suite-topbar .badge,.suite-topbar .pill{font:11px system-ui,sans-serif;white-space:nowrap;padding:6px 9px}
+.suite-topbar #layout-customize{font-size:13px;min-height:40px;padding:6px 10px}
+@media(min-width:1000px){main.wrap.suite-grid{max-width:1340px}}
+
+.suite-topbar>a,.suite-tool-link{display:inline-flex!important;align-items:center;justify-content:center;min-height:40px;padding:7px 11px!important;border:1px solid #3f726f!important;border-radius:6px!important;background:transparent!important;color:#73e3d1!important;text-decoration:none!important;font:13px system-ui,sans-serif!important;white-space:nowrap}
+.suite-topbar>a:hover,.suite-tool-link:hover{background:#203b3d!important}.suite-tool-links{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+</style><style>.suite-topbar{justify-content:center!important;margin:0 auto 16px!important;width:100%;box-sizing:border-box}</style><style id="scope-top-spacing">body{padding-top:18px}</style>
+
+<link rel="icon" type="image/x-icon" href="/static/icons/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/icons/icon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/icons/icon-180.png">
+<link rel="manifest" href="/static/manifest.webmanifest?v=branding-1">
+<meta name="apple-mobile-web-app-title" content="TDS 3032B">
+</head><body>
+<header><div><div class="eyebrow">FISCHER LAB / OSCILLOSCOPE</div><h1>Tektronix TDS 3032B</h1><div class="muted">Ethernet controller · v0.3.3</div></div>
+<nav><a id="suiteLink" class="link" href="/">Back to instrument suite</a><span id="connection" class="pill">Connecting…</span><a class="link" href="/setup">Setup</a><a class="link" href="/docs/" target="_blank">Documentation</a></nav></header>
+<div class="layoutbar suite-layoutbar"><button id="editLayout" aria-pressed="false">Customize Layout</button><button id="resetLayout">Reset Layout</button><span class="muted">Customize Layout to move panels, choose Half/Full width, or adjust height. Drag the lower-right corner on desktop, or use Shorter/Taller. Sizes and order are saved in this browser; narrow screens use full width and automatic height.</span></div>
+<main id="panels">
+<section id="panel-screen" class="card wide"><div class="heading"><h2>Scope display</h2><span id="host" class="muted">Scope connection</span></div>
+<img id="screen" alt="Scope screen — waiting for capture">
+<div class="toolbar"><button id="refresh" class="idle-action">Refresh screen</button><button id="savePNG" class="scope-action">Save original PNG</button><button id="saveDisplayedPNG" class="scope-action">Save displayed PNG</button><button class="control scope-action" data-key="menu_off" data-value="1">Menu Off</button></div>
+<label><input id="originalImage" type="checkbox">Show original capture</label><p id="effectStatus" class="muted">Dashboard display effect: custom CH1/CH2 traces and channel-colored text. Original capture remains available.</p><label><input id="auto" type="checkbox" checked>Auto refresh image only</label><p id="imageFreshness" class="freshness">No successful image update yet.</p><p id="screenStatus" class="muted">Waiting for first capture</p><p class="muted">Recoloring is a dashboard display effect. The physical scope and original PNG keep their own colors. Overlapping traces retain only the channel information present in the original capture.</p></section>
+<section id="panel-measurements" class="card narrow"><div class="heading"><h2>Measurements</h2><span class="muted">From the scope</span></div><p id="triggerSourceStatus" role="status">Trigger source: awaiting scope readback.</p>
+<div class="toolbar"><button id="addMeasurement" class="idle-action">Add entry</button><button id="saveMeasurements" class="idle-action">Save selection</button><button id="measureRefresh" class="scope-action">Refresh</button><label><input id="measureAuto" type="checkbox">Auto · 5 seconds</label></div>
+<div id="measurementFreshness" class="freshness">No successful measurement update yet.</div><div id="metrics" class="metrics"></div><p id="measurementStatus" class="muted">Loading measurement selection…</p>
+<div class="toolbar"><button id="applyScopeMeasurements" class="scope-action">Apply selected to scope · 0/4</button></div><p id="slotStatus" class="muted">Check “On scope” for up to four entries. Apply changes the scope's four display slots; it does not enable channels. Applying zero entries hides all four scope measurements.</p>
+<p>Up to 20 saved dashboard entries; the scope display supports four. Unavailable readings show the scope's reason. Readings are sequential and use the scope's gate and reference levels. Matching on-screen slots are read directly; images and readings update separately, so compare their timestamps.</p></section>
+<section id="panel-acquisition" class="card wide"><div class="heading"><h2>Acquisition</h2><span id="runState" class="pill">Unknown</span></div>
+<div class="toolbar"><button class="primary control scope-action" data-key="running" data-value="1">Run</button><button class="control scope-action" data-key="running" data-value="0">Stop</button><button class="control scope-action" data-key="single" data-value="1">Single</button><button class="control scope-action" data-key="autoset" data-value="1">Autoset</button><button id="read" class="idle-action">Read settings</button></div><p class="muted">Image refresh leaves controls unchanged. Use Read settings to load changes made on the scope front panel.</p>
+<div id="rawState" class="muted">Waiting for state query</div>
+<p>Autoset automatically adjusts channel, timebase, and trigger settings.</p><p>Single arms one sequence and waits for a trigger. In Average mode it collects the selected averaging count.</p>
+<div class="two"><div class="field"><label>Acquisition mode<select id="acq_mode"><option value="SAMPLE">Sample</option><option value="PEAKDETECT">Peak Detect</option><option value="AVERAGE">Average</option></select></label><button class="apply scope-action" data-key="acq_mode">Set</button></div>
+<div id="averageField" class="field"><label>Average count<select id="average_count"></select></label><button id="averageSet" class="apply scope-action" data-key="average_count">Set</button></div></div>
+<details><summary>Instrument details</summary><p>Front panel: TDS 3032B<br>Returned model and firmware:</p><div id="identity">Waiting for identity query</div><p id="stateTime">No live settings yet</p></details></section>
+<section id="panel-csv" class="card narrow"><div class="heading"><h2>Waveform CSV</h2></div><p>Download the latest acquired record as time in seconds and voltage in volts, with raw samples and waveform scaling metadata.</p>
+<div class="toolbar"><button class="csv scope-action" data-channel="CH1">Download CH1 CSV</button><button class="csv scope-action" data-channel="CH2">Download CH2 CSV</button></div>
+<div class="toolbar"><button id="captureBundle" class="scope-action">Download capture bundle</button></div><div id="bundleStatus" class="muted">Bundle: original screen, dashboard-color screen, available CH1/CH2 CSVs, measurements and settings. Stop acquisition first if you need a stable test record.</div><p class="muted">Capture is sequential; the controller does not stop, start or rearm acquisition. Disabled channels are recorded as unavailable in the bundle manifest.</p><div id="csvStatus" class="notice">Export leaves Run/Stop and Single arm state alone. Transfer settings are restored and verified.</div>
+<p>Enable the channel and acquire a waveform first. Stored data may predate recent settings changes. Peak Detect records retain min/max pairs. The CSV timestamp is the host's read time, not the instrument's trigger time.</p></section>
+<section id="panel-ch1" class="card ch1"><div class="heading"><h2>Channel 1 <span id="channel-trigger-1" class="trigger-badge" hidden>TRIGGER SOURCE</span></h2></div><div id="fields-ch1"></div></section>
+<section id="panel-ch2" class="card ch2"><div class="heading"><h2>Channel 2 <span id="channel-trigger-2" class="trigger-badge" hidden>TRIGGER SOURCE</span></h2></div><div id="fields-ch2"></div></section>
+<section id="panel-horizontal" class="card"><div class="heading"><h2>Horizontal</h2></div>
+<div class="readout" id="timeReadout">—</div><div class="field"><label>Time / division<select id="timebase"></select></label><button class="apply scope-action" data-key="timebase">Set</button></div><p>The scope rounds requests to supported settings. CSV scaling comes from the stored waveform preamble.</p></section>
+<section id="panel-trigger" class="card"><div class="heading"><h2>Trigger</h2><span id="triggerType" class="muted">—</span></div>
+<div class="two"><div class="field"><label>Mode<select id="trigger_mode"><option value="AUTO">Auto</option><option value="NORMAL">Normal</option></select></label><button class="apply scope-action" data-key="trigger_mode">Set</button></div>
+<div class="field"><label>Edge source<select id="trigger_source"><option>CH1</option><option>CH2</option><option>EXT</option><option>EXT10</option><option>LINE</option><option>VERTICAL</option><option>ALTERNATING</option></select></label><button class="apply scope-action" data-key="trigger_source">Set</button></div>
+<div class="field"><label>Edge slope<select id="trigger_slope"><option value="RISE">Rising</option><option value="FALL">Falling</option></select></label><button class="apply scope-action" data-key="trigger_slope">Set</button></div>
+<div class="field"><label>Level · volts<input id="trigger_level" type="number" step="any"></label><button class="apply scope-action" data-key="trigger_level">Set</button></div></div>
+<p>Source, slope, and level controls require Edge trigger. Select Edge on the scope if using another trigger type.</p></section>
+<section id="panel-presets" class="card full"><div class="heading"><h2>Saved Setups</h2></div><div id="exampleNotes" class="notice" hidden></div>
+<div class="two"><div><label>Preset name<input id="presetName" maxlength="64" placeholder="e.g. Low-noise DC check"></label><div class="toolbar"><button id="presetSave" class="scope-action">Save current setup</button></div><p id="presetSaveNote">Saving an existing name replaces that preset. Saved on the controller across restarts.</p></div>
+<div><label>Saved setup<select id="presetList"><option value="">No presets yet</option></select></label><div class="toolbar"><button id="presetRecall" class="scope-action">Recall selected</button></div></div></div>
+<p>Includes both channels' display, probe attenuation, scale, position, offset, coupling, bandwidth and invert; main timebase; acquisition mode and average count; Edge trigger type, mode, source, slope and level.</p>
+<p>Excludes Run/Stop, Single arm state, waveforms, connection address, layout, and other scope settings. Recall can restart averaging as the scope applies settings. Edge trigger setups only.</p>
+<details><summary>Selected preset contents</summary><div id="presetDetails" class="muted">Select a saved setup.</div></details></section>
+</main><footer>Fischer Lab · Ethernet / VXI-11 · Development server</footer>
+<div id="toast" class="notice" role="status" aria-live="polite"></div>
+<script>
+const $=id=>document.getElementById(id);
+$('suiteLink').href=location.protocol+'//'+location.hostname+':8080/';
+let busy=false,online=false,dirty=new Set(),screenURL=null,originalScreenURL=null,originalCapturePath=null,currentEffect='',lastState={},presets={},builtinExamples={},toastTimer;
+let backgroundJob=null,backgroundAbort=null,foregroundQueue=Promise.resolve(),pendingActions=0,actionEpoch=0,screenGeneration=0;
+let lastImageSuccess=null,lastMeasurementSuccess=null,imageFailure=false,measurementFailure=false;
+const metrics=[['frequency','Frequency'],['period','Period'],['pk2pk','Peak-to-peak'],['rms','RMS voltage'],['mean','Mean voltage']];
+const friendly={timebase:'Time / division',acq_mode:'Acquisition mode',average_count:'Average count',trigger_type:'Trigger type',trigger_mode:'Trigger mode',trigger_source:'Trigger source',trigger_slope:'Trigger slope',trigger_level:'Trigger level (V)'};
+function freshnessText(stamp,failed,automatic,now=Date.now()){
+ if(!stamp)return {stale:failed,text:failed?'Unavailable — no successful update yet.':'No successful update yet.'};
+ const seconds=Math.max(0,Math.floor((now-stamp)/1000)),age=seconds<60?seconds+'s':seconds<3600?Math.floor(seconds/60)+'m':Math.floor(seconds/3600)+'h';
+ const stale=failed||(automatic&&seconds>30),time=new Date(stamp).toLocaleString();
+ return {stale,text:(failed?'Stale — connection/update failed. ':stale?'Stale — expected update not received. ':automatic?'Updated: ':'Snapshot (auto refresh off): ')+'Last successful update '+time+' · '+age+' ago.'};
+}
+function updateFreshness(){
+ for(const [id,panel,stamp,failed,automatic] of [
+  ['imageFreshness','panel-screen',lastImageSuccess,imageFailure,$('auto').checked],
+  ['measurementFreshness','metrics',lastMeasurementSuccess,measurementFailure,$('measureAuto').checked]]){
+  const state=freshnessText(stamp,failed,automatic);$(id).textContent=state.text;$(id).classList.toggle('stale',state.stale);$(panel).classList.toggle('stale',state.stale);
+ }
+}
+function markImageSuccess(stamp){const parsed=Date.parse(stamp||'');lastImageSuccess=Number.isFinite(parsed)?parsed:Date.now();imageFailure=false;updateFreshness()}
+function markImageFailure(){imageFailure=true;updateFreshness()}
+function markMeasurementSuccess(stamp){lastMeasurementSuccess=Number(stamp)>0?Number(stamp)*1000:Date.now();measurementFailure=false;updateFreshness()}
+
+function engineering(v,unit){if(v===null||v===undefined||v==='')return '—';v=Number(v);if(!Number.isFinite(v))return '—';const a=Math.abs(v);let e=a?Math.floor(Math.log10(a)/3)*3:0;e=Math.max(-12,Math.min(9,e));return +(v/10**e).toPrecision(5)+' '+({'-12':'p','-9':'n','-6':'µ','-3':'m','0':'','3':'k','6':'M','9':'G'}[e])+unit}
+function option(el,value,text){const o=document.createElement('option');o.value=String(value);o.textContent=text;el.append(o)}
+function notify(text){$('toast').textContent=text;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').textContent='',10000)}
+function makeField(container,id,label,type,options,attrs={}){const wrap=document.createElement('div');wrap.className='field';const l=document.createElement('label');l.textContent=label;const el=document.createElement(type==='select'?'select':'input');el.id=id;if(type!=='select'){el.type='number';el.step='any';Object.assign(el,attrs)}else for(const [v,t] of options)option(el,v,t);l.append(el);const b=document.createElement('button');b.className='apply scope-action';b.dataset.key=id;b.textContent='Set';wrap.append(l,b);container.append(wrap);return el}
+for(const n of [1,2]){const c=$('fields-ch'+n),key='ch'+n+'_';
+ for(const [k,label] of [['on','Display'],['probe','Probe attenuation (×)'],['scale','Volts / division'],['position','Position (divisions)'],['offset','Offset (V)'],['coupling','Coupling'],['bandwidth','Bandwidth limit'],['invert','Invert']])friendly[key+k]='CH'+n+' '+label;
+ makeField(c,key+'on','Display','select',[['1','On'],['0','Off']]);
+ const scale=makeField(c,key+'scale','Volts / division','select',[]);
+ for(let e=-6;e<=3;e++)for(const v of [1,2,5])option(scale,v*10**e,engineering(v*10**e,'V'));
+ makeField(c,key+'position','Position · divisions','number',[],{min:'-5',max:'5',step:'0.1'});
+ makeField(c,key+'coupling','Coupling','select',[['DC','DC'],['AC','AC'],['GND','Ground']]);
+ const details=document.createElement('details'),sum=document.createElement('summary');sum.textContent='Additional channel settings';details.append(sum);c.append(details);
+ makeField(details,key+'probe','Probe attenuation · ×','number',[],{min:'.001',max:'1000'});
+ makeField(details,key+'bandwidth','Bandwidth limit','select',[['FULL','Full'],['TWENTY','20 MHz'],['ONEFIFTY','150 MHz']]);
+ makeField(details,key+'invert','Invert','select',[['0','Off'],['1','On']]);
+ makeField(details,key+'offset','Offset · volts','number',[]);
+ const p=document.createElement('p');p.textContent='Probe attenuation must match the connected probe. The scope may enforce a detected probe factor; readback shows what it accepted.';details.append(p);
+}
+for(let e=-9;e<=1;e++)for(const n of [1,2,4])if(n*10**e<=10)option($('timebase'),n*10**e,engineering(n*10**e,'s'));
+for(let i=1;i<=9;i++)option($('average_count'),2**i,String(2**i));
+for(const el of document.querySelectorAll('.field select,.field input')){el.addEventListener('input',()=>dirty.add(el.id));el.addEventListener('change',()=>dirty.add(el.id))}
+function setValue(key,v){const el=$(key);if(!el||dirty.has(key)||document.activeElement===el)return;
+ if(el.tagName==='SELECT'){const numeric=['timebase','ch1_scale','ch2_scale','average_count'].includes(key);let found=[...el.options].find(o=>numeric?Math.abs(Number(o.value)-Number(v))<=Math.abs(Number(v))*1e-7:o.value===v);
+ if(!found){option(el,v,numeric?engineering(v,key==='timebase'?'s':'V'):v);found=el.lastChild}el.value=found.value;
+ }else if(el.type==='number')el.value=Number(v);
+}
+function disableControls(){document.querySelectorAll('.scope-action').forEach(b=>b.disabled=busy||!online);document.querySelectorAll('.idle-action').forEach(b=>b.disabled=busy);$('averageSet').disabled=busy||!online||lastState.acq_mode!=='AVERAGE';$('averageField').style.opacity=lastState.acq_mode==='AVERAGE'?'1':'.55';const example=selectedExample();if(example&&!example.recallable)$('presetRecall').disabled=true}
+async function json(url,opts={}){const r=await fetch(url,{...opts,signal:AbortSignal.timeout(120000)});const d=await r.json();if(!r.ok)throw Error(d.error||r.statusText);return d}
+function post(url,d){return json(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})}
+let currentTriggerSource=null,currentTriggerType=null;
+function updateTriggerIndicators(d){if(d){currentTriggerSource=d.trigger_source||null;currentTriggerType=d.trigger_type||null}const active=currentTriggerType==='EDGE'?currentTriggerSource:null;for(const row of measurementRows){const tile=$('reading-'+row.id),badge=$('trigger-'+row.id);if(tile)tile.classList.toggle('trigger-source',active===row.channel);if(badge)badge.hidden=active!==row.channel}$('triggerSourceStatus').textContent=currentTriggerType==='EDGE'?'Trigger source: '+(currentTriggerSource||'unknown')+' (scope readback).':currentTriggerType?'Trigger type: '+currentTriggerType+' - channel highlighting applies to Edge trigger.':'Trigger source unavailable - refresh connection.';for(const n of [1,2]){const badge=$('channel-trigger-'+n);if(badge)badge.hidden=active!=='CH'+n}}
+let measurementRows=[],measurementRevision=0,measurementCounter=0;
+function selection(){return measurementRows.map(r=>({...r}))}
+function selectionChanged(){lastMeasurementSuccess=null;measurementFailure=false;updateFreshness();measurementRevision++;$('measurementStatus').textContent='Unsaved selection changes — Save to retain them.';const count=measurementRows.filter(r=>r.on_scope).length;$('applyScopeMeasurements').textContent='Apply selected to scope · '+count+'/4'}
+function clearMeasurements(reason){for(const row of measurementRows){const v=$('m-'+row.id),r=$('reason-'+row.id);if(v)v.textContent='—';if(r)r.textContent=reason}}
+function renderMeasurements(){const dest=$('metrics');dest.replaceChildren();for(const row of measurementRows){
+ const tile=document.createElement('div');tile.className='metric';tile.id='reading-'+row.id;tile.style.setProperty('--measurement-color','var(--'+row.channel.toLowerCase()+')');
+ const label=document.createElement('label');label.textContent=row.channel+' · '+metrics.find(m=>m[0]===row.type)[1];
+ const source=document.createElement('select');for(const ch of ['CH1','CH2'])option(source,ch,ch);source.value=row.channel;source.setAttribute('aria-label','Measurement channel');
+ const type=document.createElement('select');for(const [key,text] of metrics)option(type,key,text);type.value=row.type;type.setAttribute('aria-label','Measurement type');
+ const value=document.createElement('div');value.id='m-'+row.id;value.className='readout';value.textContent='—';
+ const reason=document.createElement('small');reason.id='reason-'+row.id;reason.textContent='Refresh required';
+ const details=document.createElement('details'),summary=document.createElement('summary'),detailText=document.createElement('div');summary.textContent='Reading details';detailText.id='details-'+row.id;detailText.textContent='Not read yet.';details.append(summary,detailText);
+ const scopeLabel=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=row.on_scope;scopeLabel.append(check,document.createTextNode('On scope'));
+ const remove=document.createElement('button');remove.className='idle-action';remove.textContent='Remove';remove.setAttribute('aria-label','Remove '+label.textContent);
+ source.onchange=()=>{row.channel=source.value;selectionChanged();renderMeasurements()};
+ type.onchange=()=>{row.type=type.value;selectionChanged();renderMeasurements()};
+ check.onchange=()=>{if(check.checked&&measurementRows.filter(r=>r.on_scope).length>=4){check.checked=false;notify('The scope supports four display slots. Uncheck another entry first.');return}row.on_scope=check.checked;selectionChanged()};
+ remove.onclick=()=>{measurementRows=measurementRows.filter(r=>r.id!==row.id);selectionChanged();renderMeasurements()};
+ const badge=document.createElement('span');badge.className='trigger-badge';badge.id='trigger-'+row.id;badge.textContent='TRIGGER SOURCE';badge.hidden=true;tile.append(label,badge,source,type,value,reason,details,scopeLabel,remove);dest.append(tile);
+ }updateTriggerIndicators();disableControls()}
+async function loadMeasurements(){const d=await json('/api/measurement-selection');measurementRows=d.entries;renderMeasurements();$('measurementStatus').textContent='Saved selection loaded.';const n=measurementRows.filter(r=>r.on_scope).length;$('applyScopeMeasurements').textContent='Apply selected to scope · '+n+'/4'}
+function offline(e){currentTriggerSource=null;currentTriggerType=null;updateTriggerIndicators();online=false;$('connection').textContent='● Offline';$('connection').className='pill offline';$('runState').textContent='Unknown';$('rawState').textContent='Live state unavailable';$('timeReadout').textContent='—';measurementFailure=true;imageFailure=true;updateFreshness();$('screen').style.opacity='.4';$('screenStatus').textContent='Offline — any image shown is the previous capture';$('stateTime').textContent='Live settings unavailable. '+e.message;disableControls()}
+function showAcquisition(d){updateTriggerIndicators(d);$('runState').textContent=d.acquisition_label;$('rawState').textContent='Trigger: '+d.trigger_state+' · Stop after: '+d.stop_after+' · Read '+new Date().toLocaleTimeString()}
+async function readAppearance(){const d=await json('/api/appearance');document.documentElement.style.setProperty('--ch1',d.ch1);document.documentElement.style.setProperty('--ch2',d.ch2)}
+async function readState(){try{await readAppearance();const d=await json('/api/state');lastState=d;online=true;$('connection').textContent='● Connected';$('connection').className='pill online';$('host').textContent=d.host;$('identity').textContent=d.identity;showAcquisition(d);$('timeReadout').textContent=engineering(d.timebase,'s/div');$('triggerType').textContent='Type: '+d.trigger_type;$('stateTime').textContent='Settings read '+new Date(d.updated*1000).toLocaleString();Object.entries(d).forEach(([k,v])=>setValue(k,v));return true}catch(e){offline(e);throw e}finally{disableControls()}}
+async function readAcquisition({background=false}={}){const epoch=actionEpoch;try{const d=await json('/api/acquisition');if(background&&(busy||epoch!==actionEpoch))return;const wasOffline=!online;online=true;$('connection').textContent='● Connected';$('connection').className='pill online';showAcquisition(d);if(wasOffline)disableControls()}catch(e){if(!background||(!busy&&epoch===actionEpoch))offline(e)}}
+async function readMeasurements({background=false}={}){
+ const revision=measurementRevision,epoch=actionEpoch;if(!background)$('measurementStatus').textContent='Reading selected measurements…';
+ try{
+  const d=await post('/api/measurements',{entries:selection()});
+  if(revision!==measurementRevision||(background&&(busy||epoch!==actionEpoch)))return;
+  for(const r of d.entries){
+   const warning=r.quality==='warning';$('m-'+r.id).textContent=r.valid?engineering(r.value,r.unit)+(warning?' ⚠':''):'Unavailable';
+   $('reason-'+r.id).textContent=r.reason||(r.valid?'Valid reading':'No valid result');$('reading-'+r.id).classList.toggle('warning',warning);
+   $('details-'+r.id).textContent=(r.basis||'Scope measurement')+' · '+new Date((r.measured_at||d.updated)*1000).toLocaleString()+
+    '\nStatus code: '+(r.qualifier===null?'not supplied':r.qualifier)+
+    '\nRaw scope response: '+(r.raw_response||'not supplied')+
+    '\nImages and measurements update separately; warning-marked values are uncertain.';
+  }
+  markMeasurementSuccess(d.updated);$('measurementStatus').textContent='Measurement update received. Expand Reading details for the scope status code and data source.';
+ }catch(e){
+  if(background&&(busy||epoch!==actionEpoch))return;
+  measurementFailure=true;updateFreshness();$('measurementStatus').textContent='Measurement update failed — last readings retained. '+e.message;throw e;
+ }
+}
+function releaseImagesAfterPaint(urls){const release=()=>urls.filter(Boolean).forEach(url=>URL.revokeObjectURL(url));requestAnimationFrame(()=>requestAnimationFrame(release))}
+async function swapReadyImage(url){const img=new Image();img.id='screen';img.alt='Tektronix scope capture';img.src=url;await img.decode();$('screen').replaceWith(img)}
+async function showCurrentImage(){if($('originalImage').checked&&originalCapturePath){
+ try{if(!originalScreenURL){const r=await fetch(originalCapturePath);if(!r.ok)throw Error((await r.json()).error);originalScreenURL=URL.createObjectURL(await r.blob())}await swapReadyImage(originalScreenURL);$('effectStatus').textContent='Original scope capture · no dashboard color effect.'}
+ catch(e){$('originalImage').checked=false;if(screenURL)await swapReadyImage(screenURL);$('effectStatus').textContent=currentEffect;throw e}
+ }else if(screenURL){await swapReadyImage(screenURL);$('effectStatus').textContent=currentEffect}}
+async function readScreen({background=false}={}){
+ const generation=++screenGeneration,epoch=actionEpoch,controller=new AbortController();
+ let timedOut=false;const timeout=setTimeout(()=>{timedOut=true;controller.abort()},90000);
+ let freshURL=null,freshOriginalURL=null,committed=false;
+ if(background)backgroundAbort=controller;
+ try{
+  if(!background)$('screenStatus').textContent='Capturing…';
+  await readAppearance();
+  const r=await fetch('/api/screen/display',{signal:controller.signal});if(!r.ok)throw Error((await r.json()).error);
+  freshURL=URL.createObjectURL(await r.blob());const preload=new Image();preload.src=freshURL;await preload.decode();
+  const showOriginal=$('originalImage').checked,path=r.headers.get('X-Original-Capture');let visible=preload;
+  if(showOriginal&&path){const raw=await fetch(path,{signal:controller.signal});if(!raw.ok)throw Error((await raw.json()).error);freshOriginalURL=URL.createObjectURL(await raw.blob());visible=new Image();visible.src=freshOriginalURL;await visible.decode()}
+  if(controller.signal.aborted||generation!==screenGeneration||(background&&(busy||epoch!==actionEpoch)))return;
+  const prior=[screenURL,originalScreenURL];
+  screenURL=freshURL;originalScreenURL=freshOriginalURL;originalCapturePath=path;
+  currentEffect=r.headers.get('X-Display-Effect')==='channel-trace-colors'?'Dashboard display effect · custom CH1/CH2 traces and channel-colored text. Grid, generic text and trigger markers retained.':'Original capture shown: '+(r.headers.get('X-Display-Effect-Warning')||'Custom trace palette unavailable.');
+  visible.id='screen';visible.alt='Tektronix scope capture';$('screen').replaceWith(visible);
+  $('effectStatus').textContent=showOriginal?'Original scope capture · no dashboard color effect.':currentEffect;
+  committed=true;markImageSuccess(r.headers.get('X-Captured-At'));releaseImagesAfterPaint(prior);$('screenStatus').textContent='Captured '+new Date().toLocaleTimeString();
+ }catch(e){
+  if(generation!==screenGeneration||(background&&epoch!==actionEpoch)||(controller.signal.aborted&&!timedOut))return;
+  markImageFailure();$('screenStatus').textContent='Refresh failed — last image retained. '+(timedOut?'Capture timed out.':e.message);
+ }finally{
+  clearTimeout(timeout);if(!committed){if(freshURL)URL.revokeObjectURL(freshURL);if(freshOriginalURL)URL.revokeObjectURL(freshOriginalURL)}
+  if(backgroundAbort===controller)backgroundAbort=null;
+ }
+}
+async function task(fn){
+ pendingActions++;busy=true;actionEpoch++;screenGeneration++;
+ if(backgroundAbort)backgroundAbort.abort();
+ disableControls();
+ const previous=foregroundQueue;let release;
+ foregroundQueue=new Promise(resolve=>release=resolve);
+ try{await previous;return await fn()}catch(e){notify(e.message)}
+ finally{pendingActions--;busy=pendingActions>0;release();disableControls()}
+}
+async function refreshAll(withScreen=true){await readState();if(withScreen)await readScreen()}
+async function control(key,value){return task(async()=>{const d=await post('/api/control',{key,value});dirty.delete(key);document.activeElement?.blur();if(key==='autoset'){dirty.clear();notify('Autoset is adjusting channel, timebase and trigger settings…');let status;for(let n=0;n<20;n++){status=await json('/api/autoset-status');if(!status.busy)break;await new Promise(resolve=>setTimeout(resolve,500))}await readState();await readScreen();notify(status?.busy?'Scope still reports busy. Live settings shown; refresh again shortly.':'Autoset finished. Settings and screen read back from the scope.')}else{await readState();await readScreen();notify(d.message)}})}
+function saveBlob(blob,name){const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000)}
+document.querySelectorAll('.apply').forEach(b=>b.onclick=()=>control(b.dataset.key,$(b.dataset.key).value));
+document.querySelectorAll('.control').forEach(b=>b.onclick=()=>control(b.dataset.key,b.dataset.value));
+document.querySelectorAll('.csv').forEach(b=>b.onclick=()=>task(async()=>{const ch=b.dataset.channel;$('csvStatus').textContent='Reading '+ch+' waveform and verifying restoration…';try{const r=await fetch('/api/waveform.csv?channel='+ch,{signal:AbortSignal.timeout(120000)});if(!r.ok)throw Error((await r.json()).error);const blob=await r.blob(),name=r.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)?.[1]||ch+'.csv';saveBlob(blob,name);$('csvStatus').textContent=ch+' CSV downloaded. Transfer settings restored and verified.';await readState()}catch(e){$('csvStatus').textContent='Download failed: '+e.message;throw e}}));
+$('savePNG').onclick=()=>task(async()=>{const r=await fetch(originalCapturePath||'/api/screen');if(!r.ok)throw Error((await r.json()).error);saveBlob(await r.blob(),'tektronix-original.png')});
+$('captureBundle').onclick=()=>task(async()=>{
+ $('bundleStatus').textContent='Capturing screen, waveforms, measurements and settings…';
+ try{const r=await fetch('/api/capture-bundle',{signal:AbortSignal.timeout(120000)});if(!r.ok)throw Error((await r.json()).error);
+ const name=r.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)?.[1]||'tektronix-test-capture.zip';saveBlob(await r.blob(),name);
+ $('bundleStatus').textContent=r.headers.get('X-Capture-Complete')==='1'?'Capture bundle downloaded with both channel CSVs. Reads are sequential; see manifest.json.':'Capture bundle downloaded with unavailable channel data. See manifest.json and the channel explanation files.'}
+ catch(e){$('bundleStatus').textContent='Capture bundle failed: '+e.message;throw e}
+});
+$('saveDisplayedPNG').onclick=()=>task(async()=>{if(!$('screen').src)throw Error('Capture a screen first.');const r=await fetch($('screen').src);saveBlob(await r.blob(),$('originalImage').checked?'tektronix-original.png':'tektronix-dashboard-effect.png')});
+$('originalImage').onchange=()=>task(showCurrentImage);
+$('refresh').onclick=()=>task(readScreen);$('read').onclick=()=>task(()=>refreshAll(false));$('measureRefresh').onclick=()=>task(readMeasurements);
+$('addMeasurement').onclick=()=>{if(measurementRows.length>=20){notify('Up to 20 dashboard entries can be saved.');return}measurementRows.push({id:'entry_'+Date.now().toString(36)+'_'+measurementCounter++,channel:'CH1',type:'frequency',on_scope:false});selectionChanged();renderMeasurements()};
+$('saveMeasurements').onclick=()=>task(async()=>{await post('/api/measurement-selection',{entries:selection()});$('measurementStatus').textContent='Measurement selection saved across restarts.';notify('Measurement selection saved.')});
+$('applyScopeMeasurements').onclick=()=>task(async()=>{const d=await post('/api/measurement-slots',{entries:selection()});$('slotStatus').textContent='Applied scope slots: '+d.slots.map(s=>s.slot+': '+(s.state==='1'?s.source1+' '+s.type:'Off')).join(' · ');await readScreen();notify('Scope measurement slots read back and verified.')});
+function selectedExample(){const v=$('presetList').value;return v.startsWith('example:')?builtinExamples[v.slice(8)]:null}
+function selectedPersonalName(){const v=$('presetList').value;return v.startsWith('personal:')?v.slice(9):null}
+async function loadPresets(){
+ const d=await json('/api/presets'),catalog=await json('/api/examples');presets=d.presets;builtinExamples=Object.fromEntries(catalog.examples.map(e=>[e.id,e]));
+ const prev=$('presetList').value;$('presetList').replaceChildren();option($('presetList'),'','Select a saved setup');
+ const personal=document.createElement('optgroup');personal.label='My saved setups';for(const name of Object.keys(presets).sort())option(personal,'personal:'+name,name);$('presetList').append(personal);
+ const examples=document.createElement('optgroup');examples.label='Fischer Lab examples';for(const e of catalog.examples)option(examples,'example:'+e.id,e.name+(e.recallable?' · Suggested':' · Incomplete'));$('presetList').append(examples);
+ if([...$('presetList').options].some(o=>o.value===prev))$('presetList').value=prev;previewPreset();
+}
+function previewPreset(){
+ const example=selectedExample(),p=presets[selectedPersonalName()],dest=$('presetDetails'),notes=$('exampleNotes');dest.replaceChildren();notes.replaceChildren();notes.hidden=!example;
+ $('presetSaveNote').textContent=example?'Choose a new personal name after testing. Existing personal setups cannot be overwritten from an example.':'Saving an existing name replaces that preset. Saved on the controller across restarts.';
+ $('presetSave').textContent=example?'Save current as new personal setup':'Save current setup';$('presetRecall').textContent=example?(example.recallable?'Recall suggested example':'Incomplete — recall unavailable'):'Recall selected';
+ if(example){
+  const title=document.createElement('strong');title.textContent=example.name+' · '+example.status;notes.append(title);
+  function line(label,text){const el=document.createElement('p');el.textContent=label+text;notes.append(el)}
+  line('Purpose: ',example.purpose);
+  for(const c of example.connections)line(c.channel+': ',c.point+' — '+c.role);
+  for(const [label,key] of [['Recorded notes: ','recorded'],['Suggested values: ','suggested'],['Required probe checks: ','probe_notes'],['Expected behavior: ','expected'],['Limits: ','limitations']])for(const text of example[key])line(label,text);
+  if(example.missing.length)line('Not established: ',example.missing.join('; ')+'. Establish and test these manually before saving a completed personal setup.');
+  line('Physical setup: ','Recall changes scope settings only. It cannot move probe switches, ground clips or wiring.');
+  line('After testing: ','Enter a new personal name and save the current scope readback. Built-in examples never overwrite your personal setups.');
+  if(!$('presetName').value.trim())$('presetName').value=example.name.slice(0,44)+' — my setup';
+  const table=document.createElement('table');for(const [k,v]of Object.entries(example.settings)){const tr=document.createElement('tr');for(const text of [friendly[k]||k,v]){const td=document.createElement('td');td.textContent=text;tr.append(td)}table.append(tr)}dest.append(table);
+ }else if(p){
+  const note=document.createElement('p');note.textContent='Saved '+new Date(p.saved_utc).toLocaleString()+(p.notes?' · '+p.notes:'');dest.append(note);const table=document.createElement('table');for(const [k,v]of Object.entries(p.settings)){const tr=document.createElement('tr');for(const text of [friendly[k]||k,v]){const td=document.createElement('td');td.textContent=text;tr.append(td)}table.append(tr)}dest.append(table);
+ }else dest.textContent='Select a saved setup or Fischer Lab example.';
+ disableControls();
+}
+$('presetList').onchange=previewPreset;
+$('presetSave').onclick=()=>task(async()=>{
+ const name=$('presetName').value.trim();if(!name)throw Error('Enter a personal setup name.');const example=selectedExample();
+ await post('/api/presets/save',{name,...(example?{example_id:example.id,save_as_new:true}:{})});await loadPresets();$('presetList').value='personal:'+name;previewPreset();notify('Saved personal scope readback: '+name)
+});
+$('presetRecall').onclick=()=>task(async()=>{
+ const example=selectedExample(),name=selectedPersonalName();let d;
+ if(example){if(!example.recallable)throw Error('This recipe is incomplete. Establish its timebase and trigger settings manually, then save a new personal setup.');d=await post('/api/examples/'+example.id+'/recall',{})}
+ else{if(!name)throw Error('Choose a saved setup.');d=await post('/api/presets/recall',{name})}
+ dirty.clear();document.activeElement?.blur();await refreshAll();
+ notify(example?d.message:Object.keys(d.differences).length?'Recalled '+name+'; review the scope-adjusted values.':'Recalled '+name);
+});
+let lastMeasurement=0,nextScreenAt=0,nextStatusAt=0;
+async function poll(){
+ if(!document.hidden&&!busy&&!backgroundJob){
+  backgroundJob=(async()=>{
+   const now=Date.now();
+   if(now>=nextStatusAt){nextStatusAt=now+2000;await readAcquisition({background:true})}
+   if(busy)return;
+   if(online&&$('auto').checked&&now>=nextScreenAt){nextScreenAt=now+5000;await readScreen({background:true})}
+   if(busy)return;
+   if(online&&$('measureAuto').checked&&Date.now()-lastMeasurement>5000){lastMeasurement=Date.now();await readMeasurements({background:true})}
+  })();
+  try{await backgroundJob}catch(e){/* Each background panel shows its own failure without a blocking toast. */}
+  finally{backgroundJob=null}
+ }
+ setTimeout(poll,500);
+}
+setInterval(updateFreshness,1000);updateFreshness();
+disableControls();
+task(async()=>{const c=await json('/api/config');$('host').textContent=c.address;await loadPresets();await loadMeasurements();await refreshAll();await readMeasurements()}).finally(()=>setTimeout(poll,2000));
+</script><script>const tekHead=document.querySelector('header'),tekTitle=tekHead.querySelector('h1'),tekNav=tekHead.querySelector('nav'),tekBar=document.querySelector('.layoutbar');tekHead.replaceChildren(tekTitle,...tekNav.children,tekBar);tekHead.classList.add('suite-topbar');tekHead.style.margin='16px auto';tekHead.style.padding='0 22px';
+(function(config){
+ const $=id=>document.getElementById(id);
+ let grid=document.querySelector(config.root);
+ const tiles=[...grid.querySelectorAll(config.tiles)],names={};
+ tiles.forEach((tile,i)=>{
+  tile.dataset.tileId=tile.id||(config.prefix==='hp6033a-modern'?'tile-'+(i+1):'tile-'+i);
+  names[tile.dataset.tileId]=config.names?.[i]||(tile.id==='panel-wrap'?'Classic front panel':null)||tile.getAttribute('aria-label')||tile.querySelector('h1,h2,summary')?.textContent||'Section '+(i+1);
+  tile.classList.add('meter-tile');tile.dataset.defaultSpan=config.prefix==='tek'?(tile.classList.contains('wide')?7:tile.classList.contains('narrow')?5:tile.classList.contains('full')?12:6):12;
+ });
+ grid.classList.add('suite-grid');
+ const bar=document.querySelector(config.toolbar);
+ bar.innerHTML='<button id="layout-customize" class="layout-ui" type="button" aria-pressed="false">Customize layout</button><button id="layout-reset" class="layout-ui" type="button" hidden>Reset layout</button><button id="layout-show-all" class="layout-ui" type="button" hidden>Show all boxes</button><span id="layout-note" hidden>Drag a handle or use arrows to move. Set a width or drag the bottom-right corner to resize. Saved in this browser.</span>';
+ const emit=name=>document.dispatchEvent(new CustomEvent('suite-layout-'+name));
+ let editing=false,drag=null,resize=null;
+ const mode=window.matchMedia('(max-width:'+config.breakpoint+'px)');
+ const storageKey=()=> 'fischer-suite-layout-v1-'+config.prefix+'-'+(mode.matches?'mobile':'desktop');
+ const button=(text,label,fn)=>{const b=document.createElement('button');b.type='button';b.className='layout-ui';b.textContent=text;b.setAttribute('aria-label',label);b.addEventListener('click',fn);return b};
+ function save(){try{localStorage.setItem(storageKey(),JSON.stringify([...grid.children].filter(n=>tiles.includes(n)).map(n=>({id:n.dataset.tileId,width:Number(n.dataset.tileWidth)||12,height:Number(n.dataset.tileHeight)||0,hidden:n.dataset.userHidden==='true'}))))}catch{$('layout-note').textContent='Layout updated, but browser storage is unavailable.'}emit('save')}
+ function applySize(tile,width,height){
+  tile.dataset.tileWidth=width;tile.dataset.tileHeight=height;tile.style.setProperty('--tile-span',width);
+  tile.style.minHeight=height?height+'px':'';
+  const canvas=tile.querySelector('canvas');if(canvas&&height)canvas.style.height=Math.max(150,height-200)+'px';else if(canvas)canvas.style.height='';
+  const select=tile.querySelector('.tile-width');if(![...select.options].some(o=>Number(o.value)===width)){const o=document.createElement('option');o.value=width;o.textContent='Default';select.append(o)}select.value=width;const visibility=tile.querySelector('.tile-visibility');if(visibility)visibility.textContent=tile.dataset.userHidden==='true'?'Show':'Hide';
+ }
+ function restore(){
+  let saved=[];try{saved=JSON.parse(localStorage.getItem(storageKey())||'[]')}catch{}
+  if(!Array.isArray(saved))saved=[];
+  if(!saved.length){
+   try{
+    if(config.prefix.startsWith('hp34401a-')){saved=JSON.parse(localStorage.getItem('hp34401a-layout-v1-'+config.prefix.replace('hp34401a-','')+'-'+(mode.matches?'mobile':'desktop'))||'[]')}else if(config.prefix==='hp6033a-modern'){
+     const oldKey='hp6033a-layout-'+(mode.matches?'mobile':'desktop'),order=JSON.parse(localStorage.getItem(oldKey)||'[]'),widths=JSON.parse(localStorage.getItem(oldKey+'-widths')||'{}'),hidden=JSON.parse(localStorage.getItem(oldKey+'-visibility')||'{}');
+     saved=[...new Set([...order,...tiles.map(n=>n.dataset.tileId)])].map(id=>({id,width:widths[id]==='half'?6:12,hidden:hidden[id]===true,height:0}));
+    }else if(config.prefix==='tek'){
+     const order=JSON.parse(localStorage.getItem('fischer-tek-layout-v2')||'[]'),sizes=JSON.parse(localStorage.getItem('fischer-tek-panel-sizes-v1')||'{}');
+     saved=[...new Set([...order,...tiles.map(n=>n.dataset.tileId)])].map(id=>({id,width:sizes[id]?.width==='half'?6:sizes[id]?.width==='full'?12:Number(tiles.find(n=>n.dataset.tileId===id)?.dataset.defaultSpan)||12,height:sizes[id]?.height||0}));
+    }
+   }catch{}
+  }
+  const used=new Set();
+  for(const entry of saved){const tile=tiles.find(n=>n.dataset.tileId===entry.id);if(!tile||used.has(tile))continue;used.add(tile);grid.insertBefore(tile,grid.querySelector(':scope>footer'));tile.dataset.userHidden=String(entry.hidden===true);applySize(tile,[4,5,6,7,8,12].includes(entry.width)?entry.width:12,Number.isFinite(entry.height)?Math.max(0,Math.min(1200,entry.height)):0)}
+  tiles.filter(n=>!used.has(n)).forEach(n=>{grid.insertBefore(n,grid.querySelector(':scope>footer'));n.dataset.userHidden='false';applySize(n,Number(n.dataset.defaultSpan)||12,0)});
+ }
+ function move(tile,delta){
+  const visible=tiles.filter(n=>n.parentElement===grid).sort((a,b)=>[...grid.children].indexOf(a)-[...grid.children].indexOf(b)).filter(n=>!n.hidden&&n.dataset.userHidden!=='true'),index=visible.indexOf(tile),other=visible[index+delta];
+  if(!other)return;
+  if(delta<0)grid.insertBefore(tile,other);else grid.insertBefore(tile,other.nextSibling);
+  save();tile.querySelector('.tile-drag').focus();
+ }
+ tiles.forEach(tile=>{
+  const name=names[tile.dataset.tileId],tools=document.createElement('div');tools.className='tile-tools';
+  const handle=button('☰ '+name,'Drag '+name+' to move',()=>{});handle.classList.add('tile-drag');
+  handle.addEventListener('pointerdown',e=>{if(!editing||e.button!==0)return;e.preventDefault();handle.setPointerCapture(e.pointerId);drag={tile,handle,x:e.clientX,y:e.clientY,target:null,after:false};tile.classList.add('tile-moving')});
+  handle.addEventListener('pointermove',e=>{
+   if(!drag||drag.handle!==handle||Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<8)return;
+   tiles.forEach(n=>n.classList.remove('tile-target'));
+   const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.meter-tile');
+   drag.target=target&&target!==tile?target:null;
+   if(drag.target){const r=target.getBoundingClientRect();drag.after=e.clientY>r.top+r.height/2;target.classList.add('tile-target')}
+   if(e.clientY<70)window.scrollBy(0,-18);else if(e.clientY>window.innerHeight-70)window.scrollBy(0,18);
+  });
+  function drop(e){if(!drag||drag.handle!==handle)return;if(e.type!=='pointercancel'&&drag.target)grid.insertBefore(tile,drag.after?drag.target.nextSibling:drag.target);tiles.forEach(n=>n.classList.remove('tile-target','tile-moving'));drag=null;save()}
+  handle.addEventListener('pointerup',drop);handle.addEventListener('pointercancel',drop);
+  const up=button('↑','Move '+name+' earlier',()=>move(tile,-1)),down=button('↓','Move '+name+' later',()=>move(tile,1));
+  const widthLabel=document.createElement('label');widthLabel.textContent='Width ';
+  const select=document.createElement('select');select.className='tile-width';select.setAttribute('aria-label',name+' width');
+  for(const [v,label] of [[12,'Full'],[8,'Two thirds'],[6,'Half'],[4,'One third']]){const o=document.createElement('option');o.value=v;o.textContent=label;select.append(o)}
+  select.addEventListener('change',()=>{applySize(tile,Number(select.value),Number(tile.dataset.tileHeight)||0);save()});widthLabel.append(select);
+  const visibility=button('Hide','Hide or show '+name,()=>{tile.dataset.userHidden=String(tile.dataset.userHidden!=='true');visibility.textContent=tile.dataset.userHidden==='true'?'Show':'Hide';save()});
+  visibility.classList.add('tile-visibility');tools.append(handle,up,down,widthLabel,visibility);tile.prepend(tools);
+  const grip=button('↘','Resize '+name+'; arrow keys adjust width and height',()=>{});grip.classList.add('tile-resize');tile.append(grip);
+  grip.addEventListener('pointerdown',e=>{if(!editing||e.button!==0)return;e.preventDefault();grip.setPointerCapture(e.pointerId);const r=tile.getBoundingClientRect();resize={tile,x:e.clientX,y:e.clientY,width:r.width,height:r.height}});
+  grip.addEventListener('pointermove',e=>{if(!resize||resize.tile!==tile)return;const desired=(resize.width+e.clientX-resize.x)/grid.clientWidth*12;const widths=[4,6,8,12];const width=mode.matches?Number(tile.dataset.tileWidth)||12:widths.reduce((a,b)=>Math.abs(b-desired)<Math.abs(a-desired)?b:a);applySize(tile,width,Math.max(100,Math.min(1200,Math.round(resize.height+e.clientY-resize.y))))});
+  const end=()=>{if(resize?.tile===tile){resize=null;save()}};grip.addEventListener('pointerup',end);grip.addEventListener('pointercancel',end);
+  grip.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();let width=Number(tile.dataset.tileWidth)||12,height=Number(tile.dataset.tileHeight)||tile.offsetHeight;const widths=[4,6,8,12];if(e.key==='ArrowLeft')width=widths[Math.max(0,widths.indexOf(width)-1)];if(e.key==='ArrowRight')width=widths[Math.min(3,widths.indexOf(width)+1)];if(e.key==='ArrowUp')height-=40;if(e.key==='ArrowDown')height+=40;applySize(tile,width,Math.max(100,Math.min(1200,height)));save()});
+ });
+ $('layout-customize').addEventListener('click',()=>{
+  editing=!editing;document.body.classList.toggle('layout-editing',editing);$('layout-customize').textContent=editing?'Save layout':'Customize layout';$('layout-customize').setAttribute('aria-pressed',String(editing));$('layout-reset').hidden=!editing;$('layout-show-all').hidden=!editing;$('layout-note').hidden=!editing;if(!editing)save();
+ });
+ $('layout-reset').addEventListener('click',()=>{try{localStorage.removeItem(storageKey())}catch{}tiles.forEach(n=>{grid.insertBefore(n,grid.querySelector(':scope>footer'));n.dataset.userHidden='false';applySize(n,Number(n.dataset.defaultSpan)||12,0)});emit('reset');save()});
+ $('layout-show-all').addEventListener('click',()=>{tiles.forEach(n=>{n.dataset.userHidden='false';const b=n.querySelector('.tile-visibility');if(b)b.textContent='Hide'});emit('showall');save()});mode.addEventListener('change',()=>{restore();emit('load')});restore();
+})({"root":"#panels","tiles":":scope>.card","toolbar":".layoutbar","prefix":"tek","breakpoint":900});(function(){const host=location.hostname;document.querySelectorAll('.suite-topbar a,nav[aria-label="Instrument navigation"] a').forEach(a=>a.classList.add('suite-tool-link'));const tekTitle=document.querySelector('.suite-topbar h1');if(tekTitle?.textContent.includes('Tektronix')){const back=document.getElementById('suiteLink');if(back){back.textContent='HP 6033A';back.href=location.protocol+'//'+host+'/'}const meter=document.createElement('a');meter.href=location.protocol+'//'+host+'/multimeter/classic';meter.textContent='HP 34401A';meter.className='suite-tool-link';document.querySelector('.suite-topbar').insertBefore(meter,document.querySelector('.suite-topbar .suite-layoutbar'))}const meterNav=document.querySelector('nav[aria-label="Instrument navigation"]');if(meterNav){const supply=meterNav.querySelector('a'),group=document.createElement('div');group.className='suite-tool-links';supply.before(group);group.append(supply);const tek=document.createElement('a');tek.href=location.protocol+'//'+host+':8081/';tek.textContent='Tektronix TDS 3032B';tek.className='suite-tool-link';group.append(tek)}})();</script></body></html>

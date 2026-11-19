@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Installation | HP 6033A</title><link rel="stylesheet" href="guide.css"></head>
+<body><main id="top"><header><p class="eyebrow">HP 6033A controller documentation</p>
+<h1>Installation</h1><p class="muted">Rebuild the controller on a fresh Raspberry Pi OS installation.</p>
+<nav aria-label="Controller pages"><a href="/">Modern dashboard</a><a href="/classic-dual">Classic front panel</a></nav>
+<nav aria-label="Documentation"><a href="/docs/">Guide home</a><a href="/static/docs/project.html">Project manual</a><a href="/static/docs/commands.html">Command reference</a><a href="/static/docs/installation.html">Installation</a><a href="/static/docs/recovery.html">Recovery and maintenance</a></nav></header><nav aria-label="On this page"><a href="#prep">Prepare the Pi</a><a href="#installer">Run the installer</a><a href="#config">Connect the supply</a><a href="#upgrade">Existing installations</a><a href="#web-updates">Software Updates</a><a href="#verify">Verification script</a></nav>
+<aside class="notice"><h2>Signed Instrument Suite installation</h2><p>For new suite installations and enrolled updates, use the <a href="https://github.com/RLF62/instrument-suite/blob/main/ONE_COMMAND_UPDATER.md">signed installer and maintenance guide</a>. HTTPS suite web updates reuse the existing dashboard credentials; trusted-LAN HTTP can explicitly enable password-free updates. The instructions below describe the original single-controller installer and its separate optional update helper. Do not use that updater over a shared-adapter suite installation.</p></aside>
+<section id="prep"><h2>Prepare the Pi</h2>
+<p class="notice">Both HTTPS and HTTP-only clean installs passed on fresh Raspberry Pi OS Lite (64-bit). Use a spare Pi or SD card when testing a replacement for a working controller.</p>
+<ol>
+<li>Use Raspberry Pi Imager to write Raspberry Pi OS Lite (64-bit). Configure SSH, network access and a user with sudo access. The commands below use <code>pi</code> as the example user.</li>
+<li>Give the Pi a unique hostname and reserve its address on the router. Use a separate address while an existing controller is online.</li>
+<li>Have the controller hostname or IP and permitted LAN subnet ready. For example, a controller on <code>192.168.1.0/24</code> can allow clients on that subnet.</li>
+</ol>
+<p><a href="https://www.raspberrypi.com/documentation/computers/getting-started.html">Raspberry Pi Imager and first-boot instructions</a></p>
+</section>
+<section id="installer"><h2>Run the repository installer</h2>
+<p>For a fresh install from GitHub, download and extract the <a href="https://github.com/RLF62/hp6033a-web-controller/archive/refs/heads/main.zip">main branch ZIP</a>. In the extracted directory, run <code>bash install.sh</code> as the controller user. The installer invokes <code>sudo</code> when needed.</p>
+<h3>Install from a stable release</h3>
+<p>When a stable release is available, choose its tag and full commit from the reviewed <a href="https://github.com/RLF62/hp6033a-web-controller/releases">GitHub release notes</a>. Replace both placeholders in this single command and paste it as the controller user. The command fetches the exact tag, checks the Git objects and commit, then runs the verified installer.</p>
+<pre><code>bash -c &#x27;
+set -euo pipefail
+release=$1
+commit=$2
+[[ $release =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+[[ $commit =~ ^[a-f0-9]{40}$ ]]
+(( EUID != 0 ))
+if ! command -v git &gt;/dev/null; then
+  sudo apt-get update
+  sudo apt-get install -y git
+fi
+work=$(mktemp -d)
+trap &quot;rm -rf -- \&quot;\$work\&quot;&quot; EXIT
+ref=refs/tags/$release
+git -C &quot;$work&quot; init --quiet
+git -C &quot;$work&quot; fetch --depth=1 --no-tags \
+  https://github.com/RLF62/hp6033a-web-controller.git &quot;$ref:$ref&quot;
+actual=$(git -C &quot;$work&quot; rev-parse &quot;$ref^{commit}&quot;)
+[[ $actual == &quot;$commit&quot; ]] || { echo &quot;Release commit mismatch&quot; &gt;&amp;2; exit 1; }
+git -C &quot;$work&quot; fsck --strict --no-dangling
+git -C &quot;$work&quot; checkout --quiet --detach &quot;$actual&quot;
+case ${3:-install} in
+  install) bash &quot;$work/install.sh&quot; ;;
+  update)
+    url=${4:?Supply the existing controller URL}
+    bash &quot;$work/update.sh&quot; --release &quot;$release&quot; --expect-commit &quot;$commit&quot; --url &quot;$url&quot; &quot;${@:5}&quot;
+    ;;
+  *) echo &quot;Choose install or update&quot; &gt;&amp;2; exit 2 ;;
+esac
+&#x27; _ &#x27;&lt;stable-tag&gt;&#x27; &#x27;&lt;full-commit-from-release-notes&gt;&#x27;</code></pre>
+<h3>Choose the connection mode</h3>
+<p>Setup explains both modes before asking for the controller address, allowed LAN subnet, or credentials. Both modes limit access to the configured LAN and require the user to enable remote control from the dashboard before operating the supply.</p>
+<ul>
+<li><strong>HTTPS (default).</strong> Encrypts browser traffic and redirects HTTP requests from the allowed LAN to HTTPS. The controller username and password protect power-supply controls and authorize changes to the control password policy in Setup. You can choose password-free controls and still use HTTPS. The self-signed certificate may trigger a browser warning. Verify and trust the correct certificate before submitting credentials.</li>
+<li><strong>HTTP only.</strong> Opens at <code>http://</code> with no encryption, HTTPS redirect, certificate, or controller credentials. Anyone on the allowed LAN can enable remote control and operate the supply. Use this mode on a trusted home LAN without internet port forwarding. Software updates run from the command line on the Pi.</li>
+</ul>
+<p>If <code>sudo</code> prompts for a password in either mode, use the Raspberry Pi OS login password for the account running the installer. If you opt into browser updates in HTTPS mode, create a separate administrator password to approve installations.</p>
+<p>The installer configures the service, USB permissions, and Nginx. After it verifies the status endpoint and both dashboards and confirms the service is running and enabled, it prints <strong>INSTALLATION COMPLETED SUCCESSFULLY</strong>. Copy the dashboard URL from the summary. It uses the IP address or hostname you entered and the protocol you selected. Use the same URL after rebooting the Pi.</p>
+<p>The HTTPS summary explains the self-signed certificate warning. The HTTP-only summary confirms password-free dashboard access and command-line updates. If the adapter is configured during setup, the summary asks you to check its connection on the dashboard. Otherwise, it prints the manual commissioning steps.</p>
+</section>
+<section id="config"><h2>Connect the supply and configure VISA</h2>
+<p>During interactive setup, unplug and reconnect the USB-GPIB adapter when prompted, then press Enter. If setup detects exactly one supported UsbGpib V2 adapter, it saves its VISA address before starting the service. Open the dashboard and verify that GPIB is connected and the readings match the front panel before enabling remote control.</p>
+<p>Type <code>s</code> to skip automatic configuration. If you skip it or detection fails, follow these manual steps:</p>
+<ol>
+<li>Reconnect the UsbGpib V2 adapter after the udev rules are installed. Open a fresh SSH session after any change to the user's <code>plugdev</code> membership.</li>
+<li>With the output off, list USB VISA resources from the installed environment.</li>
+</ol>
+<pre><code>cd ~/hp6033a
+venv/bin/python -c "import pyvisa; print(pyvisa.ResourceManager('@py').list_resources())"
+nano config.json
+sudo systemctl restart hp6033a</code></pre>
+<p>Set <code>gpib_resource</code> in <code>config.json</code> to the matching USB VISA resource before restarting. Check <code>/api/status</code> and confirm that GPIB is connected and the readings match the front panel.</p>
+</section>
+<section id="upgrade"><h2>Upgrade an existing controller</h2>
+<p>For a first migration, use the verified download command above and append <code>update CONTROLLER_URL --dry-run</code> after the commit argument. Use the scheme shown at installation. Remove <code>--dry-run</code> when ready to apply. You can also run the commands below from a reviewed release checkout as the controller user. The updater downloads the selected stable release directly from GitHub. The existing app directory is upgraded in place.</p>
+<pre><code>bash update.sh --check
+bash update.sh --release '&lt;stable-tag&gt;' --expect-commit '&lt;full-commit&gt;' --url https://hp6033a.local --dry-run
+bash update.sh --release '&lt;stable-tag&gt;' --expect-commit '&lt;full-commit&gt;' --url https://hp6033a.local</code></pre>
+<p>Use the actual controller URL, including <code>http://</code> for an HTTP-only installation. For HTTPS, the health check trusts the installed self-signed certificate by default. Pass <code>--ca-cert</code> with the trusted CA file if the site uses another certificate. The check connects to this Pi over loopback and validates the supplied hostname or IP.</p>
+<p>Review the preview before applying. Close both dashboards, leave the supply connected with output off, and disable remote programming. The updater checks these conditions and reads status over the installed protocol via loopback. It backs up the application and system files privately and restarts only the controller service. The Nginx site, TLS material, credential policy, and systemd unit stay in place. A failed activation triggers rollback.</p>
+<p>The older one-worker Pi 3 layout is supported when its unit, Unix socket, HTTPS site and credential format pass the compatibility checks. The updater can preserve a legacy VISA resource stored as a literal in the app. If the old Nginx site still controls authentication, the updater retains that policy. To move to dashboard-managed authentication separately after verifying the upgrade, use the existing command below.</p>
+<pre><code>sudo bash ~/hp6033a/deploy/set-control-auth.sh dashboard</code></pre>
+<p>Reload the page and open <a href="/#control-setup">Setup in Modern</a> or <a href="/classic-dual#control-setup">Setup &amp; Extra Controls in Classic</a>.</p>
+</section>
+<section id="web-updates"><h2>Set up dashboard Software Updates</h2>
+<p>The fresh installer offers this option after an HTTPS controller starts. Choose an update administrator password of 12 to 256 characters and enter it twice. Use it to approve Install Update in the dashboard, even when control is password-free. Check for Updates is available without it.</p>
+<p>For an existing controller, first apply the verified CLI upgrade. Keep dashboard-managed authentication enabled. From the same reviewed release checkout, provision the helper once as an administrator. Substitute the actual service user and existing HTTPS URL.</p>
+<pre><code>sudo bash deploy/install-web-updater.sh pi https://hp6033a.local</code></pre>
+<p>Use the controller's installed certificate and HTTPS address. The privileged helper is installed under <code>/usr/local/lib/hp6033a-update</code>. Future web upgrades update the dashboard application. Changes to the privileged helper require a separately reviewed administrator installation.</p>
+<p>In either dashboard, open Setup and select <strong>Check for Updates</strong>. The helper also checks every six hours. A published stable release provides its version, commit and release notes. Select <strong>Install Update</strong>, review the version and commit, then confirm with the update administrator password. Leave the USB-GPIB adapter connected, the physical output off, and remote programming disabled. The page reconnects after the application service restarts and shows the final result.</p>
+</section>
+<section id="verify"><h2>Verification script</h2><p>If you skipped USB-GPIB setup during installation, reconnect the adapter to apply the udev rules and open a fresh SSH session. Save the block below as <code>verify.sh</code>. Run it from a trusted client with Bash, curl and Python 3. Add <code>--require-gpib</code> during commissioning with the adapter and supply connected. Use a trusted certificate, or point curl to a verified copy of the controller certificate with <code>CURL_CA_BUNDLE</code>.</p><pre><code>#!/usr/bin/env bash
+set -euo pipefail
+base=${1:?Usage: verify.sh CONTROLLER_URL [--require-gpib]}
+case &quot;$base&quot; in http://*|https://*) ;; *) echo &quot;Use the controller HTTP or HTTPS URL&quot; &gt;&amp;2; exit 2;; esac
+base=${base%/}
+for route in / /classic-dual /docs/ /static/docs/project.html \
+    /static/docs/commands.html /static/docs/installation.html \
+    /static/docs/recovery.html; do
+  curl -fsS --max-time 10 -o /dev/null &quot;$base$route&quot;
+  printf &#x27;OK %s\n&#x27; &quot;$route&quot;
+done
+curl -fsS --max-time 25 &quot;$base/api/status&quot; | python3 -c &#x27;
+import json, sys
+data = json.load(sys.stdin)
+print(&quot;Mode:&quot;, data[&quot;mode&quot;])
+print(&quot;GPIB:&quot;, data[&quot;gpib_status&quot;])
+if sys.argv[1] == &quot;--require-gpib&quot; and not data[&quot;gpib_connected&quot;]:
+    raise SystemExit(1)
+&#x27; &quot;${2:-}&quot;</code></pre><p>The script performs GET requests and reports GPIB status. With output off and the load disconnected, compare reported measurements and setpoints against the physical panel. Test hardware control separately with the supply attended.</p></section>
+<footer><p class="muted">Development setup documentation updated November 7, 2026.</p><a href="#top">Back to top</a></footer>
+</main></body></html>

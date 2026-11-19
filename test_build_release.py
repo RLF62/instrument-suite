@@ -15,10 +15,12 @@ class ReleaseBuildTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root=Path(self.tmp.name)
         self.sources={}
-        for name,repo in release.REPOS.items():
-            source=self.root/name;source.mkdir();self.sources[name]=source
-            self.command('git','init','-q',str(source))
-            self.command('git','-C',str(source),'remote','add','origin','https://github.com/RLF62/'+repo+'.git')
+        suite=self.root/'suite';suite.mkdir()
+        self.command('git','init','-q',str(suite))
+        self.command('git','-C',str(suite),'remote','add','origin','https://github.com/RLF62/instrument-suite.git')
+        for name in release.REPOS:
+            source=suite if name=='suite' else suite/'controllers'/name
+            source.mkdir(parents=True,exist_ok=True);self.sources[name]=source
             if name=='suite':
                 (source/'patch_hp.py').write_text('from pathlib import Path\nimport sys\np=Path(sys.argv[1]);p.write_text(p.read_text()+"\\n# FISCHER_SHARED_ADAPTER_V1\\n")\n')
                 templates=source/'integration/templates';templates.mkdir(parents=True)
@@ -35,7 +37,7 @@ class ReleaseBuildTests(unittest.TestCase):
                 (source/'generator_app.py').write_text('# inert generator fixture\n')
                 (source/'hp33120a').mkdir()
             else:(source/'app.py').write_text('# inert scope fixture\n')
-            self.commit(source)
+        self.commit(suite)
         self.locks=self.root/'locks';self.locks.mkdir()
         self.lock=b'fixture==1.0.0 --hash=sha256:'+b'a'*64+b'\n'
         for name in release.REPOS:(self.locks/(name+'.lock')).write_bytes(self.lock)
@@ -69,6 +71,8 @@ class ReleaseBuildTests(unittest.TestCase):
             item=result['components'][name];archive=self.output/(name+'.tar.gz')
             self.assertEqual(item['commit'],self.command('git','-C',str(source),'rev-parse','HEAD').decode().strip())
             self.assertEqual(item['sha256'],hashlib.sha256(archive.read_bytes()).hexdigest())
+            self.assertEqual(item['url'],f'https://github.com/RLF62/instrument-suite/releases/download/v1.0.0/{name}.tar.gz')
+            self.assertEqual(result['build_inputs'][name]['repository'],'RLF62/instrument-suite')
             self.assertEqual(result['build_inputs'][name]['dependency_lock_sha256'],hashlib.sha256(self.lock).hexdigest())
         suite_payload=extract(self.output/'suite.tar.gz',self.root/'suite-extracted')
         self.assertFalse((suite_payload/'hp33120a').exists())
@@ -91,7 +95,7 @@ class ReleaseBuildTests(unittest.TestCase):
                 else:path.write_bytes(previous)
 
     def test_wrong_repository_identity_is_rejected(self):
-        self.command('git','-C',str(self.sources['meter']),'remote','set-url','origin','https://github.com/other/project.git')
+        self.command('git','-C',str(self.sources['suite']),'remote','set-url','origin','https://github.com/other/project.git')
         with self.assertRaisesRegex(MaintenanceError,'repository'):self.build()
         self.assertFalse(self.output.exists())
 

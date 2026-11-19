@@ -1,0 +1,10 @@
+{
+  "resource": "USB0::1003::8293::REPLACE_WITH_CACHED_USB_SERIAL::0::INSTR",
+  "addresses": {
+    "supply": 10,
+    "meter": 22
+  },
+  "hardware_enabled": false,
+  "meter_read_only": true,
+  "supply_enabled": false
+}
