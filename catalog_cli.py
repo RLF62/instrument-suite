@@ -12,7 +12,7 @@ def request(data):
     return r['result']
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=('install','status'));p.add_argument('tool',nargs='?',choices=('meter','supply','scope','generator'));a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=('install','status'));p.add_argument('tool',nargs='?',choices=('meter','supply','scope','generator','counter'));a=p.parse_args()
     if a.action=='status':print(json.dumps(request({'action':'status'}),indent=2));return
     if not a.tool:p.error('Choose an approved instrument')
     job=request({'action':'install','tool':a.tool})['job'];message=None
