@@ -43,9 +43,9 @@ VIEWS = {'supply':('/classic-dual','/'),'meter':('/multimeter/classic','/multime
 DOCS = {'supply':'/docs/','meter':'/multimeter/assets/docs/index.html','scope':'/docs/',
         'generator':'/generator/assets/docs.html','counter':'/docs/'}
 HEADER_CSS = """<style>
-#suite-unified-header{box-sizing:border-box;position:sticky;top:0;z-index:10000;width:100%;
-display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;
-gap:16px;min-height:76px;padding:14px max(20px,2vw);margin:0 0 14px;
+#suite-unified-header{box-sizing:border-box;position:sticky;top:0;z-index:10000;width:100vw!important;max-width:none!important;
+display:grid!important;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;
+gap:16px;min-height:76px;padding:14px max(20px,2vw);margin:0 0 14px;margin-left:calc(50% - 50vw)!important;
 background:#1e2226;border-top:2px solid #d0d6d9;border-bottom:1px solid #394550;
 color:#f2f6f8;font:14px system-ui,sans-serif}
 #suite-unified-header strong{text-align:center;white-space:nowrap;letter-spacing:.04em;font:700 15px system-ui,sans-serif}
@@ -56,12 +56,12 @@ color:#f2f6f8;font:14px system-ui,sans-serif}
 border:1px solid #466b71;border-radius:5px;background:transparent;color:#a7e9eb;
 text-decoration:none;font:13px system-ui,sans-serif;white-space:nowrap}
 #suite-unified-header a[aria-current=page],#suite-unified-header a:hover{background:#31494f;border-color:#8de0e6;color:#fff}
-body[data-suite-page=scope]>header:first-of-type{display:none}
+body[data-suite-page=scope]>header:first-of-type{display:none!important}
 body[data-suite-page=supply] nav:not(#suite-unified-header),
 body[data-suite-page=meter] nav[aria-label="Instrument navigation"]:not(#suite-unified-header),
 body[data-suite-page=generator] nav[aria-label="Instrument navigation"]:not(#suite-unified-header),
-body[data-suite-page=counter] nav.suite-topbar:not(#suite-unified-header){display:none}
-body[data-suite-page=supply] main.wrap>header.head>div:first-child{display:none}
+body[data-suite-page=counter] nav.suite-topbar:not(#suite-unified-header){display:none!important}
+body[data-suite-page=supply] main.wrap>header.head>div:first-child{display:none!important}
 @media(max-width:1349px){#suite-unified-header{display:flex;flex-direction:column;align-items:stretch}
 #suite-unified-header strong{order:-1;align-self:center;white-space:normal}
 #suite-unified-header .suite-actions{justify-content:flex-end}}
