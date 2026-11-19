@@ -1,6 +1,7 @@
 /* Shared instrument header. Dashboard panels and controls are left in place. */
 (function () {
   function render() {
+    if(document.getElementById('suite-unified-header'))return;
     const cfg=window.fischerSuite;
     if(!cfg || !Array.isArray(cfg.instruments))return;
     const pathname=location.pathname;

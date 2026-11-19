@@ -24,7 +24,7 @@
     "counter": {
       "name": "HP 5385A Frequency Counter",
       "description": "Classic and Modern frequency counter, shared GPIB measurements, live chart and remote controls.",
-      "sha256": "cc214bcf85a4ed86a4e93113c2aae29c044fa3cb54fc7ec7047cbe00dbe9707d"
+      "sha256": "ba9599e3766d779ba6a3db263bf59be83d26a242bcc0d3608e9b224a2a935079"
     }
   }
 }

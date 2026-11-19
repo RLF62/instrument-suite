@@ -206,6 +206,10 @@ def provision(tool,job,notify):
                 shutil.copy2(source/name,target/name)
             shutil.copytree(source/'hp33120a',target/'hp33120a')
             tests=['discover','-s',str(source),'-p','test_*.py']
+        # Use the suite's current navigation for every approved instrument,
+        # including packages built before the shared header was introduced.
+        for name in ('suite_navigation.py','navigation.js','catalog_web.py','catalog.html'):
+            shutil.copy2(SUITE/name,target/name)
         shutil.copy2(source/'tool_registration.py',target/'tool_registration.py')
         pi_owned(target)
         python=target/'venv/bin/python'

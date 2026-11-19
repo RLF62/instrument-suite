@@ -28,6 +28,10 @@ def home():
 def static_asset(name):
     return send_from_directory('static', name)
 
+@app.get('/favicon.ico')
+def favicon():
+    return send_from_directory('static', 'hp-logo-192.png', mimetype='image/png')
+
 @app.get('/docs/')
 def docs():
     return send_from_directory('static', 'docs.html')
