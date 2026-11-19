@@ -51,3 +51,12 @@ class CandidateTemplateTests(unittest.TestCase):
             self.skipTest('Symlink creation unavailable')
         with self.assertRaisesRegex(SystemExit, 'symlinked'):
             apply_suite_templates(self.suite, self.payload)
+
+class ReviewedSupplyNavigationTests(unittest.TestCase):
+    def test_modern_overlay_does_not_restore_legacy_navigation(self):
+        template = (Path(__file__).parent / 'integration/templates/index.html').read_text()
+        self.assertNotIn('aria-label="Instrument suite"', template)
+        self.assertNotIn('main.wrap>header.head', template)
+        self.assertNotIn('Classic View', template)
+        self.assertIn('id="layout-toolbar"', template)
+        self.assertIn('HP 5385A', template)
