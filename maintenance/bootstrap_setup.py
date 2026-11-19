@@ -1,5 +1,6 @@
 """Executed only after bootstrap verifies the suite archive's offline signature."""
 import argparse
+import json
 import os
 from pathlib import Path
 import shutil
@@ -28,13 +29,16 @@ def main(argv=None):
     if cfg.exists():raise MaintenanceError('Existing updater preserved; use instrument-suite install')
     # Validate trusted-LAN settings before any OS packages or services change.
     if args.web_updates == 'trusted-lan':
-        from .web_policy import disabled, fresh_lan_origin, validate
-        if not args.trusted_lan:
-            raise MaintenanceError('Choose a private --trusted-lan CIDR before installing')
-        if not args.update_origin:
+        from .web_policy import disabled, fresh_lan_network, fresh_lan_origin, validate
+        if not args.trusted_lan or not args.update_origin:
             addresses=subprocess.check_output(['hostname','-I'],text=True,timeout=10).split()
-            args.update_origin=[fresh_lan_origin(args.trusted_lan,addresses)]
-            print('Web-update origin: '+args.update_origin[0],flush=True)
+            if not args.trusted_lan:
+                interfaces=json.loads(subprocess.check_output(['ip','-j','-4','addr','show','scope','global'],text=True,timeout=10))
+                args.trusted_lan=[fresh_lan_network(interfaces,addresses)]
+                print('Trusted LAN: '+args.trusted_lan[0],flush=True)
+            if not args.update_origin:
+                args.update_origin=[fresh_lan_origin(args.trusted_lan,addresses)]
+                print('Web-update origin: '+args.update_origin[0],flush=True)
         policy=disabled()
         policy.update(mode='trusted-lan',origins=args.update_origin,trusted_lans=args.trusted_lan,
                       trusted_proxies=['127.0.0.1/32','::1/128'])

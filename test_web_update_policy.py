@@ -16,6 +16,13 @@ def lan():
     value=policy.disabled();value.update(mode='trusted-lan',origins=['http://bench:8080'],trusted_lans=['192.168.1.0/24'],trusted_proxies=['127.0.0.1/32']);return policy.validate(value)
 
 class PolicyTests(unittest.TestCase):
+    def test_fresh_lan_network_uses_interface_prefix_and_rejects_public_range(self):
+        interfaces=[{'addr_info':[{'family':'inet','local':'192.168.1.178','prefixlen':24}]}]
+        self.assertEqual(policy.fresh_lan_network(interfaces,['192.168.1.178']),
+                         '192.168.1.0/24')
+        with self.assertRaisesRegex(Exception,'--trusted-lan'):
+            policy.fresh_lan_network(interfaces,['192.168.2.1'])
+
     def test_fresh_lan_origin_selects_only_a_trusted_ipv4_address(self):
         self.assertEqual(policy.fresh_lan_origin(['192.168.1.0/24'],
                          ['fdca::1','192.168.2.9','192.168.1.178']),
