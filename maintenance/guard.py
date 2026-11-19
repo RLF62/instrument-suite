@@ -62,7 +62,7 @@ class Guard:
                 raise RuntimeError('Wait for the current multimeter operation to finish')
             self.meter.operation_lock.release()
             return {'polling': False, 'pending_controls': 0, 'verified': True}
-        if self.tool == 'generator':
+        if self.tool in ('generator', 'counter'):
             # The guard has already drained all controller requests. Updating the
             # web controller must not alter the generator's persistent output state.
             return {'requests': 0, 'verified': True}

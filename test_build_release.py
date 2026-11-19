@@ -33,6 +33,7 @@ class ReleaseBuildTests(unittest.TestCase):
                 (source/'templates').mkdir()
                 (source/'templates/index.html').write_text('old view')
             elif name=='meter':(source/'standalone_app.py').write_text('# inert meter fixture\n')
+            elif name=='counter':(source/'counter_app.py').write_text('# inert counter fixture\n')
             elif name=='generator':
                 (source/'generator_app.py').write_text('# inert generator fixture\n')
                 (source/'hp33120a').mkdir()
@@ -82,6 +83,15 @@ class ReleaseBuildTests(unittest.TestCase):
         self.assertTrue((payload/'supply_standalone.py').is_file())
         self.assertIn('FISCHER_SHARED_ADAPTER_V1',(payload/'app.py').read_text())
         self.assertEqual(result['build_inputs']['supply']['suite_overlay_commit'],result['components']['suite']['commit'])
+
+    def test_bridge_release_is_signed_and_excludes_counter_archive(self):
+        result=self.build(exclude_counter=True)
+        verified=verify_manifest((self.output/'manifest.json').read_bytes(),
+                                 (self.output/'manifest.json.sig').read_bytes(),self.public)
+        self.assertEqual(result,verified)
+        self.assertEqual(set(result['components']),set(release.REPOS)-{'counter'})
+        self.assertFalse((self.output/'counter.tar.gz').exists())
+        self.assertTrue((self.output/'suite.tar.gz').is_file())
 
     def test_dirty_or_untracked_sources_are_rejected_without_output(self):
         for filename in ('app.py','untracked.txt'):

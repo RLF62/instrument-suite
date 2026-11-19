@@ -86,9 +86,10 @@ def archive_payload(payload, archive):
             item.size=len(data);item.mode=0o644
             tar.addfile(item,io.BytesIO(data))
 
-def build(sources, locks, versions, release, sequence, key, public_key, output):
+def build(sources, locks, versions, release, sequence, key, public_key, output, *, exclude_counter=False):
+    included = tuple(n for n in REPOS if not (exclude_counter and n == "counter"))
     if set(sources)!=set(REPOS) or set(versions)!=set(REPOS):
-        raise MaintenanceError('Provide source paths and versions for all five components')
+        raise MaintenanceError('Provide source paths and versions for all six components')
     if not VERSION.fullmatch(release) or any(not isinstance(v,str) or not VERSION.fullmatch(v) for v in versions.values()):
         raise MaintenanceError('Release and component versions must use vMAJOR.MINOR.PATCH')
     if versions['suite']!=release or type(sequence) is not int or sequence<1:
@@ -103,7 +104,7 @@ def build(sources, locks, versions, release, sequence, key, public_key, output):
         if any(path.is_relative_to(root) for root in sources.values()):
             raise MaintenanceError('Keep signing keys and release output outside source repositories')
     inputs={n:checkout(path,n) for n,path in sources.items()}
-    locked={n:lock_bytes(Path(locks)/(n+'.lock')) for n in REPOS}
+    locked={n:lock_bytes(Path(locks)/(n+'.lock')) for n in included}
     now=dt.datetime.now(dt.timezone.utc)
     manifest={'schema':1,'engine_api':1,'sequence':sequence,'release':release,
               'issued':now.isoformat(),'expires':(now+dt.timedelta(days=30)).isoformat(),
@@ -112,7 +113,7 @@ def build(sources, locks, versions, release, sequence, key, public_key, output):
     with tempfile.TemporaryDirectory(prefix='fischer-release-',dir=output.parent) as temporary:
         staging=Path(temporary); artifacts=staging/'artifacts';artifacts.mkdir(mode=0o700)
         host=LinuxHost()
-        for name in REPOS:
+        for name in included:
             source=sources[name]
             payload=staging/name;payload.mkdir()
             for rel in inputs[name]['files']:
@@ -160,11 +161,13 @@ def main():
     for name in REPOS:parser.add_argument('--'+name,type=Path,required=True)
     for name in ('locks','versions','key','public-key','output'):parser.add_argument('--'+name,type=Path,required=True)
     parser.add_argument('--release',required=True);parser.add_argument('--sequence',type=int,required=True)
+    parser.add_argument('--exclude-counter', action='store_true', help='Bridge release for older four-component updater engines')
     args=parser.parse_args()
     if os.geteuid()==0:parser.error('Build as an ordinary user, never as root')
     try:
         result=build({n:getattr(args,n) for n in REPOS},args.locks,json.loads(args.versions.read_text()),
-                     args.release,args.sequence,args.key,args.public_key,args.output)
+                     args.release,args.sequence,args.key,args.public_key,args.output,
+                     exclude_counter=args.exclude_counter)
         print(json.dumps({'release':result['release'],'output':str(args.output),'installed':False}))
     except (MaintenanceError,OSError,ValueError,subprocess.SubprocessError):
         print('Release build rejected; inspect clean source checkouts, versions, dependency locks and signing keys. No installation performed.',file=sys.stderr)

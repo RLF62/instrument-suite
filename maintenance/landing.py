@@ -18,7 +18,7 @@ def home():
     # Use the browser's host without inserting it into executable markup.
     host=request.host.split(':',1)[0]
     items=[]
-    for tool,title,port,path in [('meter','HP 34401A Multimeter',8082,'/multimeter/classic'),('supply','HP 6033A Supply',8083,'/'),('scope','Tektronix Scope',8081,'/'),('generator','HP 33120A Function Generator',8084,'/generator/classic')]:
+    for tool,title,port,path in [('meter','HP 34401A Multimeter',8082,'/multimeter/classic'),('supply','HP 6033A Supply',8083,'/'),('scope','Tektronix Scope',8081,'/'),('generator','HP 33120A Function Generator',8084,'/generator/classic'),('counter','HP 5385A Frequency Counter',8085,'/classic')]:
         if tool in data['components']:
             url='http://'+host+':'+str(port)+path
             items.append('<li><a href="'+html.escape(url,quote=True)+'">'+title+'</a> '+html.escape(data['components'][tool]['version'])+'</li>')

@@ -45,16 +45,16 @@ def latest_url():
 
 def selection(text):
     names=list(dict.fromkeys(text.split(',')))
-    if not names or any(x not in ('meter','supply','scope','generator') for x in names):
-        raise argparse.ArgumentTypeError('Choose meter,supply,scope,generator, separated by commas')
+    if not names or any(x not in ('meter','supply','scope','generator','counter') for x in names):
+        raise argparse.ArgumentTypeError('Choose meter,supply,scope,generator,counter, separated by commas')
     return names
 
 def menu():
-    if not sys.stdin.isatty():raise MaintenanceError('Choose --instruments meter,supply,scope,generator when input is not interactive')
-    print('Choose instruments (connections begin disabled/unconfigured):\n  1 HP 34401A multimeter\n  2 HP 6033A supply\n  3 Tektronix scope\n  4 HP 33120A function generator')
+    if not sys.stdin.isatty():raise MaintenanceError('Choose --instruments meter,supply,scope,generator,counter when input is not interactive')
+    print('Choose instruments (connections begin disabled/unconfigured):\n  1 HP 34401A multimeter\n  2 HP 6033A supply\n  3 Tektronix scope\n  4 HP 33120A function generator\n  5 HP 5385A frequency counter')
     answer=input('Numbers separated by commas: ').strip().split(',')
-    mapping={'1':'meter','2':'supply','3':'scope','4':'generator'}
-    if not answer or any(x.strip() not in mapping for x in answer):raise MaintenanceError('Choose 1, 2 and/or 3')
+    mapping={'1':'meter','2':'supply','3':'scope','4':'generator','5':'counter'}
+    if not answer or any(x.strip() not in mapping for x in answer):raise MaintenanceError('Choose one or more of 1, 2, 3, 4, 5')
     return list(dict.fromkeys(mapping[x.strip()] for x in answer))
 
 def execute(action, instruments=None, dry_run=False, release_url=None):

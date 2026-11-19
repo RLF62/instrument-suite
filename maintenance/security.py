@@ -15,7 +15,7 @@ import urllib.request
 
 REPOS = {'suite': 'instrument-suite', 'meter': 'hp34401a-web-controller',
          'supply': 'hp6033a-web-controller', 'scope': 'tektronix-ethernet-controller',
-         'generator': 'hp33120a-web-controller'}
+         'generator': 'hp33120a-web-controller', 'counter': 'instrument-suite'}
 PUBLISH_REPO = 'instrument-suite'
 VERSION = re.compile(r'v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)')
 MAX_DOWNLOAD = 128 * 1024 * 1024

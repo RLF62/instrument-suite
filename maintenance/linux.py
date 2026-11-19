@@ -19,10 +19,11 @@ SPECS = {'suite': ('instrument-suite', 'fischer-suite-dashboard', 8090, 'mainten
          'meter': ('hp34401a', 'hp34401a', 8082, 'standalone_app'),
          'supply': ('hp6033a', 'hp6033a', 8083, 'supply_standalone'),
          'scope': ('tektronix-controller', 'tektronix-controller', 8081, 'app'),
-         'generator': ('hp33120a', 'hp33120a', 8084, 'generator_app')}
+         'generator': ('hp33120a', 'hp33120a', 8084, 'generator_app'),
+         'counter': ('hp5385a', 'hp5385a', 8085, 'counter_app')}
 DIRECTORIES = {'suite': {'hp34401a', 'integration', 'deploy', 'maintenance'},
                'meter': {'hp34401a'}, 'supply': {'templates', 'static', 'docs', 'deploy', 'screenshots', 'tests'},
-               'scope': {'docs', 'static'}, 'generator': {'hp33120a'}}
+               'scope': {'docs', 'static'}, 'generator': {'hp33120a'}, 'counter': {'static'}}
 FILES = {'suite': {'activate.py', 'adapter_broker.py', 'adapter_worker.py', 'catalog.html', 'catalog_cli.py',
     'catalog_service.py', 'catalog_web.py', 'deploy_manager.py', 'deployment_profile.py', 'gpib_client.py',
     'manager_engine.py', 'navigation.js', 'suite_gateway.py', 'suite_navigation.py', 'tool_registration.py',
@@ -32,7 +33,8 @@ FILES = {'suite': {'activate.py', 'adapter_broker.py', 'adapter_worker.py', 'cat
     'scope': {'app.py', 'scope_io.py', 'ethernet_transport.py', 'screen_effect.py', 'archive_tools.py', 'example_catalog.py',
               'index.html', 'setup.html', 'tool_registration.py'},
     'generator': {'generator_app.py', 'gpib_client.py', 'suite_navigation.py', 'navigation.js',
-                  'catalog_web.py', 'catalog.html'}}
+                  'catalog_web.py', 'catalog.html'},
+    'counter': {'counter_app.py'}}
 COMMON = {'requirements.txt', 'requirements.lock', 'config.example.json', 'README.md', 'ONE_COMMAND_UPDATER.md','INSTALL.md',
           'STANDALONE.md', 'CATALOG.md', 'GATEWAY_MIGRATION.md', 'DEPLOYMENT.md', 'INSTRUMENT_SUITE.md', 'PROJECT_HANDOFF.md',
           'HTTPS_MIGRATION_VALIDATION.md','GPIB_FIRMWARE.md'}
@@ -171,7 +173,7 @@ class LinuxHost:
                 if not target.is_file() or target.read_bytes()!=p.read_bytes():changed.append(rel.as_posix())
             if changed and set(changed)<=allowed:
                 self.restart_broker=False
-                self.actual_affected=sorted((set(conservative)-{'meter','supply','scope','generator'})|((set(stages)-{'suite'})&set(conservative)))
+                self.actual_affected=sorted((set(conservative)-{'meter','supply','scope','generator','counter'})|((set(stages)-{'suite'})&set(conservative)))
                 return self.actual_affected
         self.actual_affected=conservative
         return conservative
@@ -330,7 +332,7 @@ class LinuxHost:
         self.restart_broker=metadata.get('restart_broker',True)
         if type(self.restart_broker) is not bool:raise MaintenanceError('Invalid broker recovery policy')
         if self.restart_broker and 'suite' in metadata['affected']:
-            required=self.discover()&{'meter','supply','scope','generator'}
+            required=self.discover()&{'meter','supply','scope','generator','counter'}
             if not required<=set(metadata['affected']):raise MaintenanceError('Recovery would interrupt a shared broker without controller safety checks')
 
     def stop(self, affected):
@@ -392,7 +394,7 @@ class LinuxHost:
             if not unit.exists():
                 meta['created_units'].append(str(unit));atomic_json(backup/'backup.json',meta)
                 module='maintenance.landing' if name=='suite' else 'maintenance_entry'
-                dependencies='Requires=fischer-gpib.service\nAfter=fischer-gpib.service\n' if name in ('meter','supply','generator') else ''
+                dependencies='Requires=fischer-gpib.service\nAfter=fischer-gpib.service\n' if name in ('meter','supply','generator','counter') else ''
                 text=f'[Unit]\nDescription=Fischer {name} controller\nAfter=network.target\n{dependencies}[Service]\nUser=pi\nGroup=www-data\nWorkingDirectory={target}\nEnvironment=PYTHONPATH={self.folder("suite")}\nRuntimeDirectory=fischer-maintenance-{name}\nRuntimeDirectoryMode=0700\nExecStart={target}/venv/bin/gunicorn --workers 1 --threads 4 --bind {"127.0.0.1" if name=="suite" or gateway and name in ("meter","supply") else "0.0.0.0"}:{SPECS[name][2]} {module}:app\nRestart=on-failure\nTimeoutStopSec=20\n[Install]\nWantedBy=multi-user.target\n'
                 unit.write_text(text);unit.chmod(0o644)
         if 'suite' in stages:self.shared_setup(stages['suite'],job,meta)
@@ -456,7 +458,7 @@ class LinuxHost:
 
     def start(self, affected, changes):
         names=sorted(set(affected)|set(changes),key=lambda n:n!='suite')
-        needs_broker = bool(set(names)&{'meter','supply'}) or ('suite' in names and self.restart_broker)
+        needs_broker = bool(set(names)&{'meter','supply','counter'}) or ('suite' in names and self.restart_broker)
         if Path('/etc/systemd/system/fischer-gpib.service').exists() and needs_broker:
             self.run(['systemctl','start','fischer-gpib'])
         for name in names:
