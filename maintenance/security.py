@@ -16,6 +16,7 @@ import urllib.request
 REPOS = {'suite': 'instrument-suite', 'meter': 'hp34401a-web-controller',
          'supply': 'hp6033a-web-controller', 'scope': 'tektronix-ethernet-controller',
          'generator': 'hp33120a-web-controller'}
+PUBLISH_REPO = 'instrument-suite'
 VERSION = re.compile(r'v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)')
 MAX_DOWNLOAD = 128 * 1024 * 1024
 PRIVATE = {'config.json', 'registry.json', 'tools.json', 'connection.json',
@@ -50,7 +51,8 @@ def github_url(url, repo=None, artifact=False):
     if p.hostname != 'github.com':
         raise MaintenanceError('Release URL must use github.com')
     parts = p.path.strip('/').split('/')
-    if len(parts) != 6 or parts[:2] != ['RLF62', repo or 'instrument-suite'] or parts[2:4] != ['releases', 'download']:
+    allowed = {PUBLISH_REPO} if repo is None else ({repo} if isinstance(repo, str) else set(repo))
+    if len(parts) != 6 or parts[0] != 'RLF62' or parts[1] not in allowed or parts[2:4] != ['releases', 'download']:
         raise MaintenanceError('Expected an immutable RLF62 repository release asset URL')
     if not VERSION.fullmatch(parts[4]) or not re.fullmatch(r'[A-Za-z0-9_.-]+', parts[5]):
         raise MaintenanceError('Invalid versioned release asset')
@@ -119,8 +121,10 @@ def verify_manifest(raw, signature, public_key, minimum=0, now=None):
             require(VERSION.fullmatch(item['version']) and re.fullmatch('[a-f0-9]{40}', item['commit']))
             require(re.fullmatch('[a-f0-9]{64}', item['sha256']))
             require(type(item['size']) is int and 0 < item['size'] <= MAX_DOWNLOAD)
-            github_url(item['url'], REPOS[name], artifact=True)
-            require(item['url'].split('/')[-2] == item['version'])
+            # Old signed manifests still use the original controller repositories.
+            # New releases keep every archive in the instrument-suite release.
+            github_url(item['url'], (REPOS[name], PUBLISH_REPO), artifact=True)
+            require(item['url'].split('/')[-2] == (m['release'] if '/instrument-suite/' in item['url'] else item['version']))
             for dep, version in item.get('requires', {}).items():
                 require(dep in REPOS and VERSION.fullmatch(version))
     except (ValueError, TypeError, KeyError, AssertionError) as exc:
