@@ -67,6 +67,10 @@ class Guard:
             # web controller must not alter the generator's persistent output state.
             return {'requests': 0, 'verified': True}
         if self.tool == 'scope':
+            # Fresh installs use an intentionally unroutable address until Setup
+            # connects a scope. This exact sentinel proves no scope is selected.
+            if hasattr(self.scope_io, 'config') and self.scope_io.config()['address'] == 'scope-not-configured.invalid':
+                return {'connected': False, 'verified': True}
             with self.scope_io.scope() as (instrument, config):
                 running = self.scope_io.ask(instrument, 'ACQUIRE:STATE?')
                 busy = self.scope_io.ask(instrument, 'BUSY?')

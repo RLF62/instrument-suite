@@ -173,6 +173,14 @@ class SafetyTests(unittest.TestCase):
         for error in (OSError(),RuntimeError('adapter unavailable')):
             c=types.SimpleNamespace(remote_control_enabled=False,read_gpib=MagicMock(side_effect=error))
             with self.assertRaises(type(error)):Guard('supply',c).check()
+    def test_unconfigured_scope_allows_upgrade_but_configured_connection_error_blocks(self):
+        offline=types.SimpleNamespace(config=MagicMock(return_value={'address':'scope-not-configured.invalid'}),
+                                      scope=MagicMock(side_effect=AssertionError('must not connect')))
+        self.assertEqual(Guard('scope',None,scope_io=offline).check(),
+                         {'connected':False,'verified':True})
+        offline.config.return_value={'address':'192.168.1.78'}
+        with self.assertRaises(AssertionError):Guard('scope',None,scope_io=offline).check()
+
     def test_meter_polling_and_queued_operations_block(self):
         for state in ({'polling':True,'pending_controls':0},{'polling':False,'pending_controls':1},{'polling':False}):
             meter=types.SimpleNamespace(snapshot=lambda:state)
