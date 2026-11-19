@@ -1,0 +1,1086 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HP 6033A Controller</title><link rel="icon" href="/static/hp6033a.ico" sizes="any"><link rel="icon" type="image/png" sizes="192x192" href="/static/hp6033a-192.png"><link rel="apple-touch-icon" href="/static/hp6033a-192.png"><link rel="manifest" href="/static/manifest.webmanifest"><meta name="theme-color" content="#101723"><style>
+:root{font-family:system-ui,Segoe UI,sans-serif;color:#e9f0fa;background:#101723}*{box-sizing:border-box}body{margin:0;padding:18px}.wrap{max-width:850px;margin:auto}.head,.split,.pair{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}h1{margin:0;font-size:27px}h2{font-size:17px;margin:8px 0 16px}.muted{color:#9baabe;font-size:13px}.badge{border:1px solid #edba62;color:#edba62;border-radius:24px;padding:6px 10px;font-size:12px}.card{background:#1a2637;border:1px solid #304057;border-radius:15px;padding:18px;margin:16px 0}.readings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.reading{background:#0e1b2b;border-radius:12px;padding:17px}.big{font-size:clamp(28px,7vw,48px);font-weight:750;font-variant-numeric:tabular-nums}.green{color:#5ce5a4}.blue{color:#72bdff}.selected{border-color:#59e3a4!important;box-shadow:inset 0 0 0 1px #59e3a4;background:#174c48!important}.statusrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}.pill{border:1px solid #4b607b;border-radius:16px;padding:5px 10px;font-size:12px}.warn{color:#f4c16b}.stepselect{background:#0e1b2b;color:#fff;border:1px solid #59708c;border-radius:7px;padding:9px}.graph{width:100%;height:230px;background:#0e1b2b;border:1px solid #304057;border-radius:10px;display:block}.legend{display:flex;gap:20px;flex-wrap:wrap;margin:10px 0;font-size:13px}.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}button{cursor:pointer;background:#263b55;color:#f0f6ff;border:1px solid #46617e;border-radius:9px;padding:12px 10px;font-size:15px}button:hover{background:#345272}button:focus-visible{outline:3px solid #88bbff}.danger{background:#9d3036;border-color:#e66a70}.on{background:#146c4e;border-color:#4ed6a2}.inputrow{display:flex;align-items:center;gap:10px}input[type=number]{background:#0e1b2b;border:1px solid #59708c;border-radius:8px;padding:10px;color:white;width:110px;font-size:18px}input[type=range]{width:100%;accent-color:#69b4fa;margin:16px 0}.foot{padding:15px 0;text-align:center}a{color:#9ac9ff}.note{color:#e8bf76;font-size:13px}#msg{min-height:20px;color:#f6ca82}@media(max-width:600px){.readings{grid-template-columns:repeat(2,minmax(0,1fr))}.readings .reading:last-child{grid-column:1/-1}}@media(max-width:460px){.card{padding:13px}.reading{padding:12px}.presets{gap:6px}button{padding:11px 5px;font-size:13px}}
+.ok{color:#5ce5a4}.bad{color:#f4c16b}.diag{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}.diag>div{background:#0e1b2b;border-radius:9px;padding:12px}.diag strong{display:block;margin-top:5px;overflow-wrap:anywhere}@media(max-width:480px){.diag{grid-template-columns:1fr}}
+</style>
+<style>
+.card-top-controls { margin:-8px -8px 8px 0; gap:8px; flex-wrap:nowrap; }
+.card-top-controls h2 { margin:0; }
+.card-top-controls button,.card-top-controls select { flex-shrink:0; }
+.card-top-controls + .note { margin:0 0 10px; }
+.layout-toolbar {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:12px 0;
+}
+.layout-toolbar button[hidden] { display:none; }
+.layout-editing main section.card {
+  outline:1px dashed #72bdff;
+  cursor:default;
+}
+.layout-handle {
+  display:none;
+  margin:0 0 10px;
+  padding:7px 10px;
+  border:1px dashed #72bdff;
+  border-radius:7px;
+  color:#72bdff;
+  cursor:grab;
+  user-select:none;
+  touch-action:none;
+}
+.layout-editing .layout-handle { display:block; }
+.layout-handle:active { cursor:grabbing; }
+.layout-dragging { opacity:.45; }
+.layout-target { outline:2px solid #5ce5a4 !important; }
+
+
+/* Wider desktop dashboard */
+@media (min-width: 701px) {
+  .wrap {
+    max-width: 1100px;
+  }
+}
+
+/* Customizable dashboard grid */
+@media (min-width: 701px) {
+  main.wrap {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 16px;
+    align-items: stretch;
+  }
+
+  main.wrap > section.card {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  main.wrap > section.card[data-layout-width="half"] {
+    grid-column: span 1;
+  }
+
+  main.wrap > footer {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  main.wrap > section.card {
+    width: 100%;
+  }
+}
+
+
+.layout-tile-controls {
+  display:none;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+}
+.layout-editing .layout-tile-controls {
+  display:flex;
+}
+.layout-editing .layout-tile-controls .layout-handle {
+  display:block;
+  flex:1;
+  margin:0;
+}
+.layout-width-button {
+  white-space:nowrap;
+  padding:7px 10px;
+  font-size:13px;
+}
+
+.layout-hidden {
+  display:none !important;
+}
+.layout-editing main.wrap > section.layout-hidden {
+  display:block !important;
+  opacity:.55;
+}
+.layout-editing main.wrap > section.readings.layout-hidden {
+  display:grid !important;
+}
+.layout-visibility-button {
+  white-space:nowrap;
+  padding:7px 10px;
+  font-size:13px;
+}
+@media(max-width:460px){
+  .layout-editing .layout-tile-controls {
+    flex-wrap:wrap;
+  }
+}
+
+/* Individual reading customization */
+.reading-layout-controls {
+  display:none;
+  gap:5px;
+  margin-bottom:10px;
+}
+
+.layout-editing .reading-layout-controls {
+  display:flex;
+}
+
+.reading-layout-controls button {
+  flex:1;
+  padding:6px 4px;
+  font-size:12px;
+}
+
+.reading-hidden {
+  display:none !important;
+}
+
+.layout-editing .reading.reading-hidden {
+  display:block !important;
+  opacity:.5;
+}
+</style>
+
+<style>
+.staged-controls {
+  margin: 0 0 18px;
+  padding: 16px;
+  border: 1px solid #405570;
+  border-radius: 12px;
+  background: #1a2637;
+}
+#staged-status {
+  margin-bottom: 12px;
+  color: #f4c16b;
+  font-size: 14px;
+}
+.staged-buttons {
+  display: flex;
+  gap: 12px;
+}
+.staged-buttons button {
+  flex: 1;
+  min-height: 48px;
+  font-weight: 700;
+}
+.preset-apply { margin-top:10px; }
+.preset-apply button { flex:0 1 auto; min-height:0; }
+.preset-apply-feedback:empty { display:none; }
+[data-apply-settings] {
+  background: #146c4e;
+  border-color: #4ed6a2;
+}
+.staged-buttons button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+@media(max-width:460px) {
+  .staged-controls {padding:12px}
+  .staged-buttons {gap:8px}
+}
+</style>
+
+<style id="dual-output-button-styles">
+.output-button-group {
+ display:flex;
+ gap:12px;
+ flex-wrap:wrap;
+ align-items:stretch;
+}
+.output-button-group button {
+ flex:1 1 135px;
+ min-height:58px;
+ padding:12px 16px;
+ font-weight:750;
+ font-size:15px;
+ border-radius:10px;
+}
+#out {
+ background:#126b49;
+ color:white;
+ border:1px solid #36a877;
+}
+#out_off {
+ background:#b32b36;
+ color:white;
+ border:1px solid #f06b73;
+}
+#out:disabled,
+#out_off:disabled {
+ opacity:.42;
+ cursor:not-allowed;
+}
+@media(max-width:700px) {
+ .output-button-group {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  width:100%;
+ }
+ .output-button-group button {
+  min-width:0;
+  min-height:66px;
+  padding:10px 6px;
+  font-size:14px;
+ }
+}
+</style>
+
+<style>
+/* Shared suite layout editor: presentation only, no instrument requests. */
+.suite-layoutbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px 0;color:#dce5ee;font:14px system-ui,sans-serif}
+.suite-layoutbar #layout-note{font-size:12px;line-height:1.5;color:#b3bec6}
+.suite-layoutbar button,.suite-grid .tile-tools button,.suite-grid .tile-resize{font:14px system-ui,sans-serif;color:#eef6f7;background:#303b42;border:1px solid #6c7c87;border-radius:5px;min-height:44px;padding:8px 12px;cursor:pointer}
+.suite-layoutbar button:hover,.suite-grid .tile-tools button:hover{background:#40535c}
+.suite-layoutbar button:focus-visible,.suite-grid .tile-tools button:focus-visible,.suite-grid .tile-tools select:focus-visible,.suite-grid .tile-resize:focus-visible{outline:3px solid #62ded0;outline-offset:3px}
+.suite-grid{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:18px!important;align-items:start}
+.suite-grid>.meter-tile{grid-column:span var(--tile-span,12)!important;position:relative;min-width:0;margin-top:0!important;margin-bottom:0!important;resize:none!important;height:auto!important}
+.suite-grid>.meter-tile[data-user-hidden=true]{display:none!important}
+body.layout-editing .suite-grid>.meter-tile[data-user-hidden=true]{display:block!important;opacity:.55}
+body.layout-editing .suite-grid>.readings[data-user-hidden=true]{display:grid!important}
+.suite-grid .tile-tools,.suite-grid .tile-resize{display:none}
+body.layout-editing .suite-grid>.meter-tile{outline:1px dashed #7598a6;outline-offset:3px;padding-bottom:48px}
+body.layout-editing .suite-grid .tile-tools{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:12px;background:#202b32;padding:8px;border-radius:6px;grid-column:1/-1}
+.suite-grid .tile-tools label{display:flex;flex-direction:row;align-items:center;gap:6px;min-height:44px;color:#dce5ee;font:13px system-ui,sans-serif;margin:0}
+.suite-grid .tile-tools select{width:auto;min-height:44px;font:13px system-ui,sans-serif;color:#eef6f7;background:#303b42;border:1px solid #6c7c87;border-radius:5px;padding:5px;margin:0}
+.suite-grid .tile-tools button{padding:6px 10px}.suite-grid .tile-drag{cursor:grab;touch-action:none;flex:1 1 160px;text-align:left}
+body.layout-editing .suite-grid .tile-resize{display:block;position:absolute;right:3px;bottom:3px;min-width:44px;min-height:44px;touch-action:none;cursor:nwse-resize}
+.suite-grid .tile-moving{opacity:.65}.suite-grid .tile-target{outline:3px solid #62ded0!important}
+.suite-grid>.head,.suite-grid>nav,.suite-grid>footer,.suite-grid>#layout-toolbar{grid-column:1/-1}
+.suite-classic-root{max-width:1120px;margin:0 auto}.suite-classic-root>.meter-tile>.instrument{width:100%;max-width:none;margin:0}.suite-classic-root>.meter-tile>details.extra{max-width:none;margin:0}
+@media(max-width:700px){.suite-grid>.meter-tile{grid-column:1/-1!important}.suite-grid .tile-tools label{width:100%}.suite-grid .tile-tools label:after{content:'(full width on phones)';font-size:11px;color:#b3bec6}}
+</style><style>
+/* Shared suite layout editor: presentation only, no instrument requests. */
+.suite-layoutbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px 0;color:#dce5ee;font:14px system-ui,sans-serif}
+.suite-layoutbar #layout-note{font-size:12px;line-height:1.5;color:#b3bec6}
+.suite-layoutbar button,.suite-grid .tile-tools button,.suite-grid .tile-resize{font:14px system-ui,sans-serif;color:#eef6f7;background:#303b42;border:1px solid #6c7c87;border-radius:5px;min-height:44px;padding:8px 12px;cursor:pointer}
+.suite-layoutbar button:hover,.suite-grid .tile-tools button:hover{background:#40535c}
+.suite-layoutbar button:focus-visible,.suite-grid .tile-tools button:focus-visible,.suite-grid .tile-tools select:focus-visible,.suite-grid .tile-resize:focus-visible{outline:3px solid #62ded0;outline-offset:3px}
+.suite-grid{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:18px!important;align-items:start}
+.suite-grid>.meter-tile{grid-column:span var(--tile-span,12)!important;position:relative;min-width:0;margin-top:0!important;margin-bottom:0!important;resize:none!important;height:auto!important}
+.suite-grid>.meter-tile[data-user-hidden=true]{display:none!important}
+body.layout-editing .suite-grid>.meter-tile[data-user-hidden=true]{display:block!important;opacity:.55}
+body.layout-editing .suite-grid>.readings[data-user-hidden=true]{display:grid!important}
+.suite-grid .tile-tools,.suite-grid .tile-resize{display:none}
+body.layout-editing .suite-grid>.meter-tile{outline:1px dashed #7598a6;outline-offset:3px;padding-bottom:48px}
+body.layout-editing .suite-grid .tile-tools{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:12px;background:#202b32;padding:8px;border-radius:6px;grid-column:1/-1}
+.suite-grid .tile-tools label{display:flex;flex-direction:row;align-items:center;gap:6px;min-height:44px;color:#dce5ee;font:13px system-ui,sans-serif;margin:0}
+.suite-grid .tile-tools select{width:auto;min-height:44px;font:13px system-ui,sans-serif;color:#eef6f7;background:#303b42;border:1px solid #6c7c87;border-radius:5px;padding:5px;margin:0}
+.suite-grid .tile-tools button{padding:6px 10px}.suite-grid .tile-drag{cursor:grab;touch-action:none;flex:1 1 160px;text-align:left}
+body.layout-editing .suite-grid .tile-resize{display:block;position:absolute;right:3px;bottom:3px;min-width:44px;min-height:44px;touch-action:none;cursor:nwse-resize}
+.suite-grid .tile-moving{opacity:.65}.suite-grid .tile-target{outline:3px solid #62ded0!important}
+.suite-grid>.head,.suite-grid>nav,.suite-grid>footer,.suite-grid>#layout-toolbar{grid-column:1/-1}
+.suite-classic-root{max-width:1120px;margin:0 auto}.suite-classic-root>.meter-tile>.instrument{width:100%;max-width:none;margin:0}.suite-classic-root>.meter-tile>details.extra{max-width:none;margin:0}
+@media(max-width:700px){.suite-grid>.meter-tile{grid-column:1/-1!important}.suite-grid .tile-tools label{width:100%}.suite-grid .tile-tools label:after{content:'(full width on phones)';font-size:11px;color:#b3bec6}}
+
+.suite-topbar{display:flex!important;align-items:center;justify-content:flex-start!important;flex-wrap:wrap;gap:8px!important;margin:0 0 16px!important;padding:0!important;max-width:1340px}
+.suite-topbar h1,.suite-topbar>strong{font:700 18px system-ui,sans-serif;white-space:nowrap;margin:0 8px 0 0;letter-spacing:.4px}
+.suite-topbar>a{display:inline-flex!important;align-items:center;min-height:40px!important;padding:6px 9px!important;font:13px system-ui,sans-serif!important;border-radius:5px!important;white-space:nowrap}
+.suite-topbar>.suite-layoutbar{display:contents}.suite-topbar #layout-note{flex-basis:100%}
+.suite-topbar .badge,.suite-topbar .pill{font:11px system-ui,sans-serif;white-space:nowrap;padding:6px 9px}
+.suite-topbar #layout-customize{font-size:13px;min-height:40px;padding:6px 10px}
+@media(min-width:1000px){main.wrap.suite-grid{max-width:1340px}}
+
+.suite-topbar>a,.suite-tool-link{display:inline-flex!important;align-items:center;justify-content:center;min-height:40px;padding:7px 11px!important;border:1px solid #3f726f!important;border-radius:6px!important;background:transparent!important;color:#73e3d1!important;text-decoration:none!important;font:13px system-ui,sans-serif!important;white-space:nowrap}
+.suite-topbar>a:hover,.suite-tool-link:hover{background:#203b3d!important}.suite-tool-links{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+</style><style>.suite-topbar{justify-content:center!important;margin:0 auto 16px!important;width:100%;box-sizing:border-box}</style><style>
+.hp-chart-box{background:#292e32;color:#e5e8e9;border:1px solid #49545c;border-radius:8px;padding:18px;font:14px system-ui,sans-serif}
+.hp-chart-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.hp-chart-heading h2{font:700 18px system-ui,sans-serif;margin:0}
+.hp-chart-series{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:12px 0}.hp-chart-series label,.hp-chart-option{display:flex!important;flex-direction:row;align-items:center;gap:7px;min-height:44px;color:#dce5ee;font:14px system-ui,sans-serif}
+.hp-chart-box input[type=checkbox]{width:auto;min-height:0;margin:0;accent-color:#62ded0}.hp-chart-box button{font:14px system-ui,sans-serif;min-height:44px;padding:8px 12px;color:#eef6f7;background:#303b42;border:1px solid #6c7c87;border-radius:5px}
+.hp-chart-box #history{display:block;width:100%;height:360px;background:#111b20;border-radius:6px}.hp-chart-note,#hp-chart-summary{font:12px/1.5 system-ui,sans-serif;color:#b3bec6;overflow-wrap:anywhere}#hp-chart-status{min-height:24px;font:13px system-ui,sans-serif}
+.hp-chart-box summary{cursor:pointer;min-height:44px;font:700 15px system-ui,sans-serif}.hp-chart-box[hidden]{display:none!important}
+</style></head><body><main class="wrap"><header class="head"><div><h1>HP 6033A</h1><div class="muted">Wi-Fi Power Supply Controller &middot; <a href="/classic-dual" style="color: inherit; text-decoration: underline;">Classic View</a> &middot; <a href="#control-setup" style="color:inherit">Setup</a></div></div><span class="badge" id="mode_badge">LIVE GPIB · READ ONLY</span></header><nav aria-label="Instrument suite" style="display:flex;flex-wrap:wrap;gap:10px;margin:14px 0"><a class="tektronix-nav-link" href="http://{{ request.host.split(':')[0] }}:8081/" style="display:inline-block;color:#73e3d1;border:1px solid #3f726f;border-radius:8px;padding:9px 13px;min-height:40px;text-decoration:none;font:13px system-ui,sans-serif">Tektronix TDS 3032B</a><a href="/multimeter/classic" style="color:#73e3d1;padding:9px 13px;display:inline-block">HP 34401A Multimeter</a></nav>
+<div id="layout-toolbar" class="layout-toolbar suite-layoutbar">
+  <button id="layout-customize" type="button">Customize Layout</button>
+  <button id="layout-save" type="button" hidden>Save Layout</button>
+  <button id="layout-reset" type="button" hidden>Reset Layout</button>
+  <button id="layout-show-all" type="button" hidden>Show All Windows</button>
+</div>
+<section class="readings card"><div class="reading"><div class="muted">OUTPUT VOLTAGE</div><div class="big green"><span id="mv">0.00</span><small> V</small></div></div><div class="reading"><div class="muted">OUTPUT CURRENT</div><div class="big blue"><span id="mi">0.00</span><small> A</small></div></div><div class="reading"><div class="muted">OUTPUT POWER</div><div class="big"><span id="mw">0.00</span><small> W</small></div></div></section><section class="card"><div class="statusrow"><span class="pill" id="reg">REGULATION: OFF</span><span class="pill warn" id="gpib">GPIB: NOT CONNECTED</span><span class="muted">Live GPIB readings. CV/CC and output state are not yet queried.</span></div></section><section class="card">
+<div class="split">
+  <div>
+    <h2>GPIB v2 Interface Status</h2>
+    <div class="muted">HP 6033A · USB-to-GPIB interface</div>
+  </div>
+  <button id="gpib-test" onclick="refreshGpib()">Refresh Status</button>
+</div>
+<div class="statusrow">
+  <span class="pill warn" id="gpib-v2-state">GPIB: CHECKING...</span>
+  <span class="muted" id="gpib-v2-error" role="status"></span>
+</div>
+<div class="diag">
+  <div><span class="muted">Interface</span><strong>GPIB v2 / USB</strong></div>
+  <div><span class="muted">Instrument</span><strong>HP 6033A</strong></div>
+  <div><span class="muted">Output state</span><strong id="gpib-v2-output">—</strong></div>
+  <div><span class="muted">Last successful response</span><strong id="gpib-v2-time">—</strong></div>
+</div>
+</section><section class="card"><div class="split card-top-controls"><h2>Voltage presets</h2><button onclick="edit('voltage')">Edit presets</button></div><p class="note">Select a preset to stage it, then use APPLY SETTINGS on any settings card. Editing a saved preset does not program the supply.</p><div class="presets" id="vp"></div><div class="staged-buttons preset-apply"><button type="button" data-apply-settings disabled>APPLY SETTINGS</button></div><p class="muted preset-apply-feedback" data-apply-feedback="voltage" role="status"></p></section><section class="card"><div class="split card-top-controls"><h2>Current limit presets</h2><button onclick="edit('current')">Edit presets</button></div><div class="presets" id="cp"></div><div class="staged-buttons preset-apply"><button type="button" data-apply-settings disabled>APPLY SETTINGS</button></div><p class="muted preset-apply-feedback" data-apply-feedback="current" role="status"></p></section><section class="card"><div class="split card-top-controls"><h2>Manual settings</h2><select class="stepselect" id="vstep" aria-label="Voltage adjustment step"><option value="0.01">0.01 V</option><option value="0.1" selected>0.1 V</option><option value="1">1 V</option></select></div><div class="pair"><label for="v">Voltage setpoint</label><div class="inputrow"><button id="vminus" onclick="step('voltage',-Number($('vstep').value))">−</button><input id="v" type="number" min="0" max="{{ limits.voltage }}" step="0.1" onchange="setpoint('voltage',this.value)"><span>V</span><button id="vplus" onclick="step('voltage',Number($('vstep').value))">+</button></div></div><input id="vr" aria-label="Voltage slider" type="range" min="0" max="{{ limits.voltage }}" step="0.1" onchange="setpoint('voltage',this.value)"><div class="pair"><label for="i">Current limit</label><div class="inputrow"><button id="iminus" onclick="step('current',-.1)">−</button><input id="i" type="number" min="0" max="{{ limits.current }}" step="0.1" onchange="setpoint('current',this.value)"><span>A</span><button id="iplus" onclick="step('current',.1)">+</button></div></div><input id="ir" aria-label="Current slider" type="range" min="0" max="{{ limits.current }}" step="0.1" onchange="setpoint('current',this.value)"><p class="muted">HP 6033A rated ranges: 0–20 V, 0–30 A, 200 W. Remote programming and output OFF are required to apply settings.</p>
+<div id="staged-controls" class="staged-controls">
+  <div id="staged-status" role="status" aria-live="polite">
+    No pending adjustments
+  </div>
+  <div class="staged-buttons">
+    <button id="staged-reset" type="button" disabled>RESET</button>
+    <button id="staged-apply" type="button" data-apply-settings disabled>APPLY SETTINGS</button>
+  </div>
+</div>
+<p id="apply-feedback" class="muted" data-apply-feedback role="status"></p>
+</section>
+<section class="card"><div class="split"><h2>Live history (GPIB)</h2><button onclick="clearHistory()">Clear graph</button></div><div class="legend"><span class="green">● Voltage (V)</span><span class="blue">● Current (A)</span><span class="muted">Last 5 minutes · browser session only</span></div><canvas id="history" class="graph" aria-label="Voltage and current history"></canvas><p class="muted">Voltage and current use separate 0–20 V and 0–30 A scales. Measurements are read directly from the HP 6033A.</p></section><section class="card"><div class="split"><div><h2>Output control</h2><div class="note" id="control_status">Remote programming: DISABLED</div>
+<div style="margin-top:12px">
+<button id="remote_enable" type="button" onclick="toggleRemoteControl()">
+Enable Remote Control
+</button>
+</div></div><div class="output-button-group">
+ <button id="out" type="button" onclick="toggle()">
+  OUTPUT ON
+ </button>
+ <button id="out_off" type="button" onclick="turnOutputOff()">
+  OUTPUT OFF
+ </button>
+</div></div>
+<p id="setpoints" class="muted"></p><p id="msg" role="status"></p></section><section class="card"><div class="split"><div><h2>Front panel lockout</h2><div class="muted">Request GPIB Local Lockout (LLO) to prevent front-panel changes once hardware support is installed.</div></div><label class="inputrow"><input type="checkbox" id="llo" onchange="post({front_panel_lockout_requested:this.checked})"><span>Request lockout</span></label></div><div class="statusrow"><span class="pill warn" id="llo_status">NOT APPLIED - SIMULATION ONLY</span></div><p class="note">Read-only mode: lockout changes are disabled. LLO disables the LCL/LOCAL return-to-local function while remote control is active. Actual lockout must be confirmed by the GPIB controller before displaying LOCKED.</p></section>
+<a id="update-notice" href="#software-updates" style="grid-column:1 / -1" hidden></a>
+<details class="card" style="grid-column:1 / -1">
+  <summary>Setup</summary>
+  {% include "control_preferences.html" %}
+  {% include "software_updates.html" %}
+</details>
+<footer class="foot"><a href="/docs/">Project documentation</a> · HP 6033A · live read-only</footer></main><script>
+const $=id=>document.getElementById(id);
+let s=null;let samples=[];
+let mobileDrafts={voltage:null,current:null};
+let mobileDirty={voltage:false,current:false};
+let mobileBusy=false;
+let mobileBlocked=false;
+const limits={{ limits | tojson }};
+let mobileAuthorization=null;
+
+function mobileAuthorize(){
+ if(!{{ password_required | tojson }})return Promise.resolve({});
+ if(mobileAuthorization)return Promise.resolve(mobileAuthorization);
+
+ return new Promise(resolve=>{
+  const dialog=document.getElementById('mobile-auth-dialog');
+  const form=document.getElementById('mobile-auth-form');
+  const user=document.getElementById('mobile-auth-user');
+  const pass=document.getElementById('mobile-auth-pass');
+
+  let settled=false;
+
+  function finish(value){
+   if(settled)return;
+   settled=true;
+   dialog.removeEventListener('close',onClose);
+   form.onsubmit=null;
+   resolve(value);
+  }
+
+  function onClose(){
+   finish(null);
+  }
+
+  dialog.addEventListener('close',onClose);
+
+  form.onsubmit=e=>{
+   e.preventDefault();
+   if(!user.value.trim()||!pass.value)return;
+
+   mobileAuthorization={'Authorization':'Basic '+btoa(
+    unescape(encodeURIComponent(user.value.trim()+':'+pass.value))
+   )};
+
+   const authorization=mobileAuthorization;
+   finish(authorization);
+   dialog.close('authorized');
+  };
+
+  dialog.showModal();
+ });
+}
+function pendingMobile(){
+ return mobileDirty.voltage||mobileDirty.current;
+}
+function draftValue(k){
+ return mobileDirty[k]?mobileDrafts[k]:s[k];
+}
+function renderMobileDrafts(){
+ if(!s)return;
+ for(const [k,input,slider] of [
+  ['voltage','v','vr'],['current','i','ir']
+ ]){
+  const value=draftValue(k);
+  if(Number.isFinite(value)){
+   if(document.activeElement!==$(input))
+    $(input).value=value.toFixed(k==='voltage'?2:3);
+   if(document.activeElement!==$(slider)) $(slider).value=value;
+  }
+ }
+ const pending=pendingMobile();
+ $('staged-status').textContent=pending
+  ? 'Pending: '+['voltage','current']
+      .filter(k=>mobileDirty[k])
+      .map(k=>k+' '+mobileDrafts[k].toFixed(3)+(k==='voltage'?' V':' A'))
+      .join(' / ')
+  : 'No pending adjustments';
+ $('staged-reset').disabled=!pending||mobileBusy;
+ const applyDisabled=
+  !pending||mobileBusy||mobileBlocked||
+  !s.gpib_connected||!s.remote_control_enabled||
+  s.output!==false;
+ for(const button of document.querySelectorAll('[data-apply-settings]'))
+  button.disabled=applyDisabled;
+ if((pending||mobileBusy||mobileBlocked)&&s.output===false)
+  $('out').disabled=true;
+}
+function showApplyFeedback(message,readbacks){
+ for(const item of document.querySelectorAll('[data-apply-feedback]')){
+  const key=item.dataset.applyFeedback;
+  item.textContent=readbacks&&key
+   ? (readbacks[key]?'Instrument confirmed: '+readbacks[key]:'')
+   : message;
+ }
+}
+function resetMobileDrafts(){
+ mobileDirty={voltage:false,current:false};
+ mobileDrafts={voltage:null,current:null};
+ render();
+ showApplyFeedback('Pending adjustments discarded');
+}
+document.getElementById('staged-reset').addEventListener('click',resetMobileDrafts);
+async function applyMobileDrafts(){
+ if(mobileBusy||mobileBlocked||!pendingMobile()||!s||
+    !s.gpib_connected||!s.remote_control_enabled||
+    s.output!==false)return;
+
+ const pending=['voltage','current']
+  .filter(k=>mobileDirty[k])
+  .map(k=>({key:k,value:mobileDrafts[k]}));
+
+ if(pending.some(p=>!Number.isFinite(p.value)||
+    p.value<0||p.value>limits[p.key])){
+  showApplyFeedback('Staged value exceeds safety limits');
+  return;
+ }
+
+ const description=pending.map(p=>
+  p.key+' '+p.value.toFixed(3)+(p.key==='voltage'?' V':' A')
+ ).join(' and ');
+
+ if(!confirmControl('Apply '+description+
+    ' to HP 6033A? Output must remain OFF.')){
+  showApplyFeedback('Apply cancelled. Staged values are still pending.');
+  return;
+ }
+
+ const authorization=await mobileAuthorize();
+ if(!authorization){
+  showApplyFeedback('Authorization cancelled. Staged values are still pending.');
+  return;
+ }
+
+ mobileBusy=true;
+ renderMobileDrafts();
+ showApplyFeedback('Applying and verifying hardware settings...');
+
+ const completed=[];
+ const readbacks={};
+ try{
+  for(const {key,value} of pending){
+   const statusResponse=await fetch('/api/status',{cache:'no-store'});
+   if(!statusResponse.ok)throw Error('Status verification failed');
+
+   const fresh=await statusResponse.json();
+   if(fresh.gpib_connected!==true||
+      fresh.remote_control_enabled!==true||
+      fresh.output!==false)
+    throw Error('Remote control unavailable or output not OFF');
+
+   const response=await fetch('/api/control/set',{
+    method:'POST',
+    headers:{
+     'Content-Type':'application/json',
+     ...authorization
+    },
+    body:JSON.stringify({key,value})
+   });
+
+   if(response.status===401){
+    mobileAuthorization=null;
+    throw Error('Credentials rejected');
+   }
+
+   const result=await response.json();
+   if(!response.ok||result.success!==true||
+      typeof result.actual!=='number'||
+      !Number.isFinite(result.actual)||
+      Math.abs(result.actual-value)>.005)
+    throw Error(key+': '+(result.error||'Hardware verification failed'));
+
+   completed.push(key);
+   readbacks[key]=key+' '+result.actual.toFixed(3)+(key==='voltage'?' V':' A');
+   mobileDirty[key]=false;
+   mobileDrafts[key]=null;
+  }
+
+  showApplyFeedback('Instrument confirmed: '+Object.values(readbacks).join(' and '),readbacks);
+
+ }catch(e){
+  mobileBlocked=true;
+  showApplyFeedback(
+   'Adjustment failed. Confirmed writes: '+
+   (completed.join(', ')||'none')+
+   '. '+e.message+
+   '. Check the instrument and reload before retrying.');
+ }finally{
+  mobileBusy=false;
+  try{await get()}catch(e){
+   $('msg').textContent='Status refresh failed: '+e.message;
+  }
+  renderMobileDrafts();
+ }
+}
+for(const button of document.querySelectorAll('[data-apply-settings]'))
+ button.addEventListener('click',applyMobileDrafts);
+async function get(){let r=await fetch('/api/status',{cache:'no-store'});if(!r.ok)throw Error('Status unavailable');s=await r.json();render();updateGpibTile();record()}
+async function post(changes){try{let r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(changes)});let d=await r.json();if(!r.ok)throw Error(d.error||'Request failed');s=d;render();record();$('msg').textContent='Preset settings saved'}catch(e){$('msg').textContent=e.message}}
+function render(){if(!s)return;
+const modeBadge = $('mode_badge');
+modeBadge.textContent = !s.gpib_connected
+    ? 'GPIB DISCONNECTED'
+    : s.remote_control_enabled
+        ? 'LIVE GPIB · CONTROL ENABLED'
+        : 'LIVE GPIB · READ ONLY';
+
+$('control_status').textContent =
+    'Remote programming: ' +
+    (s.remote_control_enabled ? 'ENABLED' : 'DISABLED');
+$('control_status').style.color =
+    s.remote_control_enabled ? '#5ce5a4' : '';
+$('remote_enable').textContent = s.remote_control_enabled
+    ? 'Disable Remote Control'
+    : 'Enable Remote Control';
+$('remote_enable').disabled = false;
+$('mv').textContent=s.gpib_connected?s.measured_voltage.toFixed(2):'—';$('mi').textContent=s.gpib_connected?s.measured_current.toFixed(2):'—';$('mw').textContent=s.gpib_connected?s.measured_power.toFixed(2):'—';$('reg').textContent='REGULATION: '+s.regulation;$('gpib').textContent='GPIB: '+s.gpib_status;$('llo').checked=false;$('llo').disabled=true;$('llo_status').textContent=(s.front_panel_lockout_requested?'REQUESTED · ':'NOT REQUESTED · ')+s.front_panel_lockout_status;$('v').disabled=!(s.remote_control_enabled && s.gpib_connected && s.output===false);$('vr').disabled=!(s.remote_control_enabled && s.gpib_connected && s.output===false);$('i').disabled=!(s.remote_control_enabled && s.gpib_connected && s.output===false);$('ir').disabled=!(s.remote_control_enabled && s.gpib_connected && s.output===false);$('out').textContent='OUTPUT ON';
+$('out_off').textContent='OUTPUT OFF';
+$('out').disabled=s.output!==false||!(
+    s.output===false &&
+    s.remote_control_enabled &&
+    s.gpib_connected &&
+    s.voltage>=0 && s.voltage<=limits.voltage &&
+    s.current>=0.001 && s.current<=limits.current
+);
+$('out_off').disabled=!(s.gpib_connected && s.output===true);
+$('out').className='';
+const canAdjust =
+    s.remote_control_enabled &&
+    s.gpib_connected &&
+    s.output === false && !mobileBusy && !mobileBlocked;
+
+for(const id of ['vminus','vplus','iminus','iplus']){
+    $(id).disabled = !canAdjust;
+}
+renderMobileDrafts();$('setpoints').textContent=`Setpoints: ${s.voltage.toFixed(2)} V / ${s.current.toFixed(2)} A · Output: ${s.output === true ? 'ON' : s.output === false ? 'OFF' : 'UNKNOWN'} · Measured power: ${s.measured_power.toFixed(2)} W`;renderPresetButtons(canAdjust);}
+function renderPresetButtons(canAdjust){
+ for(const [key,id,field] of [['voltage_presets','vp','voltage'],['current_presets','cp','current']]){
+  const container=$(id);
+  const presets=s[key];
+  const buttons=Array.from(container.children);
+  if(buttons.length!==presets.length ||
+     !buttons.every((button,index)=>button.dataset.value===String(presets[index]))){
+   container.replaceChildren(...presets.map(value=>{
+    const button=document.createElement('button');
+    button.type='button';
+    button.dataset.value=String(value);
+    button.textContent=value+' '+(field==='voltage'?'V':'A');
+    button.onclick=()=>setpoint(field,value);
+    return button;
+   }));
+  }
+  Array.from(container.children).forEach((button,index)=>{
+   const value=presets[index];
+   button.classList.toggle('selected',Math.abs(draftValue(field)-value)<0.005);
+   button.disabled=!canAdjust||!Number.isFinite(value)||value<0||value>limits[field];
+   button.title=button.disabled?'Remote authorization, output OFF, and an in-range value required':'Stage preset';
+  });
+ }
+}
+async function toggleRemoteControl(){
+    if(mobileBusy||mobileBlocked){
+        $('msg').textContent='Control changes locked during or after failed APPLY';
+        return;
+    }
+    const enabling = !s.remote_control_enabled;
+
+    if(enabling && !confirmControl(
+        'Enable remote programming? The power supply output must be OFF. ' +
+        `Setpoint limits are ${limits.voltage} V and ${limits.current} A.`
+    )) return;
+
+    const authorization=await mobileAuthorize();
+    if(!authorization)return;
+
+    const button = $('remote_enable');
+    button.disabled = true;
+
+    try {
+        const action = enabling ? 'enable' : 'disable';
+
+        const response = await fetch('/api/control/' + action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                ...authorization
+            },
+            body: '{}'
+        });
+
+        if(response.status===401){
+            mobileAuthorization=null;
+            throw Error('Credentials rejected. Please authorize again.');
+        }
+        const result = await response.json();
+
+        if(!response.ok)
+            throw Error(result.error || 'Control request failed');
+
+        $('msg').textContent = result.message;
+        await get();
+
+    } catch(e) {
+        $('msg').textContent = e.message;
+    } finally {
+        button.disabled = false;
+    }
+}
+
+async function setpoint(k,v){
+ const x=Number(v);
+ const max=limits[k];
+
+ if(!['voltage','current'].includes(k)||
+    String(v).trim()===''||
+    !Number.isFinite(x)||x<0||x>max){
+  $('msg').textContent='Setting outside permitted range';
+  renderMobileDrafts();
+  return;
+ }
+
+ if(!s||!s.gpib_connected||
+    !s.remote_control_enabled||
+    s.output!==false||mobileBusy||mobileBlocked){
+  $('msg').textContent='Remote enabled and output OFF required';
+  renderMobileDrafts();
+  return;
+ }
+
+ mobileDrafts[k]=x;
+ mobileDirty[k]=Math.abs(x-s[k])>0.0005;
+ render();
+ showApplyFeedback(mobileDirty[k]?'Staged. Press APPLY SETTINGS to program the supply.':'Matches the programmed setting.');
+}
+function unusedOldSetpoint(k,v){$('msg').textContent='Read-only mode: hardware changes disabled';return;let x=Number(v),max=k==='voltage'?20:30;if(!Number.isFinite(x)||x<0||x>max){$('msg').textContent='Out of range';render();return}post({[k]:x})}function step(k,amount){
+ const value=draftValue(k);
+ if(!Number.isFinite(value))return;
+ setpoint(k,Math.round((value+amount)*1000)/1000);
+}async function turnOutputOff(){
+ if(!s || !s.gpib_connected || s.output!==true){
+  $('msg').textContent='Output is not confirmed ON';
+  return;
+ }
+ await toggle();
+}
+
+async function toggle(){
+    if(!s || !s.gpib_connected || typeof s.output!=='boolean'){
+        $('msg').textContent='Cannot verify hardware output state';
+        return;
+    }
+
+    const turningOn=s.output===false;
+    if(!turningOn && document.activeElement===$('out')){
+        $('msg').textContent='Use OUTPUT OFF to disable the supply';
+        return;
+    }
+    if(turningOn&&(pendingMobile()||mobileBusy||mobileBlocked)){
+        $('msg').textContent='Apply or reset pending adjustments first';
+        return;
+    }
+
+    if(turningOn){
+        if(!s.remote_control_enabled ||
+           !Number.isFinite(s.voltage) ||
+           !Number.isFinite(s.current) ||
+           s.voltage<0 || s.voltage>limits.voltage ||
+           s.current<0.001 || s.current>limits.current){
+            $('msg').textContent='Output ON safety conditions not met';
+            return;
+        }
+
+        if(!confirmControl(
+            'Enable HP 6033A output at '+s.voltage.toFixed(3)+' V / '+
+            s.current.toFixed(3)+' A current limit?'
+        )) return;
+    }
+
+    const authorization=await mobileAuthorize();
+    if(!authorization)return;
+
+    const button=$('out');
+    button.disabled=true;
+
+    try{
+        const endpoint=turningOn?'/api/control/set':'/api/control/output-off';
+        const payload=turningOn?{key:'output',value:true}:{};
+
+        const response=await fetch(endpoint,{
+            method:'POST',
+            credentials:'same-origin',
+            headers:{
+                'Content-Type':'application/json',
+                ...authorization
+            },
+            body:JSON.stringify(payload)
+        });
+
+        if(response.status===401){
+            mobileAuthorization=null;
+            throw Error('Credentials rejected. Please authorize again.');
+        }
+        const result=await response.json();
+
+        if(!response.ok)
+            throw Error(result.error||'Output command failed');
+
+        $('msg').textContent=turningOn
+            ? 'Output ON command verified by hardware readback'
+            : result.message;
+
+    }catch(e){
+        $('msg').textContent=e.message;
+    }finally{
+        try{await get()}catch(e){
+            $('msg').textContent='Status refresh failed: '+e.message;
+            button.disabled=true;
+        }
+    }
+}function edit(k){let key=k+'_presets',values=[...s[key]];let index=prompt('Which preset button (1–6)?');if(index===null)return;let n=Number(index);if(!Number.isInteger(n)||n<1||n>6)return alert('Choose 1 through 6');let raw=prompt('New '+k+' preset:',values[n-1]);if(raw===null)return;let v=Number(raw),max=k==='voltage'?20:30;if(raw.trim()===''||!Number.isFinite(v)||v<0||v>max)return alert('Value must be between 0 and '+max);values[n-1]=v;post({[key]:values})}function record(){window.hpSupplyChart?.update(s)}
+function clearHistory(){window.hpSupplyChart?.clear()}
+function drawGraph(){window.hpSupplyChart?.draw()}
+function updateGpibTile(){
+  if(!s)return;
+  const connected=s.gpib_connected===true;
+  const state=$('gpib-v2-state');
+  state.textContent=connected?'GPIB: CONNECTED':'GPIB: DISCONNECTED';
+  state.className='pill '+(connected?'ok':'warn');
+  $('gpib-v2-output').textContent=
+    !connected?'UNKNOWN':s.output===true?'ON':s.output===false?'OFF':'UNKNOWN';
+  if(connected){
+    $('gpib-v2-time').textContent=new Date().toLocaleTimeString();
+  }
+  $('gpib-v2-error').textContent=connected?'':(s.gpib_status||'');
+}
+async function refreshGpib(){
+  const b=$('gpib-test');
+  b.disabled=true;
+  b.textContent='Refreshing...';
+  try{
+    await get();
+  }catch(e){
+    $('gpib-v2-state').textContent='GPIB: UNKNOWN';
+    $('gpib-v2-state').className='pill warn';
+    $('gpib-v2-error').textContent=e.message;
+  }finally{
+    b.disabled=false;
+    b.textContent='Refresh Status';
+  }
+}
+window.addEventListener('resize',drawGraph);get().catch(e=>$('msg').textContent=e.message);setInterval(()=>get().catch(e=>{$('gpib').textContent='GPIB: UNKNOWN';$('msg').textContent=e.message}),2000);
+
+
+
+</script>
+<dialog id="mobile-auth-dialog" style="
+ background:#182536;color:#f1f5fa;border:1px solid #506078;
+ border-radius:12px;padding:22px;width:min(90vw,380px);
+ box-shadow:0 12px 50px #0009">
+ <form id="mobile-auth-form" action="/api/control/enable" method="post" autocomplete="on">
+  <h3 style="margin-top:0">HP 6033A Control Login</h3>
+  <p>Enter your remote-control credentials.</p>
+  <label for="mobile-auth-user">Username</label>
+  <input id="mobile-auth-user" name="username"
+   autocomplete="username" required
+   style="display:block;width:100%;box-sizing:border-box;
+   margin:6px 0 14px;padding:10px">
+  <label for="mobile-auth-pass">Password</label>
+  <input id="mobile-auth-pass" name="password" type="password"
+   autocomplete="current-password" required
+   style="display:block;width:100%;box-sizing:border-box;
+   margin:6px 0 18px;padding:10px">
+  {% set field = 'mobile-auth-pass' %}{% include "password_visibility.html" %}
+  <div style="display:flex;gap:12px;justify-content:flex-end">
+   <button type="button" id="mobile-auth-cancel">Cancel</button>
+   <button type="submit">Authorize</button>
+  </div>
+ </form>
+</dialog>
+<script>
+document.getElementById('mobile-auth-cancel')
+ .addEventListener('click',()=>{
+  document.getElementById('mobile-auth-dialog').close('cancel');
+ });
+</script>
+
+<script>const hpHead=document.querySelector('main.wrap>header.head'),hpNav=document.querySelector('nav[aria-label="Instrument suite"]'),hpBar=document.querySelector('#layout-toolbar'),hpTitle=hpHead.querySelector('h1'),hpBadge=hpHead.querySelector('#mode_badge'),hpLinks=[...hpHead.querySelectorAll('a')];hpHead.replaceChildren(hpTitle,...hpLinks,...hpNav.children,hpBadge,hpBar);hpNav.remove();hpHead.classList.add('suite-topbar');
+(function(config){
+ const $=id=>document.getElementById(id);
+ 
+const hpModern=!!document.querySelector('main.wrap'),hpOwner=document.querySelector(hpModern?'main.wrap':'#classic-layout-grid');
+let hpChartBox=hpModern?document.getElementById('history').closest('section'):document.createElement('div');
+hpChartBox.classList.add('hp-chart-box');hpChartBox.setAttribute('aria-label','Live chart');
+hpChartBox.innerHTML='<div class="hp-chart-heading"><h2>Live chart</h2><button id="hp-chart-clear" type="button">Clear chart</button></div><div class="hp-chart-series"><label><input type="checkbox" id="hp-series-v" checked> Voltage (V)</label><label><input type="checkbox" id="hp-series-i" checked> Current (A)</label><label><input type="checkbox" id="hp-series-p" checked> Power (W)</label></div><p id="hp-chart-status" role="status">Waiting for live supply readings.</p><canvas id="history" role="img" aria-label="Live voltage, current and power history"></canvas><p id="hp-chart-summary"></p><p class="hp-chart-note">Last five minutes of measured values from this page. Each trace uses its own scale. Power is calculated from measured voltage × current. No extra GPIB polling.</p>';
+if(!hpModern){hpChartBox.id='hp-supply-live-chart';hpOwner.insertBefore(hpChartBox,hpOwner.children[1]||null);}
+const hpAppearance=document.createElement(hpModern?'section':'div');hpAppearance.id='hp-chart-appearance';hpAppearance.className='card hp-chart-box';hpAppearance.setAttribute('aria-label','Display appearance');hpAppearance.innerHTML='<details><summary>Display appearance</summary><label class="hp-chart-option"><input id="hp-show-chart" type="checkbox" checked> Show live chart</label><p class="hp-chart-note">Use the chart checkboxes to show or hide Voltage, Current, and Power. These display preferences are saved in this browser for both supply views.</p></details>';hpOwner.insertBefore(hpAppearance,hpOwner.querySelector(':scope>footer'));
+
+ let grid=document.querySelector(config.root);
+ const tiles=[...grid.querySelectorAll(config.tiles)],names={};
+ tiles.forEach((tile,i)=>{
+  tile.dataset.tileId=tile.id||(config.prefix==='hp6033a-modern'?'tile-'+(i+1):'tile-'+i);
+  names[tile.dataset.tileId]=config.names?.[i]||(tile.id==='panel-wrap'?'Classic front panel':null)||tile.getAttribute('aria-label')||tile.querySelector('h1,h2,summary')?.textContent||'Section '+(i+1);
+  tile.classList.add('meter-tile');tile.dataset.defaultSpan=config.prefix==='tek'?(tile.classList.contains('wide')?7:tile.classList.contains('narrow')?5:tile.classList.contains('full')?12:6):12;
+ });
+ grid.classList.add('suite-grid');
+ const bar=document.querySelector(config.toolbar);
+ bar.innerHTML='<button id="layout-customize" class="layout-ui" type="button" aria-pressed="false">Customize layout</button><button id="layout-reset" class="layout-ui" type="button" hidden>Reset layout</button><button id="layout-show-all" class="layout-ui" type="button" hidden>Show all boxes</button><span id="layout-note" hidden>Drag a handle or use arrows to move. Set a width or drag the bottom-right corner to resize. Saved in this browser.</span>';
+ const emit=name=>document.dispatchEvent(new CustomEvent('suite-layout-'+name));
+ let editing=false,drag=null,resize=null;
+ const mode=window.matchMedia('(max-width:'+config.breakpoint+'px)');
+ const storageKey=()=> 'fischer-suite-layout-v1-'+config.prefix+'-'+(mode.matches?'mobile':'desktop');
+ const button=(text,label,fn)=>{const b=document.createElement('button');b.type='button';b.className='layout-ui';b.textContent=text;b.setAttribute('aria-label',label);b.addEventListener('click',fn);return b};
+ function save(){try{localStorage.setItem(storageKey(),JSON.stringify([...grid.children].filter(n=>tiles.includes(n)).map(n=>({id:n.dataset.tileId,width:Number(n.dataset.tileWidth)||12,height:Number(n.dataset.tileHeight)||0,hidden:n.dataset.userHidden==='true'}))))}catch{$('layout-note').textContent='Layout updated, but browser storage is unavailable.'}emit('save')}
+ function applySize(tile,width,height){
+  tile.dataset.tileWidth=width;tile.dataset.tileHeight=height;tile.style.setProperty('--tile-span',width);
+  tile.style.minHeight=height?height+'px':'';
+  const canvas=tile.querySelector('canvas');if(canvas&&height)canvas.style.height=Math.max(150,height-200)+'px';else if(canvas)canvas.style.height='';
+  const select=tile.querySelector('.tile-width');if(![...select.options].some(o=>Number(o.value)===width)){const o=document.createElement('option');o.value=width;o.textContent='Default';select.append(o)}select.value=width;const visibility=tile.querySelector('.tile-visibility');if(visibility)visibility.textContent=tile.dataset.userHidden==='true'?'Show':'Hide';
+ }
+ function restore(){
+  let saved=[];try{saved=JSON.parse(localStorage.getItem(storageKey())||'[]')}catch{}
+  if(!Array.isArray(saved))saved=[];
+  if(!saved.length){
+   try{
+    if(config.prefix.startsWith('hp34401a-')){saved=JSON.parse(localStorage.getItem('hp34401a-layout-v1-'+config.prefix.replace('hp34401a-','')+'-'+(mode.matches?'mobile':'desktop'))||'[]')}else if(config.prefix==='hp6033a-modern'){
+     const oldKey='hp6033a-layout-'+(mode.matches?'mobile':'desktop'),order=JSON.parse(localStorage.getItem(oldKey)||'[]'),widths=JSON.parse(localStorage.getItem(oldKey+'-widths')||'{}'),hidden=JSON.parse(localStorage.getItem(oldKey+'-visibility')||'{}');
+     saved=[...new Set([...order,...tiles.map(n=>n.dataset.tileId)])].map(id=>({id,width:widths[id]==='half'?6:12,hidden:hidden[id]===true,height:0}));
+    }else if(config.prefix==='tek'){
+     const order=JSON.parse(localStorage.getItem('fischer-tek-layout-v2')||'[]'),sizes=JSON.parse(localStorage.getItem('fischer-tek-panel-sizes-v1')||'{}');
+     saved=[...new Set([...order,...tiles.map(n=>n.dataset.tileId)])].map(id=>({id,width:sizes[id]?.width==='half'?6:sizes[id]?.width==='full'?12:Number(tiles.find(n=>n.dataset.tileId===id)?.dataset.defaultSpan)||12,height:sizes[id]?.height||0}));
+    }
+   }catch{}
+  }
+  const used=new Set();
+  for(const entry of saved){const tile=tiles.find(n=>n.dataset.tileId===entry.id);if(!tile||used.has(tile))continue;used.add(tile);grid.insertBefore(tile,grid.querySelector(':scope>footer'));tile.dataset.userHidden=String(entry.hidden===true);applySize(tile,[4,5,6,7,8,12].includes(entry.width)?entry.width:12,Number.isFinite(entry.height)?Math.max(0,Math.min(1200,entry.height)):0)}
+  tiles.filter(n=>!used.has(n)).forEach(n=>{grid.insertBefore(n,grid.querySelector(':scope>footer'));n.dataset.userHidden='false';applySize(n,Number(n.dataset.defaultSpan)||12,0)});
+ }
+ function move(tile,delta){
+  const visible=tiles.filter(n=>n.parentElement===grid).sort((a,b)=>[...grid.children].indexOf(a)-[...grid.children].indexOf(b)).filter(n=>!n.hidden&&n.dataset.userHidden!=='true'),index=visible.indexOf(tile),other=visible[index+delta];
+  if(!other)return;
+  if(delta<0)grid.insertBefore(tile,other);else grid.insertBefore(tile,other.nextSibling);
+  save();tile.querySelector('.tile-drag').focus();
+ }
+ tiles.forEach(tile=>{
+  const name=names[tile.dataset.tileId],tools=document.createElement('div');tools.className='tile-tools';
+  const handle=button('☰ '+name,'Drag '+name+' to move',()=>{});handle.classList.add('tile-drag');
+  handle.addEventListener('pointerdown',e=>{if(!editing||e.button!==0)return;e.preventDefault();handle.setPointerCapture(e.pointerId);drag={tile,handle,x:e.clientX,y:e.clientY,target:null,after:false};tile.classList.add('tile-moving')});
+  handle.addEventListener('pointermove',e=>{
+   if(!drag||drag.handle!==handle||Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<8)return;
+   tiles.forEach(n=>n.classList.remove('tile-target'));
+   const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.meter-tile');
+   drag.target=target&&target!==tile?target:null;
+   if(drag.target){const r=target.getBoundingClientRect();drag.after=e.clientY>r.top+r.height/2;target.classList.add('tile-target')}
+   if(e.clientY<70)window.scrollBy(0,-18);else if(e.clientY>window.innerHeight-70)window.scrollBy(0,18);
+  });
+  function drop(e){if(!drag||drag.handle!==handle)return;if(e.type!=='pointercancel'&&drag.target)grid.insertBefore(tile,drag.after?drag.target.nextSibling:drag.target);tiles.forEach(n=>n.classList.remove('tile-target','tile-moving'));drag=null;save()}
+  handle.addEventListener('pointerup',drop);handle.addEventListener('pointercancel',drop);
+  const up=button('↑','Move '+name+' earlier',()=>move(tile,-1)),down=button('↓','Move '+name+' later',()=>move(tile,1));
+  const widthLabel=document.createElement('label');widthLabel.textContent='Width ';
+  const select=document.createElement('select');select.className='tile-width';select.setAttribute('aria-label',name+' width');
+  for(const [v,label] of [[12,'Full'],[8,'Two thirds'],[6,'Half'],[4,'One third']]){const o=document.createElement('option');o.value=v;o.textContent=label;select.append(o)}
+  select.addEventListener('change',()=>{applySize(tile,Number(select.value),Number(tile.dataset.tileHeight)||0);save()});widthLabel.append(select);
+  const visibility=button('Hide','Hide or show '+name,()=>{tile.dataset.userHidden=String(tile.dataset.userHidden!=='true');visibility.textContent=tile.dataset.userHidden==='true'?'Show':'Hide';save()});
+  visibility.classList.add('tile-visibility');tools.append(handle,up,down,widthLabel,visibility);tile.prepend(tools);
+  const grip=button('↘','Resize '+name+'; arrow keys adjust width and height',()=>{});grip.classList.add('tile-resize');tile.append(grip);
+  grip.addEventListener('pointerdown',e=>{if(!editing||e.button!==0)return;e.preventDefault();grip.setPointerCapture(e.pointerId);const r=tile.getBoundingClientRect();resize={tile,x:e.clientX,y:e.clientY,width:r.width,height:r.height}});
+  grip.addEventListener('pointermove',e=>{if(!resize||resize.tile!==tile)return;const desired=(resize.width+e.clientX-resize.x)/grid.clientWidth*12;const widths=[4,6,8,12];const width=mode.matches?Number(tile.dataset.tileWidth)||12:widths.reduce((a,b)=>Math.abs(b-desired)<Math.abs(a-desired)?b:a);applySize(tile,width,Math.max(100,Math.min(1200,Math.round(resize.height+e.clientY-resize.y))))});
+  const end=()=>{if(resize?.tile===tile){resize=null;save()}};grip.addEventListener('pointerup',end);grip.addEventListener('pointercancel',end);
+  grip.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();let width=Number(tile.dataset.tileWidth)||12,height=Number(tile.dataset.tileHeight)||tile.offsetHeight;const widths=[4,6,8,12];if(e.key==='ArrowLeft')width=widths[Math.max(0,widths.indexOf(width)-1)];if(e.key==='ArrowRight')width=widths[Math.min(3,widths.indexOf(width)+1)];if(e.key==='ArrowUp')height-=40;if(e.key==='ArrowDown')height+=40;applySize(tile,width,Math.max(100,Math.min(1200,height)));save()});
+ });
+ $('layout-customize').addEventListener('click',()=>{
+  editing=!editing;document.body.classList.toggle('layout-editing',editing);$('layout-customize').textContent=editing?'Save layout':'Customize layout';$('layout-customize').setAttribute('aria-pressed',String(editing));$('layout-reset').hidden=!editing;$('layout-show-all').hidden=!editing;$('layout-note').hidden=!editing;if(!editing)save();
+ });
+ $('layout-reset').addEventListener('click',()=>{try{localStorage.removeItem(storageKey())}catch{}tiles.forEach(n=>{grid.insertBefore(n,grid.querySelector(':scope>footer'));n.dataset.userHidden='false';applySize(n,Number(n.dataset.defaultSpan)||12,0)});emit('reset');save()});
+ $('layout-show-all').addEventListener('click',()=>{tiles.forEach(n=>{n.dataset.userHidden='false';const b=n.querySelector('.tile-visibility');if(b)b.textContent='Hide'});emit('showall');save()});mode.addEventListener('change',()=>{restore();emit('load')});restore();
+})({"root":"main.wrap","tiles":":scope>section.card","toolbar":"#layout-toolbar","prefix":"hp6033a-modern","breakpoint":700,"names":["Live readings","Connection status","Controller diagnostics","Voltage presets","Current limit presets","Manual settings","Live history","Output control","Front panel lockout"]});(function(){const main=document.querySelector('main.wrap');function storageKey(){return 'hp6033a-layout-'+(matchMedia('(max-width:700px)').matches?'mobile':'desktop')}
+  // Independent Voltage / Current / Power layout controls.
+  const readingsPanel=main.querySelector('section.readings');
+  const readingIds=['mv','mi','mw'];
+
+  const readingTiles=readingIds.map(id=>{
+    const value=document.getElementById(id);
+    const tile=value.closest('.reading');
+    tile.dataset.readingId=id;
+
+    const controls=document.createElement('div');
+    controls.className='reading-layout-controls';
+
+    const left=document.createElement('button');
+    left.type='button';
+    left.textContent='←';
+
+    const right=document.createElement('button');
+    right.type='button';
+    right.textContent='→';
+
+    const toggle=document.createElement('button');
+    toggle.type='button';
+    toggle.textContent='Hide';
+    toggle.className='reading-toggle';
+
+    controls.append(left,right,toggle);
+    tile.prepend(controls);
+
+    left.onclick=()=>{
+      const previous=tile.previousElementSibling;
+      if(previous&&previous.classList.contains('reading')){
+        readingsPanel.insertBefore(tile,previous);saveReadingLayout();
+      }
+    };
+
+    right.onclick=()=>{
+      const next=tile.nextElementSibling;
+      if(next&&next.classList.contains('reading')){
+        readingsPanel.insertBefore(next,tile);saveReadingLayout();
+      }
+    };
+
+    toggle.onclick=()=>{
+      tile.dataset.readingHidden=
+        tile.dataset.readingHidden==='true'?'false':'true';
+      updateReadingVisibility();saveReadingLayout();
+    };
+
+    return tile;
+  });
+
+  function updateReadingVisibility(){
+    readingTiles.forEach(tile=>{
+      const hidden=tile.dataset.readingHidden==='true';
+      tile.classList.toggle('reading-hidden',hidden);
+      tile.querySelector('.reading-toggle').textContent=
+        hidden?'Show':'Hide';
+    });
+  }
+
+  function saveReadingLayout(){
+    const order=[...readingsPanel.querySelectorAll('.reading')]
+      .map(tile=>tile.dataset.readingId);
+
+    const hidden={};
+    readingTiles.forEach(tile=>{
+      hidden[tile.dataset.readingId]=
+        tile.dataset.readingHidden==='true';
+    });
+
+    localStorage.setItem(storageKey()+'-readings',JSON.stringify({
+      order:order,
+      hidden:hidden
+    }));
+  }
+
+  function loadReadingLayout(){
+    let saved={};
+
+    try{
+      saved=JSON.parse(
+        localStorage.getItem(storageKey()+'-readings')||'{}'
+      );
+    }catch(e){}
+
+    const lookup=new Map(
+      readingTiles.map(tile=>[tile.dataset.readingId,tile])
+    );
+
+    const order=Array.isArray(saved.order)
+      ?saved.order.filter(id=>lookup.has(id))
+      :[];
+
+    [...new Set([...order,...readingIds])].forEach(id=>{
+      readingsPanel.appendChild(lookup.get(id));
+    });
+
+    readingTiles.forEach(tile=>{
+      tile.dataset.readingHidden=
+        saved.hidden&&saved.hidden[tile.dataset.readingId]===true
+          ?'true':'false';
+    });
+
+    updateReadingVisibility();
+  }
+
+  function resetReadingLayout(){
+    localStorage.removeItem(storageKey()+'-readings');
+    loadReadingLayout();
+  }
+
+
+document.addEventListener('suite-layout-save',saveReadingLayout);document.addEventListener('suite-layout-load',loadReadingLayout);document.addEventListener('suite-layout-reset',resetReadingLayout);document.addEventListener('suite-layout-showall',()=>{readingTiles.forEach(n=>n.dataset.readingHidden='false');updateReadingVisibility();saveReadingLayout()});loadReadingLayout();})();(function(){const host=location.hostname;document.querySelectorAll('.suite-topbar a,nav[aria-label="Instrument navigation"] a').forEach(a=>a.classList.add('suite-tool-link'));const tekTitle=document.querySelector('.suite-topbar h1');if(tekTitle?.textContent.includes('Tektronix')){const back=document.getElementById('suiteLink');if(back){back.textContent='HP 6033A';back.href=location.protocol+'//'+host+'/'}const meter=document.createElement('a');meter.href=location.protocol+'//'+host+'/multimeter/classic';meter.textContent='HP 34401A';meter.className='suite-tool-link';document.querySelector('.suite-topbar').insertBefore(meter,document.querySelector('.suite-topbar .suite-layoutbar'))}const meterNav=document.querySelector('nav[aria-label="Instrument navigation"]');if(meterNav){const supply=meterNav.querySelector('a'),group=document.createElement('div');group.className='suite-tool-links';supply.before(group);group.append(supply);const tek=document.createElement('a');tek.href=location.protocol+'//'+host+':8081/';tek.textContent='Tektronix TDS 3032B';tek.className='suite-tool-link';group.append(tek)}})();</script><script>
+(function(){
+ const chart=document.getElementById('history'),box=chart.closest('.hp-chart-box'),show=document.getElementById('hp-show-chart'),ctx=chart.getContext('2d');
+ const definitions=[['v','Voltage','V','#62ded0'],['i','Current','A','#72bdff'],['p','Power','W','#ffc56b']];
+ let samples=[],connected=false,lastSeen=0,enabled={v:true,i:true,p:true},visible=true;
+ try{const p=JSON.parse(localStorage.getItem('hp6033a-chart-appearance-v1')||'{}');if(typeof p.visible==='boolean')visible=p.visible;for(const [k]of definitions)if(typeof p[k]==='boolean')enabled[k]=p[k]}catch{}
+ const fmt=v=>v===0?'0':Math.abs(v)<.001||Math.abs(v)>99999?v.toExponential(3):Number(v.toPrecision(5)).toString();
+ function save(){try{localStorage.setItem('hp6033a-chart-appearance-v1',JSON.stringify({visible,...enabled}))}catch{}}
+ function draw(){
+  if(box.hidden||!ctx)return;
+  const width=Math.max(260,chart.clientWidth),height=Math.max(240,chart.clientHeight),dpr=devicePixelRatio||1;
+  chart.width=Math.round(width*dpr);chart.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,width,height);
+  const now=Date.now();samples=samples.filter(p=>p.t>=now-300000).slice(-350);
+  const selected=definitions.filter(([k])=>enabled[k]),age=(now-lastSeen)/1000;
+  document.getElementById('hp-chart-status').textContent=!selected.length?'No traces selected — enable Voltage, Current or Power.':!samples.length?'Waiting for live supply readings.':connected&&age<6?'LIVE — measured supply values':'DISCONNECTED / STALE — retained measurement history';
+  ctx.font='12px system-ui';ctx.fillStyle='#becbd1';
+  if(!selected.length){ctx.fillText('No traces selected',20,40);document.getElementById('hp-chart-summary').textContent='';return}
+  if(!samples.length){ctx.fillText('No measured samples yet',20,40);document.getElementById('hp-chart-summary').textContent='';return}
+  const left=76,right=width-12,bottom=height-28,row=(height-36)/selected.length;
+  const summary=[];
+  selected.forEach(([key,title,unit,color],index)=>{
+   const top=8+index*row,base=top+row-28,values=samples.map(p=>p[key]),min=Math.min(...values),max=Math.max(...values),pad=(max-min)*.1||Math.max(Math.abs(max)*.01,.001),lo=min-pad,hi=max+pad;
+   const x=t=>left+(right-left)*Math.max(0,1-(now-t)/300000),y=v=>base-(v-lo)/(hi-lo)*(base-top-17);
+   ctx.strokeStyle='#3d505d';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left,top+17);ctx.lineTo(left,base);ctx.lineTo(right,base);ctx.stroke();
+   ctx.fillStyle=color;ctx.fillText(title+' ('+unit+')',left,top+10);ctx.fillStyle='#becbd1';ctx.fillText(fmt(hi),3,top+22);ctx.fillText(fmt(lo),3,base+3);
+   ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();let previous=null;
+   for(const p of samples){if(!previous||p.t-previous.t>10000)ctx.moveTo(x(p.t),y(p[key]));else ctx.lineTo(x(p.t),y(p[key]));previous=p}ctx.stroke();
+   const latest=samples[samples.length-1];ctx.fillStyle=color;ctx.beginPath();ctx.arc(x(latest.t),y(latest[key]),2.5,0,Math.PI*2);ctx.fill();
+   summary.push(title+': '+fmt(latest[key])+' '+unit+' (min '+fmt(min)+', max '+fmt(max)+')');
+  });
+  ctx.fillStyle='#becbd1';ctx.fillText('5 min ago',left,height-7);ctx.textAlign='right';ctx.fillText('Now',right,height-7);ctx.textAlign='left';
+  document.getElementById('hp-chart-summary').textContent=summary.join(' · ');chart.setAttribute('aria-label',summary.join('. '));
+ }
+ function update(s){
+  connected=s?.gpib_connected===true;
+  if(connected&&Number.isFinite(s.measured_voltage)&&Number.isFinite(s.measured_current)){
+   const power=s.measured_voltage*s.measured_current;
+   if(Number.isFinite(power)){lastSeen=Date.now();samples.push({t:lastSeen,v:s.measured_voltage,i:s.measured_current,p:power});samples=samples.slice(-350)}
+  }draw();
+ }
+ function visibility(){box.hidden=!visible;show.checked=visible;draw()}
+ show.addEventListener('change',()=>{visible=show.checked;save();visibility()});
+ for(const [k]of definitions){const input=document.getElementById('hp-series-'+k);input.checked=enabled[k];input.addEventListener('change',()=>{enabled[k]=input.checked;save();draw()})}
+ document.getElementById('hp-chart-clear').addEventListener('click',()=>{samples=[];draw()});
+ new ResizeObserver(draw).observe(chart);
+ window.hpSupplyChart={update,draw,clear(){samples=[];draw()},disconnect(){connected=false;draw()}};
+ window.addEventListener('storage',e=>{if(e.key!=='hp6033a-chart-appearance-v1')return;try{const p=JSON.parse(e.newValue||'{}');visible=p.visible!==false;for(const[k]of definitions){enabled[k]=p[k]!==false;document.getElementById('hp-series-'+k).checked=enabled[k]}visibility()}catch{}});
+ visibility();setInterval(draw,1000);
+})();
+</script></body></html>

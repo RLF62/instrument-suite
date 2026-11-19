@@ -1,0 +1,37 @@
+/* Classic-only mobile layout: keep the layout-editor wrapper at panel width.
+   The original v7 rule targeted body > main.instrument before it was wrapped. */
+@media (max-width: 700px) {
+  body > #classic-layout-grid.suite-classic-root {
+    width: 100%;
+    min-width: 0;
+    max-width: 1120px;
+    margin: 0 auto;
+    align-self: stretch;
+    order: 1;
+  }
+
+  body > nav.suite-topbar {
+    width: 100%;
+    gap: 6px !important;
+    margin: 0 auto 10px !important;
+  }
+
+  body > nav.suite-topbar a {
+    width: auto;
+    max-width: 100%;
+    margin: 0;
+    order: 0;
+    text-align: center;
+  }
+
+  body > nav.suite-topbar .suite-tool-links {
+    flex: 1 1 100%;
+    justify-content: center;
+    gap: 6px;
+    order: 1;
+  }
+
+  body > nav.suite-topbar #layout-customize {
+    font-size: 12px;
+  }
+}

@@ -21,7 +21,10 @@ def bundle(root,target):
     return hashlib.sha256(target.read_bytes()).hexdigest()
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--supply-source',type=Path,required=True);p.add_argument('--scope-source',type=Path,required=True);args=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--supply-source',type=Path,default=SOURCE/'controllers/supply')
+    p.add_argument('--scope-source',type=Path,default=SOURCE/'controllers/scope')
+    args=p.parse_args()
     output=SOURCE/'approved';(output/'packages').mkdir(parents=True,exist_ok=True)
     rows={}
     with tempfile.TemporaryDirectory() as d:

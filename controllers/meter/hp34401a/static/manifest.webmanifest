@@ -1,0 +1,24 @@
+{
+  "name": "HP 34401A Multimeter Controller",
+  "short_name": "HP 34401A",
+  "start_url": "/multimeter/classic",
+  "scope": "/multimeter/",
+  "display": "standalone",
+  "background_color": "#101723",
+  "theme_color": "#101723",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "id": "/multimeter/classic"
+}

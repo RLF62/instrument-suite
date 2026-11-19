@@ -1,0 +1,10 @@
+HP 34401A web-controller panel and screenshots
+Photograph: HP 34401A Multimeter by Afandrf.
+Source: https://commons.wikimedia.org/wiki/File:HP_34401A_Multimeter.jpg
+Prior perspective/shadow edits attributed to Pittigrilli.
+License: CC BY-SA 4.0 International
+https://creativecommons.org/licenses/by-sa/4.0/
+Application modifications: front-panel perspective/crop, removal of plugged leads, cleared display, rounded perimeter presentation, digital reading and optional control overlays.
+The modified panel and screenshots incorporating it remain CC BY-SA 4.0. No endorsement is implied.
+The local HTML user manual and screenshots are provided under CC BY-SA 4.0. Manufacturer documentation retains its own copyright and is linked externally.
+Screenshots captured from the actual test application on 15 November 2026. OVLD in Continuity is the actual open-input overload state; no illustrative readings were substituted.

@@ -54,8 +54,11 @@ prepare reviewed wheel-only dependency locks. The installer invokes pip as `pi`
 with `--require-hashes --only-binary=:all:` in permanent isolated runtimes. It
 never runs controller packages or package installation scripts as root.
 
-Each controller keeps its own repository/release history. The suite manifest
-selects compatible component releases. A meter-only update downloads and
+Controller source and new release archives live in instrument-suite. Historical
+signed manifests still reference the earlier controller repositories; their
+assets remain available for recovery. Existing installations must install the
+transition release before accepting a suite-only controller asset manifest.
+The suite manifest selects compatible component versions. A meter-only update downloads and
 restarts the meter only; shared-runtime changes require safety checks for all
 affected controllers. New component types require a reviewed adapter/specification,
 not a replacement of the transaction engine.
