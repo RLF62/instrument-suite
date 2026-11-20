@@ -89,3 +89,18 @@ class CatalogTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError,'Existing service'):activate.perform('meter','start',{'job':'b'*32})
                 run.assert_not_called()
             self.assertEqual(existing.read_text(),'existing service')
+
+class SignedCatalogDisplayTests(unittest.TestCase):
+    def test_installed_counter_is_listed_once_and_generator_is_not_duplicated(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d); registry=root/'registry.json'
+            registry.write_text(json.dumps({'instruments':{
+                'generator':{'port':8084}, 'counter':{'port':8085}}}))
+            catalog={'version':'signed','tools':{
+                'generator':{'name':'HP 33120A Function Generator','description':'Generator'},
+                'counter':{'name':'HP 5385A Frequency Counter','description':'Counter'}}}
+            with patch.object(engine,'STATE',root),patch.object(engine,'REGISTRY',registry),patch.object(engine,'catalog',return_value=catalog),patch.object(engine,'removal_policy',return_value=(True,'')):
+                rows=catalog_service.Manager().status()['tools']
+            self.assertEqual([row['id'] for row in rows],['generator','counter'])
+            self.assertTrue(all(row['installed'] for row in rows))
+            self.assertEqual(rows[1]['name'],'HP 5385A Frequency Counter')

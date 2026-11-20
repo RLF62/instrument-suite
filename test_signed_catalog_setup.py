@@ -38,6 +38,7 @@ class SignedCatalogSetupTests(unittest.TestCase):
    if fail:
     if existing:
      self.assertEqual((root/'manager_engine.py').read_text(),'previous manager')
+     self.assertEqual((root/'catalog.json').read_text(),'{"version":"previous","tools":{}}')
      self.assertEqual(unit.read_text(),'previous unit');self.assertEqual(sudoers.read_text(),'previous sudoers')
      self.assertFalse((root/'activate.py').exists())
     else:self.assertFalse(root.exists());self.assertFalse(unit.exists());self.assertFalse(sudoers.exists())
@@ -45,8 +46,7 @@ class SignedCatalogSetupTests(unittest.TestCase):
     if not existing:self.assertNotIn(('systemctl','stop','fischer-suite-manager'),calls)
     self.assertEqual((root/'activate.py').read_text(),'# signed fixture activate.py\n')
     self.assertIn('install-signed',sudoers.read_text());self.assertIn('remove-signed',sudoers.read_text())
-    if existing:self.assertEqual(json.loads((root/'catalog.json').read_text())['version'],'previous')
-    else:self.assertEqual(set(json.loads((root/'catalog.json').read_text())['tools']),{'meter','supply','scope','generator','counter'})
+    self.assertEqual(set(json.loads((root/'catalog.json').read_text())['tools']),{'meter','supply','scope','generator','counter'})
  def test_fresh_setup_needs_no_legacy_zip_assets(self):self.exercise(existing=False)
  def test_existing_gateway_and_controllers_are_not_restarted(self):self.exercise()
  def test_failed_refresh_restores_helper_unit_and_authorization(self):self.exercise(fail=True)

@@ -79,7 +79,9 @@ def main(signed_only=False):
         if not signed_only:
             shutil.copytree(SOURCE/'approved/packages',ROOT/'packages',dirs_exist_ok=True)
             shutil.copy2(SOURCE/'approved/catalog.json',ROOT/'catalog.json')
-        elif not (ROOT/'catalog.json').exists():
+        else:
+            # The signed catalog must track the current tool set; a prior four-tool
+            # catalog silently hid the counter and made the new manager unusable.
             (ROOT/'catalog.json').write_text(json.dumps(metadata,indent=2)+'\n')
         # Root-owned code and approved packages cannot be changed by a web process.
         for folder,dirs,files in os.walk(ROOT):
