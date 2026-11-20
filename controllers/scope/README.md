@@ -159,3 +159,7 @@ The controller has 26 Python tests and seven frontend checks. The signed suite a
 Physical Android touch behavior and the Sony example recipes remain unverified; the incomplete elevator recipe cannot be recalled. `verify_live.py` is an opt-in hardware test that temporarily changes scope settings and must not run during an acquisition you need to preserve. Do not run competing controller hosts against the same scope.
 
 Runtime connection settings, personal presets, credentials, captures and private backups are excluded from Git.
+
+## Classic and Modern displays
+
+The photographed front panel is available at `/classic`; the Modern dashboard is at `/`. Both use the shared suite header. Classic embeds the waveform preview and keeps its display settings, cursors, measurements, and scope readback. The photographed Print button opens a browser print preview containing only a fresh scope screen PNG, using the printer selected on the viewing device. The Trigger and Vertical Menu buttons open the matching scope controls from the Modern dashboard for the selected channel. The old `/static/classic-front-panel-test.html` URL remains available for existing bookmarks.

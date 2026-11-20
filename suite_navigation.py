@@ -39,7 +39,8 @@ TITLES = {'supply':'HP 6033A POWER SUPPLY','meter':'HP 34401A MULTIMETER',
 LABELS = {'supply':'HP 6033A','meter':'HP 34401A','scope':'Tektronix',
           'generator':'HP 33120A','counter':'HP 5385A'}
 VIEWS = {'supply':('/classic-dual','/'),'meter':('/multimeter/classic','/multimeter/modern'),
-         'generator':('/generator/classic','/generator/modern'),'counter':('/classic','/modern')}
+         'generator':('/generator/classic','/generator/modern'),'counter':('/classic','/modern'),
+         'scope':('/classic','/')}
 DOCS = {'supply':'/docs/','meter':'/multimeter/assets/docs/index.html','scope':'/docs/',
         'generator':'/generator/assets/docs.html','counter':'/docs/'}
 HEADER_CSS = """<style>
@@ -91,7 +92,7 @@ def header_html(current, path, hostname, records):
     if current not in TITLES:return ''
     def view_href(tool, view):
         return view+('?header=2' if tool=='counter' and view=='/modern' else '')
-    classic=path=='/classic-dual' or path=='/classic' or path.endswith('/classic')
+    classic=path=='/classic-dual' or path=='/classic' or path.endswith('/classic') or (current=='scope' and path=='/static/classic-front-panel-test.html')
     def origin(record):
         scheme=record.get('scheme','http')
         port=record.get('port')
@@ -108,8 +109,8 @@ def header_html(current, path, hostname, records):
     left.append(link('Add instruments',base+'/api/suite/manager'))
     right=[link('Suite Home',here.scheme+'://'+hostname+':8080/')]
     if current in VIEWS:
-        right.extend(link(label,base+view_href(current,view),path==view) for label,view in zip(('Classic','Modern'),VIEWS[current]))
-    elif current=='scope':right.append(link('Setup',base+'/setup'))
+        right.extend(link(label,base+view_href(current,view),(path==view or (current=='scope' and view=='/classic' and path=='/static/classic-front-panel-test.html'))) for label,view in zip(('Classic','Modern'),VIEWS[current]))
+    if current=='scope':right.append(link('Setup',base+'/setup'))
     right.append(link('Documentation',base+DOCS[current]))
     return HEADER_CSS+'<div id="suite-unified-header" role="navigation" aria-label="Instrument navigation"><div class="suite-links">'+''.join(left)+'</div><strong>'+TITLES[current]+'</strong><div class="suite-actions">'+''.join(right)+'</div></div>'
 

@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tektronix TDS 3032B · Classic</title>
+<style>
+:root{color-scheme:dark;font:16px system-ui,sans-serif;background:#0c1420;color:#eff7ff}
+*{box-sizing:border-box}body{margin:0;padding:18px}main{max-width:2100px;margin:auto}
+a{color:#8de4e2}h1{font-size:1.45rem;margin:.3em 0}p{line-height:1.5;color:#bcd0df}
+.toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.toolbar button,.dialog button{border:1px solid #638994;border-radius:7px;padding:9px 13px;min-height:42px;background:#263745;color:#efffff;cursor:pointer}
+.toolbar button:hover,.dialog button:hover{background:#37536a}button:disabled{opacity:.6;cursor:wait}
+#feedback{min-height:1.5em;color:#98e6d2;white-space:pre-wrap}#feedback.error{color:#ffaaa4}
+.panel{position:relative;width:100%;line-height:0}
+.panel>img{display:block;width:100%;height:auto;clip-path:polygon(1.2% 1.8%,96.7% 1.8%,98.4% 2.3%,99.15% 4.3%,99.15% 94.5%,98% 97.5%,95% 98%,2% 98%,.7% 96%,.7% 5%,1% 2.7%)}
+#scopeScreen{position:absolute;left:11.05%;top:16.7%;width:38.58%;height:58.18%;border:0;background:#080d12;z-index:1}
+.hotspot{position:absolute;z-index:2;left:calc(var(--x)*100%/2048);top:calc(var(--y)*100%/1032);width:calc(var(--w)*100%/2048);height:calc(var(--h)*100%/1032);padding:0;border:2px solid transparent;background:transparent;border-radius:20%;cursor:pointer;color:transparent;font-size:0;line-height:1}
+.hotspot:hover,.hotspot:focus-visible{border-color:#4eefd9;background:#31c8ae35;outline:none}
+.hotspot.selected{border-color:#42efdb;background:#31c8ae33}
+#settingsShade[hidden],#knobShade[hidden]{display:none}
+#settingsShade{position:fixed;z-index:900;right:14px;top:84px;width:min(445px,calc(100vw - 28px));height:min(76dvh,850px);max-height:calc(100dvh - 92px);min-width:280px;min-height:250px;overflow:auto;resize:both;background:#152635;border:1px solid #60828e;border-radius:12px;box-shadow:0 18px 45px #000b}
+#settingsShade header{position:sticky;top:0;z-index:2}
+#settingsShade .size-control{padding:10px 15px;background:#1d3443;border-bottom:1px solid #4d7080;color:#e6f8f6;display:grid;gap:6px}
+#settingsShade .size-control input{width:100%;accent-color:#65dbcf}
+#settingsControls{padding:12px}
+#settingsControls .appearance{margin:0;padding:0;border:0;background:transparent}
+#settingsControls .appearance-grid{display:flex;flex-wrap:wrap;gap:10px;padding:5px}
+#settingsControls fieldset{display:flex;flex-wrap:wrap;gap:8px;border:1px solid #4d6b7a;border-radius:8px;margin:0;padding:10px;width:100%;min-width:0}
+#settingsControls legend{font-weight:700;color:#b5e9e7}
+#settingsControls label{display:grid;gap:4px;min-width:120px;color:#e3f2f3;font-size:14px}
+#settingsControls .toggle{display:flex;align-items:center;gap:7px;min-width:0;min-height:35px}
+#settingsControls .toggle input{width:18px;height:18px;accent-color:#58d9d2}
+#settingsControls input[type=color]{width:72px;height:40px;background:#233c4c;border:1px solid #70909b;border-radius:5px}
+#settingsControls input[type=range]{width:145px;accent-color:#5bd7ce}
+#settingsControls input[type=text],#settingsControls select{min-height:36px;max-width:100%;color:#f1fcff;background:#23394b;border:1px solid #65808e;border-radius:5px;padding:5px}
+#settingsControls button{min-height:38px;padding:7px 10px;color:white;background:#294958;border:1px solid #7797a2;border-radius:5px;cursor:pointer}
+#settingsControls .preset-line{display:flex;flex-wrap:wrap;gap:8px}
+#settingsControls .preset-line[hidden]{display:none}
+#settingsControls .option-help,#settingsControls small{color:#bacfd5;line-height:1.4}
+#settingsNotice{color:#fcb2a7;padding:0 12px 12px;min-height:1em}
+
+#settingsShade header{height:55px;display:flex;align-items:center;justify-content:space-between;padding:5px 18px;background:#182736}
+#settingsShade .hint{font-size:14px;color:#c3dee0}
+#settingsShade button{padding:8px 16px;color:white;background:#24505a;border:1px solid #6cacb5;border-radius:6px}
+#knobShade{position:fixed;inset:0;z-index:950;background:#07111abb;display:grid;place-items:center;padding:16px}
+.dialog{background:#1b2d3b;border:1px solid #61848e;border-radius:12px;max-width:420px;width:100%;padding:20px;line-height:1.5}
+.dialog label{display:block;margin:10px 0}.dialog input{width:100%;padding:10px;background:#12212c;color:white;border:1px solid #73909b;border-radius:5px;font-size:18px}
+.dialog .actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+@media(max-width:800px){body{padding:8px}.hotspot{border-width:1px}h1{font-size:1.2rem}}
+
+#liveReadouts{--readout-font-size:14px;max-width:1200px;margin:16px auto 30px;display:flex;flex-direction:column;align-items:stretch;gap:12px}
+#liveReadouts.auto-size{align-items:flex-start}
+#liveReadouts.auto-size section{width:max-content;max-width:100%;height:auto}
+#liveReadouts section{background:#172837;border:1px solid #42606b;border-left:4px solid #ed7474;border-radius:8px;padding:12px 15px;min-width:0}
+#liveReadouts h2{font-size:calc(var(--readout-font-size) + 2px);margin:0 0 8px}
+#liveReadouts pre,#liveReadouts p{font:var(--readout-font-size)/1.6 system-ui,sans-serif;color:#dceef3;white-space:pre-wrap;margin:0;overflow-wrap:anywhere}
+#liveReadouts #classicCursor{font-size:var(--readout-font-size);line-height:1.6;white-space:pre-line}
+#liveReadouts #classicCursor[hidden]{display:none}
+#liveReadouts #classicWaveform{display:block;color:#91e6d1;font-size:var(--readout-font-size);line-height:1.6;margin:10px 0 4px}
+
+#measurementPopup[hidden]{display:none}
+#measurementPopup{position:fixed;z-index:905;right:14px;top:84px;width:min(530px,calc(100vw - 28px));height:min(78dvh,950px);max-height:calc(100dvh - 92px);min-height:280px;min-width:290px;resize:both;display:flex;flex-direction:column;background:#152635;border:1px solid #62848e;border-radius:12px;box-shadow:0 18px 45px #000b;overflow:hidden}
+#measurementPopup header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 14px;background:#1d3443;min-height:48px}
+#measurementPopup button{min-height:35px;padding:6px 12px;border:1px solid #7ca9ae;border-radius:5px;background:#294a56;color:white;cursor:pointer}
+#measurementPopup p{margin:0;padding:9px 14px;color:#c6e6e4;font-size:13px;line-height:1.4}
+#measurementFrame{flex:1;width:100%;min-height:0;border:0;background:#101b29}
+
+#settingsShade{resize:none;--settings-font-size:15px;font-size:var(--settings-font-size);padding-bottom:35px}
+#settingsShade header,#settingsShade .size-control,#settingsControls,#settingsNotice{font-size:inherit}
+#settingsControls label,#settingsControls .option-help,#settingsControls small{font-size:inherit}
+#settingsControls input,#settingsControls select,#settingsControls button,#settingsShade header button{font-size:inherit}
+#settingsControls input[type=text],#settingsControls select,#settingsControls button{min-height:2.4em}
+#settingsResizeGrip{position:absolute;bottom:0;left:0;z-index:6;width:44px;height:38px;min-height:0!important;padding:0!important;border:0!important;background:#314f5c!important;color:#b9e9e8!important;border-radius:0 8px 0 0!important;cursor:nesw-resize!important;touch-action:none;user-select:none}
+#settingsResizeGrip::after{content:'◢';display:block;transform:rotate(90deg);font-size:24px;line-height:36px}
+#settingsResizeGrip:focus-visible{outline:2px solid #7bf1df;outline-offset:-3px}
+#measurementPopup{resize:none;--measure-font-size:14px;font-size:var(--measure-font-size);min-height:360px}
+#measurementPopup header,#measurementPopup header button,#measurementPopup p,#measurementPopup .measure-size-control{font-size:inherit}
+#measurementPopup .measure-size-control{display:grid;gap:5px;padding:7px 13px;background:#203746;color:#dceff0}
+#measurementPopup .measure-size-control input[type=range]{width:100%;accent-color:#67d9d0}
+#measurementResizeGrip{position:absolute;bottom:0;left:0;z-index:10;width:44px;height:38px;min-height:0!important;padding:0!important;border:0!important;background:#31505c!important;color:#b9e9e8!important;border-radius:0 8px 0 0!important;cursor:nesw-resize!important;touch-action:none;user-select:none}
+#measurementResizeGrip::after{content:'◢';display:block;transform:rotate(90deg);font-size:24px;line-height:36px}
+#measurementResizeGrip:focus-visible{outline:2px solid #7bf1df;outline-offset:-3px}
+</style></head>
+<body><main>
+<div class="toolbar"><button id="displaySettings" type="button">Customize scope screen</button><span id="feedback" role="status" aria-live="polite">Loading live display…</span></div>
+<div class="panel" id="panel">
+<img src="/static/tek-classic-panel.jpg" alt="Tektronix TDS 3032B front panel; interactive controls overlaid" width="2048" height="1032">
+<iframe id="scopeScreen" title="Live simulated scope display with Option 10 settings" src="/static/trace-speed-test.html?classic_embed=1&amp;mode=trace&amp;v=14"></iframe>
+</div>
+<div id="liveReadouts">
+<section><h2>Scope settings · live readback</h2><pre id="classicReadback">Waiting for scope settings…</pre></section>
+<section><h2>Cursors and waveform updates</h2><div id="classicCursor" hidden></div><strong id="classicWaveform">Awaiting live waveform…</strong><p id="classicTransfer"></p></section>
+</div>
+<div id="settingsShade" hidden role="region" aria-label="Scope screen settings">
+<header><strong>Customize scope screen</strong><button type="button" id="closeSettings">Close</button></header>
+<label class="size-control">Scope photo and screen size <span id="screenSizeLabel">100%</span><input id="screenSize" type="range" min="40" max="100" step="5" value="100"></label>
+<label class="size-control">Information text size <span id="readoutFontLabel">14 px</span><input id="readoutFont" type="range" min="12" max="24" step="1" value="14"></label>
+<label class="size-control" style="display:flex;align-items:center"><input id="autoReadoutBox" type="checkbox" checked style="width:20px;height:20px"> Auto size information boxes to their text</label>
+<label class="size-control" style="display:flex;align-items:center"><input id="autoSettingsFont" type="checkbox" checked style="width:20px;height:20px"> Scale settings text when resized</label>
+<label class="size-control">Settings text size <span id="settingsFontLabel">15 px</span><input id="settingsFont" type="range" min="12" max="24" step="1" value="15"></label>
+<div id="settingsControls"></div><div id="settingsNotice" role="status"></div>
+<button id="settingsResizeGrip" type="button" aria-label="Drag lower-left corner to resize settings box" title="Drag this corner to resize settings and text"></button></div>
+<div id="measurementPopup" hidden role="region" aria-label="Scope measurements">
+<header><strong>Scope measurements</strong><button type="button" id="closeMeasurements">Close</button></header>
+<p>Select each entry’s channel and measurement. Check <b>On scope</b> for up to four entries, then click <b>Apply selected to scope</b>. Use <b>Save selection</b> to keep them after restart.</p>
+<label class="measure-size-control" style="display:flex;align-items:center"><input id="autoMeasurementFont" type="checkbox" checked style="width:20px;height:20px"> Scale measurement text when resized</label>
+<label class="measure-size-control">Measurement text size <span id="measurementFontLabel">14 px</span><input id="measurementFont" type="range" min="12" max="24" step="1" value="14"></label>
+<iframe id="measurementFrame" title="Scope measurement entries and display slots"></iframe>
+<button id="measurementResizeGrip" type="button" aria-label="Drag lower-left corner to resize measurement window" title="Drag this corner to resize measurements and text"></button></div>
+<div id="knobShade" hidden><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="knobTitle">
+<h2 id="knobTitle"></h2><p id="knobHelp"></p><label>Value <input id="knobValue" type="number" step="any"></label><div class="actions"><button type="button" id="stepDown">− step</button><button type="button" id="stepUp">+ step</button><button type="button" id="cancelKnob">Cancel</button><button type="button" id="applyKnob">Apply to scope</button></div></div></div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const iframe=$('scopeScreen'),panel=$('panel'),feedback=$('feedback');
+const positions=[
+ ['Print scope screen',110,709,84,83,'print'],
+ ['CH 1',1256,325,75,65,'ch1'],['CH 2',1256,398,75,65,'ch2'],
+ ['Channel OFF',1377,440,77,61,'off'],['Run / Stop',1860,288,86,65,'run'],
+ ['Single sequence',1861,359,85,64,'single'],['Autoset',1862,441,84,57,'autoset'],
+ ['Menu OFF',1040,719,70,73,'menu_off'],['Measure settings',1527,94,78,63,'measure'],
+ ['Cursor display',1527,166,78,64,'cursor'],['Display settings',1624,165,78,65,'display'],
+ ['Utility / full settings',1723,168,76,62,'display'],
+ ['Vertical position',1367,307,100,99,'ch_position'],['Vertical scale',1355,555,112,113,'ch_scale'],
+ ['Horizontal position',1535,308,98,96,'h_position'],['Horizontal scale',1525,554,114,115,'timebase'],
+ ['Trigger level',1704,312,89,89,'trigger_level'],
+ ['Trigger settings',1711,716,78,60,'trigger'],
+ ['Acquisition settings',1862,717,81,60,'acquisition'],
+ ['Vertical menu',1374,720,83,60,'ch_settings']
+];
+let selected='ch1',state=null,editing=null,busy=false;
+for(const [label,x,y,w,h,action] of positions){
+ const b=document.createElement('button');
+ b.className='hotspot';b.type='button';b.title=label;b.setAttribute('aria-label',label);
+ for(const [key,value] of Object.entries({left:x/2048*100,top:y/1032*100,width:w/2048*100,height:h/1032*100}))b.style[key]=value+'%';
+ b.dataset.action=action;panel.append(b);
+ b.onclick=()=>handle(action);
+}
+function message(value,error=false){feedback.textContent=value;feedback.classList.toggle('error',error)}
+function selectChannel(ch){selected=ch;for(const b of panel.querySelectorAll('.hotspot'))b.classList.toggle('selected',b.dataset.action===ch)}
+async function readState(){
+ const r=await fetch('/api/state',{cache:'no-store'}),d=await r.json();
+ if(!r.ok)throw Error(d.error||d.message||'Unable to read scope settings');
+ state=d;return d;
+}
+async function control(key,value){
+ if(busy)return;
+ busy=true;message('Sending '+key+' to scope…');
+ try{
+  const r=await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value:String(value)})});
+  const d=await r.json();
+  if(!r.ok||!d.ok)throw Error(d.error||d.message||'Scope rejected the command');
+  state=null;
+  message(d.message||'Applied '+key);
+  const child=iframe.contentWindow;
+  if(child&&typeof child.updateSettings==='function')child.updateSettings().catch(()=>{});
+ }catch(e){message(e.message,true)}finally{busy=false}
+}
+function copyAppearance(){
+ const doc=iframe.contentDocument,source=doc?.getElementById('appearancePanel');
+ if(!source){message('Display is still loading. Try again shortly.',true);return false}
+ const mirror=source.cloneNode(true);
+ mirror.id='scopeSettingsMirror';mirror.open=true;
+ mirror.querySelector('summary')?.remove();
+ for(const input of mirror.querySelectorAll('input,select')){
+  const original=doc.getElementById(input.id);if(!original)continue;
+  if(input.type==='checkbox'||input.type==='radio')input.checked=original.checked;
+  else input.value=original.value;
+  input.disabled=original.disabled;
+ }
+ for(const [id,originalId] of [['presetTools','presetTools']]){
+  const element=mirror.querySelector('#'+id),original=doc.getElementById(originalId);
+  if(element&&original)element.hidden=original.hidden;
+ }
+ $('settingsControls').replaceChildren(mirror);
+ return true;
+}
+function showSettings(){
+ closeMeasurements();
+ if(!copyAppearance())return;
+ $('settingsShade').hidden=false;syncSettingsFont();
+ $('displaySettings').setAttribute('aria-expanded','true');
+}
+function closeSettings(){
+ $('settingsShade').hidden=true;
+ $('displaySettings').setAttribute('aria-expanded','false');
+}
+$('settingsControls').addEventListener('input',event=>{
+ const target=event.target,original=iframe.contentDocument?.getElementById(target.id);
+ if(!original)return;
+ if(target.type==='checkbox'||target.type==='radio')original.checked=target.checked;
+ else original.value=target.value;
+ original.dispatchEvent(new Event('input',{bubbles:true}));
+ const preset=iframe.contentDocument?.getElementById('presetTools');
+ const localPreset=$('settingsControls').querySelector('#presetTools');
+ if(preset&&localPreset)localPreset.hidden=preset.hidden;
+ for(const id of ['viewXZoom','viewXPan','viewYZoom','viewYPan']){
+  const local=$('settingsControls').querySelector('#'+id),from=iframe.contentDocument?.getElementById(id);
+  if(local&&from)local.disabled=from.disabled;
+ }
+});
+$('settingsControls').addEventListener('change',event=>{
+ const target=event.target,original=iframe.contentDocument?.getElementById(target.id);
+ if(original&&target.tagName==='SELECT'){original.value=target.value;original.dispatchEvent(new Event('change',{bubbles:true}))}
+});
+$('settingsControls').addEventListener('click',event=>{
+ const button=event.target.closest('button[id]');if(!button)return;
+ const original=iframe.contentDocument?.getElementById(button.id);if(!original)return;
+ const scroll=$('settingsShade').scrollTop;
+ original.click();
+ setTimeout(()=>{
+  $('settingsNotice').textContent=iframe.contentDocument?.getElementById('errors')?.textContent||'';
+  copyAppearance();$('settingsShade').scrollTop=scroll;
+ },80);
+});
+const sizeKey='scopeClassicScreenSize.v1';
+function setScopeSize(value){
+ const n=Math.max(40,Math.min(100,Number(value)||100));
+ $('screenSize').value=n;$('screenSizeLabel').textContent=n+'%';
+ panel.style.width=n+'%';panel.style.marginInline='auto';
+ try{localStorage.setItem(sizeKey,String(n))}catch(e){}
+}
+$('screenSize').addEventListener('input',event=>setScopeSize(event.target.value));
+try{setScopeSize(localStorage.getItem(sizeKey)||100)}catch(e){setScopeSize(100)}
+function setReadoutFont(value){
+ const n=Math.max(12,Math.min(24,Number(value)||14));
+ $('readoutFont').value=n;$('readoutFontLabel').textContent=n+' px';
+ $('liveReadouts').style.setProperty('--readout-font-size',n+'px');
+ try{localStorage.setItem('scopeClassicReadoutFont.v1',String(n))}catch(e){}
+}
+function setAutoReadoutBox(enabled){
+ $('autoReadoutBox').checked=enabled;
+ $('liveReadouts').classList.toggle('auto-size',enabled);
+ try{localStorage.setItem('scopeClassicAutoReadout.v1',String(enabled))}catch(e){}
+}
+$('readoutFont').addEventListener('input',event=>setReadoutFont(event.target.value));
+$('autoReadoutBox').addEventListener('change',event=>setAutoReadoutBox(event.target.checked));
+try{setReadoutFont(localStorage.getItem('scopeClassicReadoutFont.v1')||14)}catch(e){setReadoutFont(14)}
+try{setAutoReadoutBox(localStorage.getItem('scopeClassicAutoReadout.v1')!=='false')}catch(e){setAutoReadoutBox(true)}
+const settingsBox=$('settingsShade'),resizeGrip=$('settingsResizeGrip');
+function clampSettingsBox(){
+ const w=parseInt(settingsBox.style.width,10),h=parseInt(settingsBox.style.height,10);
+ if(Number.isFinite(w))settingsBox.style.width=Math.min(Math.max(w,280),Math.max(280,innerWidth-28))+'px';
+ if(Number.isFinite(h))settingsBox.style.height=Math.min(Math.max(h,250),Math.max(250,innerHeight-96))+'px';
+}
+try{
+ const saved=JSON.parse(localStorage.getItem('scopeClassicSettingsBox.v1')||'null');
+ if(saved&&Number.isFinite(saved.width)&&Number.isFinite(saved.height)){
+  settingsBox.style.width=saved.width+'px';settingsBox.style.height=saved.height+'px';
+  clampSettingsBox();
+ }
+}catch(e){}
+window.addEventListener('resize',()=>{clampSettingsBox();syncSettingsFont()});
+function setSettingsFont(n,persist=false){
+ n=Math.max(12,Math.min(24,Math.round(Number(n)||15)));
+ settingsBox.style.setProperty('--settings-font-size',n+'px');
+ $('settingsFont').value=n;$('settingsFontLabel').textContent=n+' px';
+ if(persist)try{localStorage.setItem('scopeClassicSettingsFont.v1',String(n))}catch(e){}
+}
+function syncSettingsFont(){
+ if($('autoSettingsFont').checked&&!settingsBox.hidden)setSettingsFont(Math.max(12,Math.min(24,Math.round(settingsBox.getBoundingClientRect().width/30))));
+}
+function setAutoSettingsFont(enabled){
+ $('autoSettingsFont').checked=enabled;$('settingsFont').disabled=enabled;
+ try{localStorage.setItem('scopeClassicAutoSettingsFont.v1',String(enabled))}catch(e){}
+ if(enabled)syncSettingsFont();
+ else setSettingsFont(localStorage.getItem('scopeClassicSettingsFont.v1')||15);
+}
+$('autoSettingsFont').addEventListener('change',e=>setAutoSettingsFont(e.target.checked));
+$('settingsFont').addEventListener('input',e=>setSettingsFont(e.target.value,true));
+try{setAutoSettingsFont(localStorage.getItem('scopeClassicAutoSettingsFont.v1')!=='false')}catch(e){setAutoSettingsFont(true)}
+let resizingSettings=null;
+resizeGrip.addEventListener('pointerdown',e=>{
+ e.preventDefault();const box=settingsBox.getBoundingClientRect();
+ resizingSettings={x:e.clientX,y:e.clientY,w:box.width,h:box.height};
+ resizeGrip.setPointerCapture(e.pointerId);
+});
+resizeGrip.addEventListener('pointermove',e=>{
+ if(!resizingSettings)return;
+ settingsBox.style.width=Math.min(Math.max(280,resizingSettings.w+resizingSettings.x-e.clientX),Math.max(280,innerWidth-28))+'px';
+ settingsBox.style.height=Math.min(Math.max(250,resizingSettings.h+e.clientY-resizingSettings.y),Math.max(250,innerHeight-96))+'px';
+ syncSettingsFont();
+});
+function endSettingsResize(){
+ if(!resizingSettings)return;
+ resizingSettings=null;
+ try{localStorage.setItem('scopeClassicSettingsBox.v1',JSON.stringify({width:settingsBox.offsetWidth,height:settingsBox.offsetHeight}))}catch(e){}
+}
+resizeGrip.addEventListener('pointerup',endSettingsResize);
+resizeGrip.addEventListener('pointercancel',endSettingsResize);
+$('displaySettings').onclick=showSettings;
+$('closeSettings').onclick=closeSettings;
+const measureBox=$('measurementPopup'),measureGrip=$('measurementResizeGrip');
+function clampMeasureBox(){
+ const w=parseInt(measureBox.style.width,10),h=parseInt(measureBox.style.height,10);
+ if(Number.isFinite(w))measureBox.style.width=Math.min(Math.max(w,290),Math.max(290,innerWidth-28))+'px';
+ if(Number.isFinite(h))measureBox.style.height=Math.min(Math.max(h,360),Math.max(360,innerHeight-96))+'px';
+}
+try{
+ const saved=JSON.parse(localStorage.getItem('scopeClassicMeasurementBox.v1')||'null');
+ if(saved&&Number.isFinite(saved.width)&&Number.isFinite(saved.height)){
+  measureBox.style.width=saved.width+'px';measureBox.style.height=saved.height+'px';clampMeasureBox();
+ }
+}catch(e){}
+function setMeasurementFont(n,persist=false){
+ n=Math.max(12,Math.min(24,Math.round(Number(n)||14)));
+ measureBox.style.setProperty('--measure-font-size',n+'px');
+ $('measurementFont').value=n;$('measurementFontLabel').textContent=n+' px';
+ const doc=$('measurementFrame').contentDocument;
+ if(doc?.getElementById('panel-measurements'))doc.documentElement.style.zoom=(n/14).toFixed(2);
+ if(persist)try{localStorage.setItem('scopeClassicMeasurementFont.v1',String(n))}catch(e){}
+}
+function syncMeasurementFont(){
+ if($('autoMeasurementFont').checked&&!measureBox.hidden)setMeasurementFont(Math.max(12,Math.min(24,Math.round(measureBox.getBoundingClientRect().width/35))));
+ else if(!$('autoMeasurementFont').checked)setMeasurementFont(localStorage.getItem('scopeClassicMeasurementFont.v1')||14);
+}
+function setAutoMeasurementFont(enabled){
+ $('autoMeasurementFont').checked=enabled;$('measurementFont').disabled=enabled;
+ try{localStorage.setItem('scopeClassicAutoMeasurementFont.v1',String(enabled))}catch(e){}
+ syncMeasurementFont();
+}
+$('autoMeasurementFont').addEventListener('change',e=>setAutoMeasurementFont(e.target.checked));
+$('measurementFont').addEventListener('input',e=>setMeasurementFont(e.target.value,true));
+try{setAutoMeasurementFont(localStorage.getItem('scopeClassicAutoMeasurementFont.v1')!=='false')}catch(e){setAutoMeasurementFont(true)}
+window.addEventListener('resize',()=>{clampMeasureBox();syncMeasurementFont()});
+let resizingMeasure=null;
+measureGrip.addEventListener('pointerdown',e=>{
+ e.preventDefault();const box=measureBox.getBoundingClientRect();
+ resizingMeasure={x:e.clientX,y:e.clientY,w:box.width,h:box.height};
+ measureGrip.setPointerCapture(e.pointerId);
+});
+measureGrip.addEventListener('pointermove',e=>{
+ if(!resizingMeasure)return;
+ measureBox.style.width=Math.min(Math.max(290,resizingMeasure.w+resizingMeasure.x-e.clientX),Math.max(290,innerWidth-28))+'px';
+ measureBox.style.height=Math.min(Math.max(360,resizingMeasure.h+e.clientY-resizingMeasure.y),Math.max(360,innerHeight-96))+'px';
+ syncMeasurementFont();
+});
+function endMeasureResize(){
+ if(!resizingMeasure)return;resizingMeasure=null;
+ try{localStorage.setItem('scopeClassicMeasurementBox.v1',JSON.stringify({width:measureBox.offsetWidth,height:measureBox.offsetHeight}))}catch(e){}
+}
+measureGrip.addEventListener('pointerup',endMeasureResize);
+measureGrip.addEventListener('pointercancel',endMeasureResize);
+function showVertical(){
+ closeSettings();
+ const popup=$('measurementPopup'),frame=$('measurementFrame');
+ popup.dataset.view='vertical';
+ popup.querySelector('header strong').textContent=selected.toUpperCase()+' vertical settings';
+ popup.querySelector('p').hidden=true;
+ popup.hidden=false;syncMeasurementFont();
+ frame.style.visibility='hidden';
+ frame.src='/?measurement_popup=1&vertical_popup=1&channel='+selected.slice(2);
+}
+function showTrigger(){
+ closeSettings();
+ const popup=$('measurementPopup'),frame=$('measurementFrame');
+ popup.dataset.view='trigger';
+ popup.querySelector('header strong').textContent='Trigger settings';
+ popup.querySelector('p').hidden=true;
+ popup.hidden=false;syncMeasurementFont();
+ frame.style.visibility='hidden';
+ frame.src='/?measurement_popup=1&trigger_popup=1';
+}
+function showMeasurements(){
+ closeSettings();
+ const popup=$('measurementPopup'),frame=$('measurementFrame');
+ const prior=popup.dataset.view;
+ popup.dataset.view='measure';
+ popup.querySelector('header strong').textContent='Scope measurements';
+ popup.querySelector('p').hidden=false;
+ popup.hidden=false;syncMeasurementFont();
+ if(prior!=='measure'||!frame.src){frame.style.visibility='hidden';frame.src='/?measurement_popup=1'}
+}
+function closeMeasurements(){$('measurementPopup').hidden=true}
+$('closeMeasurements').onclick=closeMeasurements;
+$('measurementFrame').addEventListener('load',()=>{
+ const frame=$('measurementFrame'),doc=frame.contentDocument;
+ if(!doc)return;
+ doc.getElementById('suite-unified-header')?.remove();
+ const style=doc.createElement('style');
+ const target=measureBox.dataset.view==='trigger'?'panel-trigger':measureBox.dataset.view==='vertical'?'panel-'+selected:'panel-measurements';
+ style.textContent='body{margin:0!important;padding:8px!important}body>*:not(#panels){display:none!important}#panels{display:block!important;max-width:none!important;width:100%!important;padding:0!important;margin:0!important}#panels>section:not(#'+target+'){display:none!important}#'+target+'{display:block!important;position:static!important;width:100%!important;max-width:none!important;height:auto!important;margin:0!important;padding:10px!important;transform:none!important}#panel-measurements .metrics{width:100%!important;grid-template-columns:repeat(auto-fit,minmax(205px,1fr))!important}';
+ doc.head.append(style);
+ frame.style.visibility='visible';syncMeasurementFont();
+ const status=doc.getElementById('slotStatus');
+ if(status){
+  let prior=status.textContent;
+  new MutationObserver(()=>{
+   const next=status.textContent;
+   if(next===prior)return;prior=next;
+   if(next.startsWith('Applied scope slots:')){
+    const child=iframe.contentWindow;
+    child?.refreshClassicMeasurements?.().catch(()=>{});
+   }
+  }).observe(status,{childList:true,subtree:true,characterData:true});
+ }
+});
+$('cancelKnob').onclick=()=>$('knobShade').hidden=true;
+async function editNumber(key,label,min,max,step,unit){
+ try{
+  const d=await readState(),value=Number(d[key]);
+  if(!Number.isFinite(value))throw Error('Scope did not report '+label);
+  editing={key,min,max,step};
+  $('knobTitle').textContent=label;
+  $('knobHelp').textContent='Current scope setting: '+value+' '+unit+'. Range: '+min+' to '+max+' '+unit+'. This changes the real scope when you press Apply.';
+  $('knobValue').min=min;$('knobValue').max=max;$('knobValue').step='any';$('knobValue').value=value;
+  $('knobShade').hidden=false;$('knobValue').focus();$('knobValue').select();
+ }catch(e){message(e.message,true)}
+}
+for(const [id,sign] of [['stepDown',-1],['stepUp',1]])$(id).onclick=()=>{
+ if(!editing)return;
+ const v=Number($('knobValue').value);
+ const next=editing.key==='timebase'||editing.key.endsWith('_scale')?v*(sign>0?2:.5):v+sign*editing.step;
+ $('knobValue').value=Number(Math.max(editing.min,Math.min(editing.max,next)).toPrecision(6));
+};
+$('applyKnob').onclick=async()=>{
+ const v=Number($('knobValue').value);
+ if(!editing||!$('knobValue').value||!Number.isFinite(v)||v<editing.min||v>editing.max){message('Enter a valid number in the shown range.',true);return}
+ const key=editing.key;$('knobShade').hidden=true;await control(key,v)
+};
+function printScopeScreen(){
+ const tab=window.open('','_blank');
+ if(!tab){message('Allow popups to print the scope screen.',true);return}
+ tab.document.write('<!doctype html><html><head><title>Tektronix scope screen</title><style>@page{size:landscape;margin:10mm}body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh}img{display:block;max-width:100%;max-height:95vh;object-fit:contain}@media print{body{min-height:0}img{max-height:180mm}}</style></head><body><img id="printImage" alt="Tektronix scope screen"></body></html>');
+ tab.document.close();
+ const img=tab.document.getElementById('printImage');
+ img.onload=()=>{tab.focus();tab.print()};
+ img.onerror=()=>{tab.document.body.textContent='Could not capture the scope screen. Close this tab and retry.'};
+ img.src='/api/screen?print='+Date.now();
+ message('Opening screen-only print preview…');
+}
+async function handle(action){
+ if(action==='print'){printScopeScreen();return}
+ if(action==='trigger'){showTrigger();return}
+ if(action==='ch_settings'){showVertical();return}
+ if(action==='measure'){showMeasurements();return}
+ if(action==='display'||action==='acquisition'){showSettings();return}
+ if(action==='cursor'){
+  const doc=iframe.contentDocument,box=doc?.getElementById('cursorsEnabled');
+  if(!box){message('Display is still loading. Try again shortly.',true);return}
+  box.checked=!box.checked;box.dispatchEvent(new Event('input',{bubbles:true}));
+  message('Display cursors '+(box.checked?'enabled':'disabled')+' (Option 10 setting).');return
+ }
+ if(action==='ch1'||action==='ch2'){selectChannel(action);await control(action+'_on','1');return}
+ if(action==='off'){await control(selected+'_on','0');return}
+ if(action==='single'||action==='autoset'||action==='menu_off'){await control(action,'1');return}
+ if(action==='run'){
+  try{const d=await readState();await control('running',String(d.running)==='0'?'1':'0')}
+  catch(e){message(e.message,true)}return
+ }
+ if(action==='ch_position'){await editNumber(selected+'_position',selected.toUpperCase()+' vertical position',-5,5,.2,'div');return}
+ if(action==='ch_scale'){await editNumber(selected+'_scale',selected.toUpperCase()+' vertical scale',.000001,10000,1,'V/div');return}
+ if(action==='timebase'){await editNumber('timebase','Horizontal timebase',.000000001,10,1,'s/div');return}
+ if(action==='trigger_level'){await editNumber('trigger_level','Trigger level',-1000,1000,.1,'V');return}
+ if(action==='h_position')message('Horizontal position is not exposed by this controller yet.',true);
+}
+function syncLiveReadouts(){
+ const doc=iframe.contentDocument;if(!doc)return;
+ const readback=doc.getElementById('settingsInfo');
+ if(readback&&$('classicReadback').textContent!==readback.textContent)$('classicReadback').textContent=readback.textContent;
+ const cursor=doc.getElementById('cursorReadout');
+ $('classicCursor').hidden=!cursor||cursor.hidden;
+ if(cursor&&!cursor.hidden&&$('classicCursor').textContent!==cursor.textContent)$('classicCursor').textContent=cursor.textContent;
+ for(const [from,to] of [['traceLive','classicWaveform'],['traceTime','classicTransfer']]){
+  const el=doc.getElementById(from);if(el&&$(to).textContent!==el.textContent)$(to).textContent=el.textContent;
+ }
+}
+iframe.addEventListener('load',()=>{const doc=iframe.contentDocument;doc?.getElementById('suite-unified-header')?.remove();doc?.documentElement.classList.add('classic-embed');syncLiveReadouts();message('Live trace ready. Select CH 1 or CH 2 before adjusting vertical controls.')});
+setInterval(syncLiveReadouts,500);
+selectChannel('ch1');
+</script></main></body></html>

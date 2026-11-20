@@ -92,6 +92,7 @@ def serialized():
 def scope(override=None):
     with serialized():
         c = override or config()
+        if c['address']=='scope-not-configured.invalid':raise ScopeError('Open Setup and enter the scope IP address before connecting.',409)
         s = BoundedInstrument(c['address'])
         s.timeout = c['timeout']
         broken = False

@@ -1,4 +1,5 @@
-"""Fischer Lab Tektronix controller, v0.3.3. One worker; threaded requests serialized."""
+"""Fischer Lab Tektronix controller, v0.3.6. One worker; threaded requests serialized."""
+import gzip
 import json
 import logging
 import math
@@ -16,7 +17,7 @@ from scope_io import (ROOT, ScopeError, ask, atomic_json, channel, config, measu
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 262144
-VERSION = '0.3.3'
+VERSION = '0.3.6'
 FIELDS = {
  'timebase': ('HORIZONTAL:MAIN:SCALE', 1e-9, 10),
  'acq_mode': ('ACQUIRE:MODE', ('SAMPLE','PEAKDETECT','AVERAGE','ENVELOPE')),
@@ -174,6 +175,19 @@ def waveform():
         'Content-Disposition': 'attachment; filename="'+name+'"',
         'X-Waveform-Point-Format': p['point_format']})
 
+@app.get('/api/waveform.preview.csv')
+def waveform_preview():
+    # Read-only test endpoint. Browser transparently decompresses the CSV.
+    ch = channel(request.args.get('channel', 'CH1'))
+    with scope() as (s, _):
+        text, preamble, _ = waveform_csv(s, ch)
+    return Response(gzip.compress(text.encode('utf-8'), compresslevel=1),
+                    mimetype='text/csv',
+                    headers={'Content-Encoding': 'gzip',
+                             'Cache-Control': 'no-store',
+                             'X-Waveform-Point-Format': preamble['point_format']})
+
+
 @app.post('/api/control')
 def control():
     d = request.get_json()
@@ -230,6 +244,10 @@ def validate_png(b):
             return b[:end]
         pos = end
     raise ScopeError('Incomplete scope screen image; refresh to retry.')
+
+@app.get('/classic')
+def classic_front_panel():
+    return send_file(ROOT/'static'/'classic-front-panel-test.html')
 
 @app.get('/api/screen')
 def screen():

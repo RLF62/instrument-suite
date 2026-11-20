@@ -315,7 +315,7 @@ $('originalImage').onchange=()=>task(showCurrentImage);
 $('refresh').onclick=()=>task(readScreen);$('read').onclick=()=>task(()=>refreshAll(false));$('measureRefresh').onclick=()=>task(readMeasurements);
 $('addMeasurement').onclick=()=>{if(measurementRows.length>=20){notify('Up to 20 dashboard entries can be saved.');return}measurementRows.push({id:'entry_'+Date.now().toString(36)+'_'+measurementCounter++,channel:'CH1',type:'frequency',on_scope:false});selectionChanged();renderMeasurements()};
 $('saveMeasurements').onclick=()=>task(async()=>{await post('/api/measurement-selection',{entries:selection()});$('measurementStatus').textContent='Measurement selection saved across restarts.';notify('Measurement selection saved.')});
-$('applyScopeMeasurements').onclick=()=>task(async()=>{const d=await post('/api/measurement-slots',{entries:selection()});$('slotStatus').textContent='Applied scope slots: '+d.slots.map(s=>s.slot+': '+(s.state==='1'?s.source1+' '+s.type:'Off')).join(' · ');await readScreen();notify('Scope measurement slots read back and verified.')});
+$('applyScopeMeasurements').onclick=()=>task(async()=>{const d=await post('/api/measurement-slots',{entries:selection()});$('slotStatus').textContent='Applied scope slots: '+d.slots.map(s=>s.slot+': '+(s.state==='1'?s.source1+' '+s.type:'Off')).join(' · ');if(!measurementPopup)await readScreen();notify('Scope measurement slots read back and verified.')});
 function selectedExample(){const v=$('presetList').value;return v.startsWith('example:')?builtinExamples[v.slice(8)]:null}
 function selectedPersonalName(){const v=$('presetList').value;return v.startsWith('personal:')?v.slice(9):null}
 async function loadPresets(){
@@ -357,12 +357,14 @@ $('presetRecall').onclick=()=>task(async()=>{
  dirty.clear();document.activeElement?.blur();await refreshAll();
  notify(example?d.message:Object.keys(d.differences).length?'Recalled '+name+'; review the scope-adjusted values.':'Recalled '+name);
 });
+const measurementPopup=new URLSearchParams(location.search).has('measurement_popup');
+if(measurementPopup)$('auto').checked=false;
 let lastMeasurement=0,nextScreenAt=0,nextStatusAt=0;
 async function poll(){
  if(!document.hidden&&!busy&&!backgroundJob){
   backgroundJob=(async()=>{
    const now=Date.now();
-   if(now>=nextStatusAt){nextStatusAt=now+2000;await readAcquisition({background:true})}
+   if(!measurementPopup&&now>=nextStatusAt){nextStatusAt=now+2000;await readAcquisition({background:true})}
    if(busy)return;
    if(online&&$('auto').checked&&now>=nextScreenAt){nextScreenAt=now+5000;await readScreen({background:true})}
    if(busy)return;
@@ -375,7 +377,7 @@ async function poll(){
 }
 setInterval(updateFreshness,1000);updateFreshness();
 disableControls();
-task(async()=>{const c=await json('/api/config');$('host').textContent=c.address;await loadPresets();await loadMeasurements();await refreshAll();await readMeasurements()}).finally(()=>setTimeout(poll,2000));
+task(async()=>{const c=await json('/api/config');$('host').textContent=c.address;await loadPresets();await loadMeasurements();await refreshAll(!measurementPopup);await readMeasurements()}).finally(()=>setTimeout(poll,2000));
 </script><script>
 (function(config){
  const $=id=>document.getElementById(id);

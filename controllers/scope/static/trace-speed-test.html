@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tektronix trace speed test · development</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0d1420;color:#e8f0fb}
+*{box-sizing:border-box}body{margin:0;padding:20px}main{max-width:1460px;margin:auto}
+h1{font-size:clamp(1.2rem,3vw,1.8rem);margin:10px 0}p,small{color:#b8c7d8;line-height:1.5}
+a{color:#91e8e5}.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:20px 0}
+label{display:grid;gap:5px;color:#b8c7d8;font-size:.9rem}select,button{min-height:42px;padding:9px 14px;color:#f2f7fd;background:#263749;border:1px solid #547082;border-radius:6px}
+button{cursor:pointer}button:hover{background:#365366}button:disabled{opacity:.5}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+section{background:#182432;padding:14px;border-radius:10px;border:1px solid #3c5564;min-width:0}
+h2{font-size:1.1rem;margin:0 0 10px}.settings{padding:10px 13px;margin:12px 0;background:#162a31;border:1px solid #395c62;border-radius:7px;line-height:1.6;font-size:.91rem;white-space:pre-wrap}.display{display:block;width:100%;aspect-ratio:4/3;background:#070d13;border:1px solid #4a6571;object-fit:contain}
+#cursorReadout{white-space:pre-line;line-height:1.65}.metric{margin:12px 0 0;min-height:3em;line-height:1.5;font-variant-numeric:tabular-nums}.live-indicator{display:block;margin:8px 0;color:#88e6cb;font-size:1rem}.live-indicator.fresh{color:#fff;background:#187868;padding:4px 8px;border-radius:4px}
+.note{margin:12px 0}.appearance{border:1px solid #456175;background:#182735;padding:12px;margin:12px 0;border-radius:8px}.appearance summary{cursor:pointer;font-weight:700}.appearance-grid{display:flex;gap:12px 20px;flex-wrap:wrap;align-items:end;margin-top:12px}.appearance-grid>label{min-width:110px}.appearance-grid fieldset{display:flex;gap:8px 16px;flex-wrap:wrap;align-items:end;border:1px solid #3d5a6a;border-radius:7px;min-width:0;width:100%;padding:12px}.appearance-grid fieldset legend{font-weight:700;color:#c7e4e9;padding:0 7px}.appearance-grid fieldset label{min-width:110px}.appearance-grid input[type=range]{width:145px;accent-color:#5ad5ce}.display.cursor-active{touch-action:none;cursor:crosshair}#trace:fullscreen{width:100vw;height:100vh;max-width:none;aspect-ratio:auto;object-fit:contain;background:#000}.option-help{color:#a5becc;font-size:12px;flex-basis:100%}.preset-line{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.preset-line[hidden]{display:none}.preset-line input[type=text]{min-height:42px;padding:8px;background:#243747;color:#fff;border:1px solid #587385;border-radius:6px}.appearance-grid input[type=color]{height:42px;width:80px;border:1px solid #637d8b;padding:2px;background:transparent}.appearance-grid input[type=checkbox]{width:19px;height:19px;accent-color:#5ad5ce}.appearance-grid .toggle{display:flex;gap:7px;align-items:center;min-height:42px;font-size:14px;color:#dfedf2}.appearance-grid select{width:auto}#status{color:#adeddc}#errors{color:#ffadad}
+@media(max-width:820px){.grid{grid-template-columns:1fr}body{padding:12px}}
+
+/* Classic photo embedding: preserve every Option 10 control in the same iframe. */
+html.classic-embed,html.classic-embed body{width:100%;height:100%;margin:0;padding:0;overflow:hidden}
+html.classic-embed body>*:not(main){display:none!important}
+html.classic-embed main{width:100%;height:100%;max-width:none;margin:0;padding:0}
+html.classic-embed main>*:not(.grid){display:none!important}
+html.classic-embed .grid{display:block;width:100%;height:100%;margin:0;padding:0}
+html.classic-embed .grid section{display:none!important}
+html.classic-embed .grid section:first-child{display:block!important;width:100%;height:100%;margin:0;padding:0;border:0;border-radius:0;overflow:hidden}
+html.classic-embed .grid section:first-child>*:not(#trace){display:none!important}
+html.classic-embed #trace{display:block;width:100%;height:100%;max-height:100%;margin:0;padding:0;border:0;aspect-ratio:auto;object-fit:fill}
+/* Embedded classic screen: hide the shared server header inside the scope */
+html.classic-embed #suite-unified-header,html.classic-embed .suite-unified-header,html.classic-embed header[aria-label="Instrument navigation"]{display:none!important;height:0!important;margin:0!important;padding:0!important}
+
+/* Focus Option 10 display controls in the classic front-panel settings dialog. */
+html.classic-settings,html.classic-settings body{height:auto;overflow:auto}
+html.classic-settings body{margin:0;padding:16px}
+html.classic-settings #suite-unified-header,html.classic-settings .suite-unified-header{display:none!important}
+html.classic-settings main{max-width:1180px;margin:0 auto}
+html.classic-settings main>*:not(#appearancePanel){display:none!important}
+html.classic-settings #appearancePanel{display:block!important;margin:0}
+</style></head>
+<body><main>
+<a href="/">← Scope dashboard</a>
+<h1>Live trace speed test · .108</h1>
+<p>Temporary read-only preview. CH1 and CH2 are drawn from their latest stored waveform records. The screenshot comes from the existing controller. This page does not change acquisition settings.</p>
+<div class="controls">
+<label>Test mode<select id="mode"><option value="compare">Compare · screenshot every third trace</option><option value="trace">Waveform only</option><option value="image">Screenshot only</option></select></label>
+<label>Screenshot<select id="picture"><option value="display">Dashboard colors (slower)</option><option value="raw" selected>Original scope image (fast)</option></select></label>
+<label>Wait after cycle<select id="delay"><option value="0" selected>No added wait</option><option value="1">1 second</option><option value="3">3 seconds</option></select></label>
+<button id="start">Start live test</button><button id="stop" disabled>Stop</button><button id="once">Update once</button><button id="settings">Refresh scope settings</button>
+</div>
+<details id="appearancePanel" class="appearance"><summary>Customize simulated display</summary>
+<div class="appearance-grid">
+<fieldset><legend>Colors and traces</legend>
+<label>Background<input id="background" type="color" value="#080d12"></label>
+<label>Grid color<input id="gridColor" type="color" value="#839eab"></label>
+<label>Center line color<input id="centerColor" type="color" value="#a7aeb0"></label>
+<label>Trigger color<input id="triggerColor" type="color" value="#ffad4b"></label>
+<label>CH1 color<input id="colorCH1" type="color" value="#ff6268"></label>
+<label>CH2 color<input id="colorCH2" type="color" value="#4da2ff"></label>
+<label>Trace width<select id="traceWidth"><option value="1">Thin</option><option value="2" selected>Medium</option><option value="3">Thick</option><option value="4">Extra thick</option></select></label>
+<label>Trace style<select id="traceStyle"><option value="envelope">Fine detail</option><option value="line">Clean line</option><option value="dots">Sample dots</option></select></label>
+<label>Font size<select id="fontScale"><option value="0.85">Small</option><option value="1" selected>Standard</option><option value="1.15">Large</option></select></label>
+<label class="toggle"><input id="showCH1" type="checkbox" checked> CH1</label>
+<label class="toggle"><input id="showCH2" type="checkbox" checked> CH2</label>
+</fieldset>
+<fieldset><legend>Graticule and tick marks</legend>
+<label>Grid line style<select id="gridStyle"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option></select></label>
+<label>Minor lines per division<select id="minorDensity"><option value="2">2</option><option value="5" selected>5</option><option value="10">10</option></select></label>
+<label>Center ticks per division<select id="centerTickDensity"><option value="2">2</option><option value="5" selected>5</option><option value="10">10</option></select></label>
+<label>Tick length<select id="tickLength"><option value="3">Short</option><option value="6" selected>Medium</option><option value="10">Long</option></select></label>
+<label class="toggle"><input id="showMajor" type="checkbox" checked> Major grid</label>
+<label class="toggle"><input id="showMinor" type="checkbox" checked> Minor grid</label>
+<label class="toggle"><input id="showTicks" type="checkbox" checked> Edge ticks</label>
+<label class="toggle"><input id="showBorder" type="checkbox" checked> Graticule border</label>
+<label class="toggle"><input id="centerHorizontal" type="checkbox" checked> Horizontal center line</label>
+<label class="toggle"><input id="centerVertical" type="checkbox" checked> Vertical center line</label>
+<label class="toggle"><input id="centerHorizontalTicks" type="checkbox" checked> Ticks on horizontal center</label>
+<label class="toggle"><input id="centerVerticalTicks" type="checkbox" checked> Ticks on vertical center</label>
+</fieldset>
+<fieldset><legend>Screen information</legend>
+<label class="toggle"><input id="showHeader" type="checkbox" checked> Top status</label>
+<label class="toggle"><input id="showFooter" type="checkbox" checked> Bottom settings</label>
+<label class="toggle"><input id="showChannelMarkers" type="checkbox" checked> Channel zero markers</label>
+<label class="toggle"><input id="showTriggerTime" type="checkbox" checked> Trigger time marker</label>
+<label class="toggle"><input id="showTriggerLevel" type="checkbox" checked> Trigger level marker</label>
+<label class="toggle"><input id="showMeasurements" type="checkbox" checked> Measurements</label>
+<label class="toggle"><input id="showTimestamp" type="checkbox" checked> Clock</label>
+<label class="toggle"><input id="showTraceCount" type="checkbox" checked> Update count</label>
+</fieldset>
+<fieldset><legend>Analysis tools</legend>
+<label class="toggle"><input id="cursorsEnabled" type="checkbox"> Two draggable cursors</label>
+<label>Cursor A color<input id="cursorAColor" type="color" value="#4ff1d5"></label>
+<label>Cursor B color<input id="cursorBColor" type="color" value="#ffffff"></label>
+<label>Cursor voltage channel<select id="cursorChannel"><option value="CH1">CH1</option><option value="CH2">CH2</option></select></label>
+<label class="toggle"><input id="freezeEnabled" type="checkbox"> Freeze waveform</label>
+<label class="toggle"><input id="showReference" type="checkbox"> Reference overlay</label>
+<label>Reference trace color<input id="referenceColor" type="color" value="#b496ff"></label>
+<label>Reference opacity<input id="referenceOpacity" type="range" min="10" max="90" step="5" value="40"></label>
+<button id="captureReference" type="button">Capture reference</button>
+<button id="clearReference" type="button">Clear reference</button>
+<label>Persistence<select id="persistenceMode"><option value="off">Off</option><option value="5">Last 5 seconds</option><option value="15">Last 15 seconds</option><option value="last20">Last 20 traces</option></select></label>
+<button id="clearPersistence" type="button">Clear persistence</button>
+<span class="option-help">Freeze holds the last waveform. Persistence and reference traces remain in this browser until cleared or the page is closed.</span>
+</fieldset>
+<fieldset><legend>View-only magnification</legend>
+<label class="toggle"><input id="zoomEnabled" type="checkbox"> Enable zoom and pan</label>
+<label>Horizontal zoom<select id="viewXZoom"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label>
+<label>Horizontal pan<input id="viewXPan" type="range" min="0" max="100" value="50"></label>
+<label>Vertical zoom<select id="viewYZoom"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+<label>Vertical pan<input id="viewYPan" type="range" min="-4" max="4" step="0.1" value="0"></label>
+<span class="option-help">Zoom only changes this drawing. The physical scope timebase and volts/div stay as set on the scope.</span>
+</fieldset>
+<fieldset><legend>Display presets and screen</legend>
+<label class="toggle"><input id="showPresetTools" type="checkbox" checked> Preset controls</label>
+<div id="presetTools" class="preset-line"><label>Display preset<select id="presetSelect"></select></label>
+<label>New preset name<input id="presetName" type="text" maxlength="30" placeholder="e.g. Sony changer"></label>
+<button id="savePreset" type="button">Save preset</button><button id="loadPreset" type="button">Load preset</button><button id="deletePreset" type="button">Delete saved preset</button></div>
+<label class="toggle"><input id="fullscreenEnabled" type="checkbox"> Fullscreen simulated display</label>
+</fieldset>
+<button id="resetAppearance" type="button">Reset appearance</button>
+<button id="saveTracePNG" type="button">Save display PNG</button>
+</div><small>These settings stay in this browser and do not change the scope.</small></details>
+<p id="status" role="status">Ready. Start to compare the changing traces.</p><p id="errors" role="alert"></p><div id="settingsInfo" class="settings">Settings have not been read yet.</div>
+<div class="grid">
+<section><h2>Simulated scope screen · CH1 + CH2</h2><canvas id="trace" class="display" width="800" height="600" aria-label="Live CH1 and CH2 waveform"></canvas><div id="cursorReadout" class="metric" hidden>Enable cursors to measure the waveform.</div><strong id="traceLive" class="live-indicator">Waveform: awaiting first update</strong><div id="traceTime" class="metric">Awaiting first read.</div></section>
+<section><h2>Scope screenshot</h2><img id="image" class="display" alt="Live screenshot of scope"><strong id="imageLive" class="live-indicator">Screenshot: awaiting first update</strong><div id="imageTime" class="metric">Awaiting first capture.</div></section>
+</div>
+<p class="note">The left display uses live scope waveform records and readback for its graticule, position, trigger, status and on-screen measurement slots. It is drawn from data, not the PNG. Measurement values are read separately from the scope every five cycles; their time is excluded from waveform timing. Scope settings refresh before every trace read so front-panel changes appear on the next waveform cycle. In comparison mode the trace refreshes every cycle and the screenshot every third cycle, so the image does not hold up each trace. Use Waveform only for maximum trace refresh speed. Each time includes network transfer, parsing and display in this browser.</p>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+let active=false,waiting=false,cycles=0,traceTimes=[],imageTimes=[],lastImageURL=null,abort=null,scopeState=null,scopeReadouts=[],lastRecords=null,traceUpdates=0,imageUpdates=0,lastTraceSignature=null;
+const appearanceDefaults={background:'#080d12',gridColor:'#839eab',centerColor:'#a7aeb0',triggerColor:'#ffad4b',
+ colorCH1:'#ff6268',colorCH2:'#4da2ff',traceWidth:'2',traceStyle:'envelope',fontScale:'1',
+ gridStyle:'solid',minorDensity:'5',centerTickDensity:'5',tickLength:'6',
+ showCH1:true,showCH2:true,showMajor:true,showMinor:true,showTicks:true,showBorder:true,
+ centerHorizontal:true,centerVertical:true,centerHorizontalTicks:true,centerVerticalTicks:true,
+ showHeader:true,showFooter:true,showChannelMarkers:true,showTriggerTime:true,showTriggerLevel:true,
+ showMeasurements:true,showTimestamp:true,showTraceCount:true,
+ cursorsEnabled:false,cursorAColor:'#4ff1d5',cursorBColor:'#ffffff',cursorChannel:'CH1',cursor1x:'0.25',cursor2x:'0.75',cursor1y:'0.3',cursor2y:'0.7',
+ showReference:false,referenceColor:'#b496ff',referenceOpacity:'40',persistenceMode:'off',
+ zoomEnabled:false,viewXZoom:'1',viewXPan:'50',viewYZoom:'1',viewYPan:'0',showPresetTools:true};
+let appearance={...appearanceDefaults};
+try{const saved=JSON.parse(localStorage.getItem('scopeTraceAppearance.v1')||'{}');for(const [key,value] of Object.entries(appearanceDefaults)){if(typeof saved[key]===typeof value)appearance[key]=saved[key]}}catch(e){}
+const timer=ms=>new Promise(r=>setTimeout(r,ms));
+function fmt(n){return n.toFixed(2)+' s'}
+function median(a){let s=a.slice().sort((x,y)=>x-y);return s.length?s[Math.floor(s.length/2)].toFixed(2)+' s':'—'}
+async function get(path){abort=new AbortController();let id=setTimeout(()=>abort.abort(),20000);
+ try{let r=await fetch(path,{cache:'no-store',signal:abort.signal});if(!r.ok){let detail=await r.text();throw Error('HTTP '+r.status+' '+detail.slice(0,120))}return r}
+ finally{clearTimeout(id);abort=null}}
+function parseCSV(text){
+ const lines=text.split(/\r?\n/), rows=[];
+ let channel='',pointFormat='',stamp='',waveformId='';
+ for(const line of lines){
+  if(line.startsWith('# channel,'))channel=line.slice(10).trim();
+  if(line.startsWith('# point_format,'))pointFormat=line.slice(15).trim();
+  if(line.startsWith('# waveform_id,'))waveformId=line.slice(14).trim();
+  if(line.startsWith('# capture_read_timestamp_utc,'))stamp=line.slice(29).trim();
+  if(!line||line[0]==='#'||line.startsWith('time_seconds,'))continue;
+  const values=line.split(',');const t=Number(values[0]),v=Number(values[1]);
+  if(Number.isFinite(t)&&Number.isFinite(v))rows.push([t,v]);
+ }
+ if(rows.length<2)throw Error('No usable waveform points in '+(channel||'CSV'));
+ if(pointFormat&&pointFormat!=='Y')throw Error('This preview currently handles Y point records; received '+pointFormat);
+ return {rows,channel,stamp,waveformId}
+}
+const viewport={x:30,y:32,w:620,h:500};
+function canvasLabel(ctx,str,x,y,color,size=15){
+ ctx.fillStyle=color;ctx.font='600 '+Math.round(size*Number(appearance.fontScale))+'px system-ui';ctx.fillText(str,x,y);
+}
+function foreground(){
+ const c=appearance.background;
+ let r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16);
+ return .2126*r+.7152*g+.0722*b>145?'#1a2931':'#dce8ec';
+}
+function canvasGrid(ctx,w,h){
+ const g=viewport,sub=Number(appearance.minorDensity),light=foreground()==='#1a2931';
+ ctx.fillStyle=appearance.background;ctx.fillRect(0,0,w,h);
+ if(appearance.showBorder){ctx.strokeStyle=appearance.gridColor;ctx.lineWidth=1.5;ctx.strokeRect(g.x,g.y,g.w,g.h)}
+ ctx.save();
+ for(const axis of ['x','y']){
+  let divisions=axis==='x'?10:8,count=divisions*sub;
+  for(let i=1;i<count;i++){
+   let major=i%sub===0;
+   if((major&&!appearance.showMajor)||(!major&&!appearance.showMinor))continue;
+   let v=axis==='x'?g.x+i*g.w/count:g.y+i*g.h/count;
+   ctx.strokeStyle=appearance.gridColor;ctx.globalAlpha=major?.68:(light?.3:.28);ctx.lineWidth=major?1.15:.7;
+   ctx.setLineDash(appearance.gridStyle==='dotted'?[1,4]:appearance.gridStyle==='dashed'?[5,5]:[]);
+   ctx.beginPath();
+   if(axis==='x'){ctx.moveTo(v,g.y);ctx.lineTo(v,g.y+g.h)}
+   else{ctx.moveTo(g.x,v);ctx.lineTo(g.x+g.w,v)}
+   ctx.stroke();
+  }
+ }
+ ctx.restore();
+ if(appearance.showTicks){
+  ctx.strokeStyle=appearance.centerColor;ctx.lineWidth=1;ctx.beginPath();
+  for(let i=0;i<=10*sub;i++){let x=g.x+i*g.w/(10*sub),span=i%sub===0?Number(appearance.tickLength)+3:Number(appearance.tickLength);
+   ctx.moveTo(x,g.y);ctx.lineTo(x,g.y+span);ctx.moveTo(x,g.y+g.h);ctx.lineTo(x,g.y+g.h-span)}
+  for(let i=0;i<=8*sub;i++){let y=g.y+i*g.h/(8*sub),span=i%sub===0?Number(appearance.tickLength)+3:Number(appearance.tickLength);
+   ctx.moveTo(g.x,y);ctx.lineTo(g.x+span,y);ctx.moveTo(g.x+g.w,y);ctx.lineTo(g.x+g.w-span,y)}
+  ctx.stroke();
+ }
+ ctx.strokeStyle=appearance.centerColor;ctx.lineWidth=1.5;ctx.beginPath();
+ if(appearance.centerVertical){ctx.moveTo(g.x+g.w/2,g.y);ctx.lineTo(g.x+g.w/2,g.y+g.h)}
+ if(appearance.centerHorizontal){ctx.moveTo(g.x,g.y+g.h/2);ctx.lineTo(g.x+g.w,g.y+g.h/2)}
+ ctx.stroke();
+ const tickSub=Number(appearance.centerTickDensity),length=Number(appearance.tickLength);
+ ctx.lineWidth=1;ctx.beginPath();
+ if(appearance.centerHorizontalTicks){
+  for(let i=0;i<=10*tickSub;i++){
+   let x=g.x+i*g.w/(10*tickSub),span=i%tickSub===0?length+4:length;
+   ctx.moveTo(x,g.y+g.h/2-span);ctx.lineTo(x,g.y+g.h/2+span)
+  }
+ }
+ if(appearance.centerVerticalTicks){
+  for(let i=0;i<=8*tickSub;i++){
+   let y=g.y+i*g.h/(8*tickSub),span=i%tickSub===0?length+4:length;
+   ctx.moveTo(g.x+g.w/2-span,y);ctx.lineTo(g.x+g.w/2+span,y)
+  }
+ }
+ ctx.stroke();
+}
+function channelColor(ch){return ch==='CH2'?appearance.colorCH2:appearance.colorCH1}
+function arrow(ctx,x,y,color,direction){
+ ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(x,y);
+ ctx.lineTo(x+direction*12,y-7);ctx.lineTo(x+direction*12,y+7);ctx.closePath();ctx.fill();
+}
+function displayNumber(n,unit){
+ if(!Number.isFinite(n))return '—';
+ let scale=Math.abs(n)>=1?1:Math.abs(n)>=.001?1000:1000000;
+ return (n*scale).toPrecision(3)+(scale===1000?' m':scale===1000000?' µ':' ')+unit;
+}
+async function updateSettings(){
+ let r=await get('/api/state'),d=await r.json();
+ if(!d.connected)throw Error('Scope did not return connected settings');
+ const previous=scopeState;
+ scopeState=d;
+ const positionChanged=previous&&['ch1_position','ch2_position','ch1_offset','ch2_offset'].some(k=>previous[k]!==d[k]);
+ const channelChanged=previous&&['ch1_on','ch2_on'].some(k=>String(previous[k])!==String(d[k]));
+ if((positionChanged||channelChanged)&&lastRecords)draw(lastRecords,traceUpdates);
+ let lines=['Scope readback · '+new Date().toLocaleTimeString()+' · '+displayNumber(Number(d.timebase),'s/div')+' · trigger '+d.trigger_source+' '+d.trigger_slope+' at '+displayNumber(Number(d.trigger_level),'V')+' · '+d.acquisition_label];
+ for(const ch of ['ch1','ch2']){
+  lines.push(ch.toUpperCase()+' '+(String(d[ch+'_on'])==='1'?'ON':'OFF')+' · '+displayNumber(Number(d[ch+'_scale']),'V/div')+
+   ' · position '+Number(d[ch+'_position']).toFixed(2)+' div · offset '+displayNumber(Number(d[ch+'_offset']),'V')+
+   ' · probe '+Number(d[ch+'_probe']).toPrecision(2)+'× · '+d[ch+'_coupling']);
+ }
+ $('settingsInfo').textContent=lines.join('\n');
+}
+async function refreshReadouts(){
+ const r=await get('/api/measurement-slots'),selection=await r.json();
+ const slots=(selection.slots||[]).filter(slot=>String(slot.state)==='1');
+ const channels=[...new Set(slots.map(slot=>slot.source1).filter(ch=>ch==='CH1'||ch==='CH2'))];
+ const values={};
+ for(const ch of channels){let response=await get('/api/measurements?channel='+ch);values[ch]=(await response.json()).readings||{}}
+ const names={FREQ:'Freq',PK2:'Pk-Pk',RMS:'RMS',MEAN:'Mean',PERI:'Period'},
+ keys={FREQ:'frequency',PK2:'pk2pk',RMS:'rms',MEAN:'mean',PERI:'period'};
+ scopeReadouts=slots.map(slot=>{
+  let key=keys[slot.type],reading=(values[slot.source1]||{})[key],v=reading&&reading.valid?Number(reading.value):NaN;
+  let value=Number.isFinite(v)?(slot.type==='FREQ'&&v>=1000?(v/1000).toFixed(3)+' kHz':slot.type==='PERI'&&v<1?(v*1000).toFixed(3)+' ms':v.toPrecision(4)+' '+(reading.unit||'')):'—';
+  return {channel:slot.source1,label:(names[slot.type]||slot.type),value};
+ });
+}
+function channelVisible(ch){
+ const key=ch.toLowerCase();
+ return appearance[ch==='CH2'?'showCH2':'showCH1'] && (!scopeState || String(scopeState[key+'_on'])==='1');
+}
+function draw(records,displaySeq=traceUpdates+1){
+ if(!scopeState)throw Error('Read scope settings first');
+ const canvas=$('trace'),ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height,g=viewport;
+ let secDiv=Number(scopeState.timebase);
+ if(!Number.isFinite(secDiv)||secDiv<=0)throw Error('Invalid scope timebase');
+ if(!records.length){canvasGrid(ctx,w,h);canvasLabel(ctx,'No channels enabled',g.x+80,g.y+g.h/2,foreground(),20);return}
+ let rawMin=Math.min(...records.map(r=>r.rows[0][0]));
+ let xZoom=appearance.zoomEnabled?Number(appearance.viewXZoom):1;
+ let fullWidth=10*secDiv,visibleWidth=fullWidth/xZoom;
+ let xmin=rawMin+(fullWidth-visibleWidth)*(appearance.zoomEnabled?Number(appearance.viewXPan)/100:0),xmax=xmin+visibleWidth;
+ canvasGrid(ctx,w,h);
+ const running=scopeState.running==='1',trig=String(scopeState.trigger_state||'');
+ if(appearance.showHeader){
+  canvasLabel(ctx,running?'Tek Run':'Tek Stop',6,22,foreground(),20);
+  canvasLabel(ctx,trig.startsWith('TRIG')?"Trig'd":trig||'Waiting',552,22,foreground(),18);
+  canvasLabel(ctx,'LIVE DATA',680,22,foreground(),13);
+ }
+ let triggerX=g.x+(-xmin)/(xmax-xmin)*g.w;
+ if(appearance.showTriggerTime&&triggerX>=g.x&&triggerX<=g.x+g.w){
+  ctx.fillStyle=appearance.triggerColor;ctx.fillRect(triggerX-6,g.y-18,12,10);
+  arrow(ctx,triggerX,g.y+5,appearance.triggerColor,1);
+ }
+ for(const rec of records){
+  if(!channelVisible(rec.channel))continue;
+  const key=rec.channel.toLowerCase(),color=channelColor(rec.channel),rows=rec.rows;
+  let voltsDiv=Number(scopeState[key+'_scale']),position=Number(scopeState[key+'_position']),offset=Number(scopeState[key+'_offset']);
+  if(!Number.isFinite(voltsDiv)||voltsDiv<=0||!Number.isFinite(position)||!Number.isFinite(offset))throw Error('Invalid '+rec.channel+' settings');
+  const low=new Float64Array(g.w).fill(Infinity),high=new Float64Array(g.w).fill(-Infinity);
+  for(const [t,v] of rows){
+   let x=Math.floor((t-xmin)/(xmax-xmin)*g.w);if(x<0||x>=g.w)continue;
+   let div=((v-offset)/voltsDiv+position)*(appearance.zoomEnabled?Number(appearance.viewYZoom):1)+
+    (appearance.zoomEnabled?Number(appearance.viewYPan):0);
+   low[x]=Math.min(low[x],div);high[x]=Math.max(high[x],div);
+  }
+  ctx.save();ctx.beginPath();ctx.rect(g.x,g.y,g.w,g.h);ctx.clip();
+  ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=Number(appearance.traceWidth);ctx.beginPath();let started=false,lastX=-2;
+  for(let x=0;x<g.w;x++){
+   if(low[x]===Infinity)continue;
+   let y1=g.y+g.h/2-low[x]*g.h/8,y2=g.y+g.h/2-high[x]*g.h/8;
+   if(appearance.traceStyle==='dots'){
+    ctx.fillRect(g.x+x-1,(y1+y2)/2-1,Number(appearance.traceWidth)+1,Number(appearance.traceWidth)+1);
+    continue;
+   }
+   if(appearance.traceStyle==='line')y1=(y1+y2)/2;
+   if(!started||x-lastX>1){ctx.moveTo(g.x+x,y1);started=true}else ctx.lineTo(g.x+x,y1);
+   if(appearance.traceStyle==='envelope'&&y2!==y1)ctx.lineTo(g.x+x,y2);
+   lastX=x;
+  }
+  if(appearance.traceStyle!=='dots')ctx.stroke();
+  ctx.restore();
+  const displayPosition=position*(appearance.zoomEnabled?Number(appearance.viewYZoom):1)+
+    (appearance.zoomEnabled?Number(appearance.viewYPan):0);
+  const zeroY=g.y+g.h/2-displayPosition*g.h/8;
+  if(appearance.showChannelMarkers&&zeroY>=g.y&&zeroY<=g.y+g.h){
+   arrow(ctx,g.x-2,zeroY,color,1);
+   canvasLabel(ctx,rec.channel==='CH2'?'2':'1',g.x-25,zeroY+5,color,15);
+  }
+ }
+ let triggerChannel=String(scopeState.trigger_source||'');
+ if(appearance.showTriggerLevel&&(triggerChannel==='CH1'||triggerChannel==='CH2')&&channelVisible(triggerChannel)){
+  let key=triggerChannel.toLowerCase(),voltsDiv=Number(scopeState[key+'_scale']),p=Number(scopeState[key+'_position']),off=Number(scopeState[key+'_offset']);
+  let displayDiv=((Number(scopeState.trigger_level)-off)/voltsDiv+p)*(appearance.zoomEnabled?Number(appearance.viewYZoom):1)+
+   (appearance.zoomEnabled?Number(appearance.viewYPan):0);
+  let triggerY=g.y+g.h/2-displayDiv*g.h/8;
+  if(Number.isFinite(triggerY)&&triggerY>=g.y&&triggerY<=g.y+g.h)arrow(ctx,g.x+g.w+2,triggerY,appearance.triggerColor,-1);
+ }
+ let textY=g.y+60;
+ for(const m of (appearance.showMeasurements?scopeReadouts.filter(m=>channelVisible(m.channel)).slice(0,4):[])){
+  canvasLabel(ctx,m.channel+' '+m.label,g.x+g.w+18,textY,channelColor(m.channel),15);
+  canvasLabel(ctx,m.value,g.x+g.w+18,textY+23,channelColor(m.channel),18);
+  textY+=90;
+ }
+ if(appearance.showFooter){
+  ctx.fillStyle=appearance.background;ctx.fillRect(0,g.y+g.h+2,w,h-(g.y+g.h+2));
+  if(channelVisible('CH1'))canvasLabel(ctx,'CH1 '+displayNumber(Number(scopeState.ch1_scale),'V/div'),g.x,g.y+g.h+25,channelColor('CH1'),16);
+  if(channelVisible('CH2'))canvasLabel(ctx,'CH2 '+displayNumber(Number(scopeState.ch2_scale),'V/div'),g.x+175,g.y+g.h+25,channelColor('CH2'),16);
+  canvasLabel(ctx,(appearance.zoomEnabled?'VIEW ':'M ')+displayNumber(secDiv/(appearance.zoomEnabled?Number(appearance.viewXZoom):1),'s/div'),g.x+365,g.y+g.h+25,foreground(),16);
+  canvasLabel(ctx,'A '+scopeState.trigger_source+' '+scopeState.trigger_slope+' '+displayNumber(Number(scopeState.trigger_level),'V'),g.x+518,g.y+g.h+25,appearance.triggerColor,13);
+  if(appearance.showTimestamp)canvasLabel(ctx,'T '+((-xmin)/(10*secDiv)*100).toFixed(1)+'%  ·  '+new Date().toLocaleTimeString(),g.x+8,g.y+g.h+53,foreground(),13);
+  if(appearance.showTraceCount)canvasLabel(ctx,'TRACE '+displaySeq,g.x+g.w+18,g.y+g.h+53,foreground(),14);
+ }
+}
+async function updateTrace(){
+ let t=performance.now(),total=0,wire=0,records=[],signatures=[];
+ for(const ch of ['CH1','CH2'].filter(channelVisible)){let r=await get('/api/waveform.preview.csv?channel='+ch);wire+=Number(r.headers.get('Content-Length'))||0;let content=await r.text();total+=new Blob([content]).size;let hash=2166136261;for(let i=0;i<content.length;i+=17)hash=Math.imul(hash^content.charCodeAt(i),16777619);signatures.push(hash>>>0);records.push(parseCSV(content))}
+ if(!records.length){lastRecords=[];draw([],traceUpdates);$('traceLive').textContent='CH1 and CH2 off · no waveform to update';$('traceTime').textContent='Enable a channel to resume live updates.';return}
+ if(records.some(rec=>{let m=rec.waveformId.match(/([\d.E+-]+) V\/div, ([\d.E+-]+) s\/div/i);return m && (Math.abs(Number(m[1])-Number(scopeState[rec.channel.toLowerCase()+'_scale']))>Number(m[1])*.001 || Math.abs(Number(m[2])-Number(scopeState.timebase))>Number(m[2])*.001)}))await updateSettings();
+ lastRecords=records;recordHistory(records);draw(records);let seconds=(performance.now()-t)/1000;traceTimes.push(seconds);traceUpdates++;
+ let changed=signatures.join(':')!==lastTraceSignature;lastTraceSignature=signatures.join(':');
+ let indicator=$('traceLive');indicator.textContent='Waveform update #'+traceUpdates+' · '+new Date().toLocaleTimeString()+' · '+(changed?'new data':'same data');indicator.classList.add('fresh');setTimeout(()=>indicator.classList.remove('fresh'),700);
+ $('traceTime').textContent='Last '+fmt(seconds)+' · median '+median(traceTimes)+' · '+Math.round(wire/1024)+' KiB transferred ('+Math.round(total/1024)+' KiB expanded) · '+records.map(r=>r.channel+' '+r.rows.length.toLocaleString()+' points').join(' · ')+' · '+new Date().toLocaleTimeString();
+}
+async function updateImage(){
+ let t=performance.now(),endpoint=$('picture').value==='raw'?'/api/screen':'/api/screen/display';
+ let r=await get(endpoint),blob=await r.blob(),url=URL.createObjectURL(blob),img=$('image');
+ try{let pre=new Image();pre.src=url;await pre.decode();img.src=url;if(lastImageURL)URL.revokeObjectURL(lastImageURL);lastImageURL=url}
+ catch(e){URL.revokeObjectURL(url);throw e}
+ let seconds=(performance.now()-t)/1000;imageTimes.push(seconds);imageUpdates++;
+ let indicator=$('imageLive');indicator.textContent='Screenshot update #'+imageUpdates+' · '+new Date().toLocaleTimeString();indicator.classList.add('fresh');setTimeout(()=>indicator.classList.remove('fresh'),700);
+ $('imageTime').textContent='Last '+fmt(seconds)+' · median '+median(imageTimes)+' · '+Math.round(blob.size/1024)+' KiB · '+new Date().toLocaleTimeString();
+}
+async function cycle(){
+ if(waiting)return;waiting=true;$('errors').textContent='';let mode=$('mode').value,errors=[];
+ try{
+  if(mode!=='image'&&$('freezeEnabled').checked){
+   $('traceLive').textContent='Waveform frozen at update #'+traceUpdates+' · uncheck Freeze waveform to resume';
+  }else if(mode!=='image'){
+   try{await updateSettings()}catch(e){errors.push('Scope settings: '+e.message)}
+   if(!scopeReadouts.length||cycles>0&&cycles%5===0){
+    try{await refreshReadouts()}catch(e){errors.push('Measurements: '+e.message)}
+   }
+   try{await updateTrace()}catch(e){errors.push('Waveform: '+e.message);$('traceLive').textContent='Waveform update failed · '+new Date().toLocaleTimeString()}
+  }else $('traceLive').textContent='Waveform paused · screenshot-only mode selected';
+  if(mode==='image'||mode==='compare'&&cycles%3===0){
+   try{await updateImage()}catch(e){errors.push('Screenshot: '+e.message);$('imageLive').textContent='Screenshot update failed · '+new Date().toLocaleTimeString()}
+  }else if(mode==='trace')$('imageLive').textContent='Screenshot paused · waveform-only mode selected';
+  cycles++;
+  $('status').textContent='Live cycle '+cycles+' · waveform '+traceUpdates+' updates · screenshot '+imageUpdates+' updates · '+new Date().toLocaleTimeString();
+  $('errors').textContent=errors.join(' | ');
+ }finally{waiting=false}
+}
+async function run(){
+ if(active)return;active=true;$('start').disabled=true;$('stop').disabled=false;
+ while(active){await cycle();if(!active)break;await timer($('freezeEnabled').checked?500:Number($('delay').value)*1000)}
+ $('start').disabled=false;$('stop').disabled=true;$('status').textContent+=' · Stopped';
+}
+$('start').onclick=run;
+$('stop').onclick=()=>{active=false;if(abort)abort.abort()};
+$('once').onclick=()=>cycle();
+$('settings').onclick=async()=>{try{await updateSettings();await refreshReadouts();if(lastRecords)draw(lastRecords)}catch(e){$('errors').textContent='Settings read failed: '+e.message}};
+function syncAppearance(){
+ for(const [id,value] of Object.entries(appearance)){const el=$(id);if(el){if(el.type==='checkbox')el.checked=!!value;else el.value=value}}
+ if(lastRecords&&scopeState)draw(lastRecords,traceUpdates);
+ else canvasGrid($('trace').getContext('2d'),800,600);
+}
+$('appearancePanel').addEventListener('input',event=>{
+ const el=event.target,key=el.id;if(!(key in appearanceDefaults))return;
+ const value=el.type==='checkbox'?el.checked:el.value;
+ if(el.type==='color'&&!/^#[0-9a-f]{6}$/i.test(value))return;
+ if((key==='showCH1'||key==='showCH2')&&!value&&!appearance[key==='showCH1'?'showCH2':'showCH1']){el.checked=true;return}
+ appearance[key]=value;
+ try{localStorage.setItem('scopeTraceAppearance.v1',JSON.stringify(appearance))}catch(e){}
+ syncAppearance();
+});
+$('resetAppearance').onclick=()=>{
+ appearance={...appearanceDefaults};
+ try{localStorage.removeItem('scopeTraceAppearance.v1')}catch(e){}
+ syncAppearance();
+};
+$('saveTracePNG').onclick=()=>{
+ const canvas=$('trace');canvas.toBlob(blob=>{
+  if(!blob)return;
+  const link=document.createElement('a'),url=URL.createObjectURL(blob);
+  link.href=url;link.download='tek-simulated-display-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png';
+  document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+ },'image/png');
+};
+window.refreshClassicMeasurements=async()=>{await refreshReadouts();if(lastRecords&&scopeState)draw(lastRecords,traceUpdates)};
+syncAppearance();
+</script><script src="/static/trace-extras.js?v=3"></script><script>
+if(new URLSearchParams(location.search).has('classic_embed')){
+  document.documentElement.classList.add('classic-embed');
+  document.getElementById('mode').value='trace';
+  document.getElementById('delay').value='0';
+  document.getElementById('start').click();
+}
+</script></body></html>

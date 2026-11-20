@@ -32,6 +32,8 @@ HTTPS web maintenance reuses the existing dashboard credentials. Trusted-LAN HTT
 | HP 33120A function generator | [controllers/generator](controllers/generator) | 8084 |
 | HP 5385A frequency counter | [controllers/counter](controllers/counter) | 8085 |
 
+The Tektronix Classic front panel is at port 8081 /classic, and the Modern dashboard is at port 8081 /. Classic includes the live trace, screen-only browser Print, and working Trigger and Vertical Menu controls.
+
 The fresh suite dashboard uses port 8080. Existing HTTPS installations retain their configured URLs and authentication. Navigation uses the current browser host. Supply and meter share one adapter broker; do not run a direct-adapter application against that same adapter.
 
 ## Maintenance and recovery

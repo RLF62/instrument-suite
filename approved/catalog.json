@@ -1,5 +1,5 @@
 {
-  "version": "development-2026-11-19",
+  "version": "development-2026-11-20",
   "tools": {
     "meter": {
       "name": "HP 34401A Multimeter",
@@ -13,8 +13,8 @@
     },
     "scope": {
       "name": "Tektronix Ethernet",
-      "description": "Scope dashboard, captures and setup over Ethernet. Enter the scope IP after installing.",
-      "sha256": "cb249bc76bdcaab2646cf99cfd4edf986d0d447f83f6caed4cbc8e232448125d"
+      "description": "Photographic Classic with screen-only Print, Trigger and Vertical controls, live waveform, and Modern scope dashboard. Enter the scope IP after installing.",
+      "sha256": "fcf0c51aab385a2639c3e424e6a9442101c23033e3bdd024741a36fa622cd65b"
     },
     "generator": {
       "name": "HP 33120A Function Generator",
