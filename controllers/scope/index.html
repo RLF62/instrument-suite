@@ -97,9 +97,22 @@ body.layout-editing .suite-grid .tile-resize{display:block;position:absolute;rig
 <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/icon-180.png">
 <link rel="manifest" href="/static/manifest.webmanifest?v=branding-1">
 <meta name="apple-mobile-web-app-title" content="TDS 3032B">
-</head><body>
-<header><div><div class="eyebrow">FISCHER LAB / OSCILLOSCOPE</div><h1>Tektronix TDS 3032B</h1><div class="muted">Ethernet controller · v0.3.3</div></div>
-<nav><a id="suiteLink" class="link" href="/">Back to instrument suite</a><span id="connection" class="pill">Connecting…</span><a class="link" href="/setup">Setup</a><a class="link" href="/docs/" target="_blank">Documentation</a></nav></header>
+<style id="suite-direct-header-style">
+body>nav.suite-direct-header{box-sizing:border-box!important;width:100%!important;max-width:none!important;min-height:76px!important;margin:0 0 14px!important;padding:14px max(20px,2vw)!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;align-items:center!important;gap:16px!important;background:#1e2226!important;border-top:2px solid #d0d6d9!important;border-bottom:1px solid #394550!important;border-radius:0!important;color:#f2f6f8!important;font:14px system-ui,sans-serif!important}
+body>nav.suite-direct-header>strong{grid-column:2!important;text-align:center!important;white-space:nowrap!important;letter-spacing:.04em!important;font:700 15px system-ui,sans-serif!important;color:#f2f6f8!important}
+.suite-direct-header .suite-unified-links,.suite-direct-header .suite-unified-actions{display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:wrap!important}
+.suite-direct-header .suite-unified-links{grid-column:1!important;justify-content:flex-start!important}.suite-direct-header .suite-unified-actions{grid-column:3!important;justify-content:flex-end!important}
+.suite-direct-header a{display:inline-flex!important;align-items:center!important;min-height:40px!important;padding:7px 12px!important;border:1px solid #466b71!important;border-radius:5px!important;background:transparent!important;color:#a7e9eb!important;text-decoration:none!important;font:13px system-ui,sans-serif!important;white-space:nowrap!important}
+.suite-direct-header a[aria-current="page"]{background:#31494f!important;border-color:#8de0e6!important;color:#fff!important}
+.suite-direct-header a:hover{background:#2b4348!important}
+.suite-unified-status{text-align:center!important;margin:8px auto 15px!important}.suite-unified-status>*{display:inline-block!important}
+@media(max-width:1100px){body>nav.suite-direct-header{grid-template-columns:1fr!important;justify-items:center!important}.suite-direct-header .suite-unified-links,.suite-direct-header>strong,.suite-direct-header .suite-unified-actions{grid-column:1!important;justify-content:center!important}.suite-direct-header .suite-unified-links{grid-row:2!important}.suite-direct-header>strong{grid-row:1!important}.suite-direct-header .suite-unified-actions{grid-row:3!important}}
+</style></head><body>
+<nav class="suite-direct-header" aria-label="Instrument navigation">
+<div class="suite-unified-links"><a href="/" data-suite-port="8083">HP 6033A</a><a href="/" data-suite-port="8082" data-suite-path="/multimeter/classic">HP 34401A</a><a href="/" data-suite-port="8084" data-suite-path="/generator/classic">HP 33120A</a><a href="/" data-suite-port="8085" data-suite-path="/classic">HP 5385A</a><a href="/api/suite/manager">Add instruments</a></div>
+<strong>TEKTRONIX TDS 3032B</strong><div class="suite-unified-actions"><a id="suiteLink" href="/" data-suite-port="8080">Suite Home</a><a href="/setup">Setup</a><a href="/docs/">Documentation</a></div></nav>
+<div class="suite-unified-status"><span id="connection" class="pill">Connecting…</span></div>
+<script>document.querySelectorAll('[data-suite-port]').forEach(a=>a.href=location.protocol+'//'+location.hostname+':'+a.dataset.suitePort+(a.dataset.suitePath||'/'));</script>
 <div class="layoutbar suite-layoutbar"><button id="editLayout" aria-pressed="false">Customize Layout</button><button id="resetLayout">Reset Layout</button><span class="muted">Customize Layout to move panels, choose Half/Full width, or adjust height. Drag the lower-right corner on desktop, or use Shorter/Taller. Sizes and order are saved in this browser; narrow screens use full width and automatic height.</span></div>
 <main id="panels">
 <section id="panel-screen" class="card wide"><div class="heading"><h2>Scope display</h2><span id="host" class="muted">Scope connection</span></div>
@@ -363,7 +376,7 @@ async function poll(){
 setInterval(updateFreshness,1000);updateFreshness();
 disableControls();
 task(async()=>{const c=await json('/api/config');$('host').textContent=c.address;await loadPresets();await loadMeasurements();await refreshAll();await readMeasurements()}).finally(()=>setTimeout(poll,2000));
-</script><script>const tekHead=document.querySelector('header'),tekTitle=tekHead.querySelector('h1'),tekNav=tekHead.querySelector('nav'),tekBar=document.querySelector('.layoutbar');tekHead.replaceChildren(tekTitle,...tekNav.children,tekBar);tekHead.classList.add('suite-topbar');tekHead.style.margin='16px auto';tekHead.style.padding='0 22px';
+</script><script>
 (function(config){
  const $=id=>document.getElementById(id);
  let grid=document.querySelector(config.root);
@@ -444,4 +457,4 @@ task(async()=>{const c=await json('/api/config');$('host').textContent=c.address
  });
  $('layout-reset').addEventListener('click',()=>{try{localStorage.removeItem(storageKey())}catch{}tiles.forEach(n=>{grid.insertBefore(n,grid.querySelector(':scope>footer'));n.dataset.userHidden='false';applySize(n,Number(n.dataset.defaultSpan)||12,0)});emit('reset');save()});
  $('layout-show-all').addEventListener('click',()=>{tiles.forEach(n=>{n.dataset.userHidden='false';const b=n.querySelector('.tile-visibility');if(b)b.textContent='Hide'});emit('showall');save()});mode.addEventListener('change',()=>{restore();emit('load')});restore();
-})({"root":"#panels","tiles":":scope>.card","toolbar":".layoutbar","prefix":"tek","breakpoint":900});(function(){const host=location.hostname;document.querySelectorAll('.suite-topbar a,nav[aria-label="Instrument navigation"] a').forEach(a=>a.classList.add('suite-tool-link'));const tekTitle=document.querySelector('.suite-topbar h1');if(tekTitle?.textContent.includes('Tektronix')){const back=document.getElementById('suiteLink');if(back){back.textContent='HP 6033A';back.href=location.protocol+'//'+host+'/'}const meter=document.createElement('a');meter.href=location.protocol+'//'+host+'/multimeter/classic';meter.textContent='HP 34401A';meter.className='suite-tool-link';document.querySelector('.suite-topbar').insertBefore(meter,document.querySelector('.suite-topbar .suite-layoutbar'))}const meterNav=document.querySelector('nav[aria-label="Instrument navigation"]');if(meterNav){const supply=meterNav.querySelector('a'),group=document.createElement('div');group.className='suite-tool-links';supply.before(group);group.append(supply);const tek=document.createElement('a');tek.href=location.protocol+'//'+host+':8081/';tek.textContent='Tektronix TDS 3032B';tek.className='suite-tool-link';group.append(tek)}})();</script></body></html>
+})({"root":"#panels","tiles":":scope>.card","toolbar":".layoutbar","prefix":"tek","breakpoint":900});</script></body></html>

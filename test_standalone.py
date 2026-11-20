@@ -62,6 +62,16 @@ class StandaloneTests(unittest.TestCase):
             html=suite_navigation.header_html('meter','/multimeter/modern','192.168.1.108',{'counter':{'scheme':'http','port':8085}})
         self.assertIn('href="http://192.168.1.108:8085/modern?header=2"',html)
 
+    def test_packaged_scope_keeps_layout_button_outside_hidden_header(self):
+        page=(Path(__file__).parent/'controllers/scope/index.html').read_text()
+        toolbar='<div class="layoutbar suite-layoutbar">'
+        self.assertEqual(page.count(toolbar),1)
+        self.assertIn('id="editLayout"',page)
+        self.assertIn('id="layout-customize"',page)
+        self.assertLess(page.index('</nav>'),page.index(toolbar))
+        self.assertNotIn('const tekHead=',page)
+        self.assertNotIn('192.168.1.108',page)
+
     def test_file_served_scope_page_gets_navigation_without_stale_etag(self):
         with tempfile.TemporaryDirectory() as d:
             page=Path(d)/'index.html';page.write_text('<html><body><nav class="suite-direct-header">OLD</nav><main>Scope</main></body></html>')
