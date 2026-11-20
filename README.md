@@ -60,7 +60,7 @@ Start with the [instrument starter template and development checklist](instrumen
 - [Add/remove instruments and approved catalog](CATALOG.md)
 - [Current acceptance record](FRESH_CARD_VALIDATION.md)
 
-All controller source, operating manuals and screenshots live in this repository. New controllers should be added under `controllers/<name>` and enrolled in the signed suite manifest. New signed release archives are published together on the suite release. Historic signed releases still refer to immutable assets in the earlier controller repositories; keep those assets available for recovery.
+All controller source, operating manuals and screenshots live in this repository. New controllers should be added under `controllers/<name>` and enrolled in the signed suite manifest. New signed release archives are published together on the suite release. The supported install and update path starts at the self-contained v1.0.17 signed release in this repository. Earlier releases and standalone controller repositories are legacy archives, and their old release/download links are no longer maintained.
 
 ## Original ZIP installers
 
