@@ -142,7 +142,7 @@ def install(app, current='meter', default=('meter',)):
                 host=urlsplit(request.host_url).hostname or request.host.split(':')[0]
                 top=header_html(tool,request.path,host,records)
                 body=re.sub(r'<body(\s[^>]*)?>',lambda m:m.group(0)[:-1]+' data-suite-page="'+tool+'">'+top,body,count=1,flags=re.I)
-                body = body.replace('</body>', '<script defer src="/api/suite/navigation.js?v=20261119-header9"></script></body>')
+                body = body.rsplit('</body>', 1)[0] + '<script defer src="/api/suite/navigation.js?v=20261119-header9"></script></body>'
                 response.set_data(body)
                 response.headers.pop('ETag', None)
                 response.headers['Cache-Control'] = 'no-cache'

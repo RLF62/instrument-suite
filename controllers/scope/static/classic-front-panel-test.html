@@ -419,11 +419,15 @@ $('applyKnob').onclick=async()=>{
 function printScopeScreen(){
  const tab=window.open('','_blank');
  if(!tab){message('Allow popups to print the scope screen.',true);return}
- tab.document.write('<!doctype html><html><head><title>Tektronix scope screen</title><style>@page{size:landscape;margin:10mm}body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh}img{display:block;max-width:100%;max-height:95vh;object-fit:contain}@media print{body{min-height:0}img{max-height:180mm}}</style></head><body><img id="printImage" alt="Tektronix scope screen"></body></html>');
- tab.document.close();
- const img=tab.document.getElementById('printImage');
+ tab.document.title='Tektronix scope screen';
+ const style=tab.document.createElement('style');
+ style.textContent='@page{size:landscape;margin:10mm}body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh}img{display:block;max-width:100%;max-height:95vh;object-fit:contain}@media print{body{min-height:0}img{max-height:180mm}}';
+ tab.document.head.append(style);
+ const img=tab.document.createElement('img');
+ img.alt='Tektronix scope screen';
  img.onload=()=>{tab.focus();tab.print()};
  img.onerror=()=>{tab.document.body.textContent='Could not capture the scope screen. Close this tab and retry.'};
+ tab.document.body.replaceChildren(img);
  img.src='/api/screen?print='+Date.now();
  message('Opening screen-only print preview…');
 }
