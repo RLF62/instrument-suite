@@ -1,4 +1,4 @@
-"""Fischer Lab Tektronix controller, v0.3.9. One worker; threaded requests serialized."""
+"""Fischer Lab Tektronix controller, v0.3.10. One worker; threaded requests serialized."""
 import gzip
 import json
 import logging
@@ -17,7 +17,7 @@ from scope_io import (ROOT, ScopeError, ask, atomic_json, channel, config, measu
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 262144
-VERSION = '0.3.9'
+VERSION = '0.3.10'
 FIELDS = {
  'timebase': ('HORIZONTAL:MAIN:SCALE', 1e-9, 10),
  'acq_mode': ('ACQUIRE:MODE', ('SAMPLE','PEAKDETECT','AVERAGE','ENVELOPE')),
@@ -154,6 +154,62 @@ def state():
     with scope() as (s,c):
         return jsonify(read_state(s,c))
 
+# Scoped, validated controls for the photographed front panel. Queries run only while a popup is open.
+FRONT_PANEL_QUERIES={
+ 'horizontal':{'position':'HORIZONTAL:TRIGGER:POSITION','delay':'HORIZONTAL:DELAY:STATE',
+               'delay_time':'HORIZONTAL:DELAY:TIME','scale':'HORIZONTAL:MAIN:SCALE'},
+ 'reference':{f'ref{n}':f'SELECT:REF{n}' for n in range(1,5)},
+ 'intensity':{'waveform':'DISPLAY:INTENSITY:WAVEFORM'},
+ 'b_trigger':{'enabled':'TRIGGER:B:STATE','source':'TRIGGER:B:EDGE:SOURCE',
+              'slope':'TRIGGER:B:EDGE:SLOPE','level':'TRIGGER:B:LEVEL'}
+}
+FRONT_PANEL_OPTIONS={
+ ('horizontal','delay'):('0','1'),
+ **{('reference',f'ref{n}'):('0','1') for n in range(1,5)},
+ ('b_trigger','enabled'):('0','1'),
+ ('b_trigger','source'):('CH1','CH2','EXT','EXT10'),
+ ('b_trigger','slope'):('RISE','FALL')
+}
+FRONT_PANEL_RANGES={
+ ('horizontal','position'):(0,100),('horizontal','delay_time'):(0,50),
+ ('intensity','waveform'):(1,100),('b_trigger','level'):(-1000,1000)
+}
+
+
+def front_panel_values(s,group):
+    return {name:ask(s,command+'?') for name,command in FRONT_PANEL_QUERIES[group].items()}
+
+
+@app.get('/api/front-panel/<group>')
+def front_panel_status(group):
+    if group not in FRONT_PANEL_QUERIES:raise ScopeError('Unknown front panel group.',404)
+    with scope() as (s,_):return jsonify(front_panel_values(s,group))
+
+
+@app.post('/api/front-panel/<group>')
+def front_panel_control(group):
+    d=request.get_json(silent=True)
+    if group not in FRONT_PANEL_QUERIES or not isinstance(d,dict) or set(d)!={'key','value'}:
+        raise ScopeError('Invalid front panel control.',400)
+    key,val=d['key'],d['value']
+    command=FRONT_PANEL_QUERIES[group].get(key)
+    if not command:raise ScopeError('Unknown front panel setting.',400)
+    choices=FRONT_PANEL_OPTIONS.get((group,key))
+    limits=FRONT_PANEL_RANGES.get((group,key))
+    if choices:
+        if not isinstance(val,str) or val not in choices:raise ScopeError('Invalid option.',400)
+    elif limits:
+        try: number=float(val)
+        except (ValueError,TypeError):raise ScopeError('Enter a number.',400)
+        if not math.isfinite(number) or not limits[0]<=number<=limits[1]:
+            raise ScopeError('Value outside supported range.',400)
+        val=format(number,'.12g')
+    else:raise ScopeError('Read-only front panel setting.',400)
+    with scope() as (s,_):
+        s.write(command+' '+val)
+        return jsonify(ok=True,**front_panel_values(s,group))
+
+
 @app.get('/api/math')
 def math_status():
     with scope() as (s,_):
@@ -220,13 +276,19 @@ def control():
     if not isinstance(d,dict) or set(d) != {'key','value'}:
         raise ScopeError('Expected key and value.',400)
     key,val = d['key'],d['value']
-    if key in ('running','single','menu_off','autoset'):
+    if key in ('running','single','menu_off','autoset','force_trigger','trigger_half'):
         if (key == 'running' and val not in ('0','1')) or (key != 'running' and val != '1'):
             raise ScopeError('Invalid action.',400)
         command = None
     else:
         command = command_for(key,val)
     with scope() as (s,c):
+        if key == 'force_trigger':
+            s.write('TRIGGER FORCE')
+            return jsonify(ok=True,message='Force trigger requested.')
+        if key == 'trigger_half':
+            s.write('TRIGGER:A:SETLEVEL')
+            return jsonify(ok=True,level=ask(s,'TRIGGER:A:LEVEL?'),message='Trigger level set to 50% of the signal.')
         if key == 'autoset':
             s.write('AUTOSET EXECUTE')
             return jsonify(ok=True, message='Autoset requested; reading scope status and resulting settings.')

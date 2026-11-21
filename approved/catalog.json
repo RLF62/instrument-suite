@@ -13,8 +13,8 @@
     },
     "scope": {
       "name": "Tektronix Ethernet",
-      "description": "Photographic Classic with Math, ACQUIRE, SAVE/RECALL, Trigger and Vertical popups plus screen-only Print; Modern dashboard. Enter the scope IP after installing.",
-      "sha256": "c6ba0cdeb9e248a7105604ccb625b5c91900a8635fd64d18fd0b0f47a7ffbc62"
+      "description": "Classic scope photo with Math, Trigger, Acquisition, Horizontal, Reference, intensity and Saved Setup controls, plus Modern dashboard. Enter scope IP after installing.",
+      "sha256": "2d0177fbf580207b633ce0118638a2b2124e935e88c5b8de0dbc7233cf25e79e"
     },
     "generator": {
       "name": "HP 33120A Function Generator",

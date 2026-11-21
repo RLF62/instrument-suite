@@ -61,7 +61,11 @@ a{color:#8de4e2}h1{font-size:1.45rem;margin:.3em 0}p{line-height:1.5;color:#bcd0
 #measurementPopup header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 14px;background:#1d3443;min-height:48px}
 #measurementPopup button{min-height:35px;padding:6px 12px;border:1px solid #7ca9ae;border-radius:5px;background:#294a56;color:white;cursor:pointer}
 #measurementPopup p{margin:0;padding:9px 14px;color:#c6e6e4;font-size:13px;line-height:1.4}
-#mathPanel[hidden]{display:none!important}
+#frontPanelOptions[hidden],#frontPanelOptions section[hidden],#mathPanel[hidden]{display:none!important}
+#frontPanelOptions section{display:grid;gap:12px}
+#frontPanelOptions label{display:grid;gap:5px;color:#cce9ec}
+#frontPanelOptions input,#frontPanelOptions select{padding:8px;background:#203746;color:white;border:1px solid #7ca9ae;border-radius:5px;font-size:inherit}
+#frontPanelOptions p{padding:0!important}
 #measurementFrame[hidden]{display:none!important}
 #mathPanel label{display:grid;gap:6px;color:#cce9ec}
 #mathPanel select{padding:9px;background:#203746;color:white;border:1px solid #7ca9ae;border-radius:5px;font-size:inherit}
@@ -114,6 +118,13 @@ a{color:#8de4e2}h1{font-size:1.45rem;margin:.3em 0}p{line-height:1.5;color:#bcd0
 <button type="button" id="mathApply">Apply operation and show Math</button><button type="button" id="mathRead">Read scope Math settings</button>
 <div id="mathStatus" role="status">Waiting for scope…</div><small>The operation controls the real scope's Math waveform. The simulated CH1/CH2 display continues to show those two channels.</small>
 </div>
+<div id="frontPanelOptions" hidden style="flex:1;padding:16px;overflow:auto;display:grid;align-content:start;gap:14px;background:#101b29">
+<section data-group="horizontal" hidden><label>Trigger position (%) <input data-key="position" type="number" min="0" max="100" step="1"></label><label>Horizontal scale (seconds/div, read-only) <input data-key="scale" type="text" readonly></label><label>Delay <select data-key="delay"><option value="0">Off</option><option value="1">On</option></select></label><label>Delay time (seconds) <input data-key="delay_time" type="number" min="0" max="50" step="any"></label><button type="button" data-apply="position">Apply trigger position</button><button type="button" data-apply="delay_time">Apply delay time</button></section>
+<section data-group="reference" hidden><p>Select which saved reference traces are visible on the scope.</p><label>REF 1 <select data-key="ref1"><option value="0">Off</option><option value="1">On</option></select></label><label>REF 2 <select data-key="ref2"><option value="0">Off</option><option value="1">On</option></select></label><label>REF 3 <select data-key="ref3"><option value="0">Off</option><option value="1">On</option></select></label><label>REF 4 <select data-key="ref4"><option value="0">Off</option><option value="1">On</option></select></label></section>
+<section data-group="intensity" hidden><label>Scope waveform brightness (%) <input data-key="waveform" type="range" min="1" max="100" step="1"></label><output id="intensityValue"></output><button type="button" data-apply="waveform">Apply brightness</button><p>This adjusts the real scope screen, not the simulated display.</p></section>
+<section data-group="b_trigger" hidden><label>B trigger <select data-key="enabled"><option value="0">Off</option><option value="1">On</option></select></label><label>B source <select data-key="source"><option>CH1</option><option>CH2</option><option>EXT</option><option>EXT10</option></select></label><label>B slope <select data-key="slope"><option value="RISE">Rising</option><option value="FALL">Falling</option></select></label><label>B level (V) <input data-key="level" type="number" min="-1000" max="1000" step="any"></label><button type="button" data-apply="level">Apply B trigger level</button></section>
+<button type="button" id="frontPanelRead">Read scope settings</button><div id="frontPanelStatus" role="status"></div>
+</div>
 <button id="measurementResizeGrip" type="button" aria-label="Drag lower-left corner to resize measurement window" title="Drag this corner to resize measurements and text"></button></div>
 <div id="knobShade" hidden><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="knobTitle">
 <h2 id="knobTitle"></h2><p id="knobHelp"></p><label>Value <input id="knobValue" type="number" step="any"></label><div class="actions"><button type="button" id="stepDown">− step</button><button type="button" id="stepUp">+ step</button><button type="button" id="cancelKnob">Cancel</button><button type="button" id="applyKnob">Apply to scope</button></div></div></div>
@@ -128,8 +139,12 @@ const positions=[
  ['Single sequence',1861,359,85,64,'single'],['Autoset',1862,441,84,57,'autoset'],
  ['Menu OFF',1040,719,70,73,'menu_off'],['Measure settings',1527,94,78,63,'measure'],
  ['Saved setups',1624,94,78,63,'presets'],['Math settings',1255,632,77,61,'math'],
+ ['Quick menu / scope screen options',1722,94,79,64,'quickmenu'],['Controller setup',1723,168,76,62,'utility'],
+ ['Reference waveforms',1255,719,76,60,'reference'],
  ['Cursor display',1527,166,78,64,'cursor'],['Display settings',1624,165,78,65,'display'],
- ['Utility / full settings',1723,168,76,62,'display'],
+ ['Horizontal delay',1543,439,81,57,'horizontal'],['Horizontal options',1545,714,79,63,'horizontal'],
+ ['Set A trigger level to 50%',1707,439,83,61,'trigger_half'],['Force trigger',1706,531,85,64,'force_trigger'],
+ ['B trigger settings',1708,622,82,60,'b_trigger'],['Waveform intensity',1871,603,92,94,'intensity'],
  ['Vertical position',1367,307,100,99,'ch_position'],['Vertical scale',1355,555,112,113,'ch_scale'],
  ['Horizontal position',1535,308,98,96,'h_position'],['Horizontal scale',1525,554,114,115,'timebase'],
  ['Trigger level',1704,312,89,89,'trigger_level'],
@@ -326,7 +341,7 @@ function setMeasurementFont(n,persist=false){
  $('measurementFont').value=n;$('measurementFontLabel').textContent=n+' px';
  const doc=$('measurementFrame').contentDocument;
  if(doc?.getElementById('panel-measurements'))doc.documentElement.style.zoom=(n/14).toFixed(2);
- $('mathPanel').style.fontSize=n+'px';
+ $('mathPanel').style.fontSize=n+'px';$('frontPanelOptions').style.fontSize=n+'px';
  if(persist)try{localStorage.setItem('scopeClassicMeasurementFont.v1',String(n))}catch(e){}
 }
 function syncMeasurementFont(){
@@ -378,13 +393,50 @@ async function applyMath(action,value){
 $('mathDisplay').onchange=e=>applyMath('display',e.target.value);
 $('mathApply').onclick=()=>applyMath('operation',$('mathOperation').value);
 $('mathRead').onclick=readMath;
+let frontPanelGroup='';
+async function readFrontPanel(){
+ const status=$('frontPanelStatus');status.textContent='Reading scope settings…';
+ try{const r=await fetch('/api/front-panel/'+frontPanelGroup,{cache:'no-store'}),d=await r.json();if(!r.ok)throw Error(d.error||'Scope read failed');
+  const section=$('frontPanelOptions').querySelector('[data-group="'+frontPanelGroup+'"]');
+  for(const input of section.querySelectorAll('[data-key]')){
+   const val=d[input.dataset.key];if(val===undefined)continue;
+   input.value=String(val).toUpperCase()==='ON'?'1':String(val).toUpperCase()==='OFF'?'0':val;
+  }
+  if(frontPanelGroup==='intensity')$('intensityValue').textContent=d.waveform+'%';
+  status.textContent='Scope settings read at '+new Date().toLocaleTimeString();
+ }catch(e){status.textContent=e.message}
+}
+async function applyFrontPanel(key,value){
+ const status=$('frontPanelStatus');status.textContent='Applying '+key+'…';
+ try{const r=await fetch('/api/front-panel/'+frontPanelGroup,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value})}),d=await r.json();if(!r.ok)throw Error(d.error||'Scope rejected the setting');
+  await readFrontPanel();iframe.contentWindow?.updateSettings?.().catch(()=>{});
+ }catch(e){status.textContent=e.message}
+}
+function showFrontPanel(group,title){
+ closeSettings();const popup=$('measurementPopup');frontPanelGroup=group;popup.dataset.view='front-panel';
+ popup.querySelector('header strong').textContent=title;popup.querySelector('p').hidden=true;
+ popup.hidden=false;$('measurementFrame').hidden=true;$('mathPanel').hidden=true;
+ const box=$('frontPanelOptions');box.hidden=false;
+ for(const section of box.querySelectorAll('[data-group]'))section.hidden=section.dataset.group!==group;
+ syncMeasurementFont();readFrontPanel();
+}
+$('frontPanelRead').onclick=readFrontPanel;
+$('frontPanelOptions').addEventListener('change',e=>{
+ const input=e.target;if(input.tagName==='SELECT'&&input.dataset.key)applyFrontPanel(input.dataset.key,input.value);
+ if(input.dataset.key==='waveform')$('intensityValue').textContent=input.value+'%';
+});
+$('frontPanelOptions').addEventListener('click',e=>{
+ const key=e.target.dataset.apply;if(!key)return;
+ const input=$('frontPanelOptions').querySelector('[data-group="'+frontPanelGroup+'"] [data-key="'+key+'"]');
+ if(input?.value)applyFrontPanel(key,input.value);
+});
 function showMath(){
- closeSettings();const popup=$('measurementPopup');popup.dataset.view='math';
+ $('frontPanelOptions').hidden=true;closeSettings();const popup=$('measurementPopup');popup.dataset.view='math';
  popup.querySelector('header strong').textContent='Math settings';popup.querySelector('p').hidden=true;
  popup.hidden=false;$('measurementFrame').hidden=true;$('mathPanel').hidden=false;syncMeasurementFont();readMath();
 }
 function showVertical(){
- $('mathPanel').hidden=true;$('measurementFrame').hidden=false;
+ $('frontPanelOptions').hidden=true;$('mathPanel').hidden=true;$('measurementFrame').hidden=false;
  closeSettings();
  const popup=$('measurementPopup'),frame=$('measurementFrame');
  popup.dataset.view='vertical';
@@ -395,7 +447,7 @@ function showVertical(){
  frame.src='/?measurement_popup=1&vertical_popup=1&channel='+selected.slice(2);
 }
 function showSavedSetups(){
- $('mathPanel').hidden=true;$('measurementFrame').hidden=false;
+ $('frontPanelOptions').hidden=true;$('mathPanel').hidden=true;$('measurementFrame').hidden=false;
  closeSettings();
  const popup=$('measurementPopup'),frame=$('measurementFrame');
  popup.dataset.view='presets';
@@ -406,7 +458,7 @@ function showSavedSetups(){
  frame.src='/?measurement_popup=1&presets_popup=1';
 }
 function showAcquisition(){
- $('mathPanel').hidden=true;$('measurementFrame').hidden=false;
+ $('frontPanelOptions').hidden=true;$('mathPanel').hidden=true;$('measurementFrame').hidden=false;
  closeSettings();
  const popup=$('measurementPopup'),frame=$('measurementFrame');
  popup.dataset.view='acquisition';
@@ -417,7 +469,7 @@ function showAcquisition(){
  frame.src='/?measurement_popup=1&acquisition_popup=1';
 }
 function showTrigger(){
- $('mathPanel').hidden=true;$('measurementFrame').hidden=false;
+ $('frontPanelOptions').hidden=true;$('mathPanel').hidden=true;$('measurementFrame').hidden=false;
  closeSettings();
  const popup=$('measurementPopup'),frame=$('measurementFrame');
  popup.dataset.view='trigger';
@@ -428,7 +480,7 @@ function showTrigger(){
  frame.src='/?measurement_popup=1&trigger_popup=1';
 }
 function showMeasurements(){
- $('mathPanel').hidden=true;$('measurementFrame').hidden=false;
+ $('frontPanelOptions').hidden=true;$('mathPanel').hidden=true;$('measurementFrame').hidden=false;
  closeSettings();
  const popup=$('measurementPopup'),frame=$('measurementFrame');
  const prior=popup.dataset.view;
@@ -442,7 +494,7 @@ function closeMeasurements(){$('measurementPopup').hidden=true}
 $('closeMeasurements').onclick=closeMeasurements;
 $('measurementFrame').addEventListener('load',()=>{
  const frame=$('measurementFrame'),doc=frame.contentDocument;
- if(!doc||measureBox.dataset.view==='math')return;
+ if(!doc||measureBox.dataset.view==='math'||measureBox.dataset.view==='front-panel')return;
  doc.getElementById('suite-unified-header')?.remove();
  const style=doc.createElement('style');
  const target=measureBox.dataset.view==='trigger'?'panel-trigger':measureBox.dataset.view==='vertical'?'panel-'+selected:measureBox.dataset.view==='acquisition'?'panel-acquisition':measureBox.dataset.view==='presets'?'panel-presets':'panel-measurements';
@@ -506,6 +558,13 @@ async function handle(action){
  if(action==='acquisition'){showAcquisition();return}
  if(action==='presets'){showSavedSetups();return}
  if(action==='math'){showMath();return}
+ if(action==='horizontal'||action==='h_position'){showFrontPanel('horizontal','Horizontal settings');return}
+ if(action==='reference'){showFrontPanel('reference','Reference waveforms');return}
+ if(action==='intensity'){showFrontPanel('intensity','Waveform intensity');return}
+ if(action==='b_trigger'){showFrontPanel('b_trigger','B trigger settings');return}
+ if(action==='quickmenu'){showSettings();return}
+ if(action==='utility'){window.open('/setup','scope-setup');return}
+ if(action==='force_trigger'||action==='trigger_half'){await control(action,'1',{refreshTrace:true});return}
  if(action==='ch_settings'){showVertical();return}
  if(action==='measure'){showMeasurements();return}
  if(action==='display'){showSettings();return}
@@ -527,7 +586,7 @@ async function handle(action){
  if(action==='ch_scale'){await editNumber(selected+'_scale',selected.toUpperCase()+' vertical scale',.000001,10000,1,'V/div');return}
  if(action==='timebase'){await editNumber('timebase','Horizontal timebase',.000000001,10,1,'s/div');return}
  if(action==='trigger_level'){await editNumber('trigger_level','Trigger level',-1000,1000,.1,'V');return}
- if(action==='h_position')message('Horizontal position is not exposed by this controller yet.',true);
+
 }
 function syncLiveReadouts(){
  const doc=iframe.contentDocument;if(!doc)return;
