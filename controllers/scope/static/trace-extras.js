@@ -1,5 +1,5 @@
 'use strict';
-let referenceCapture=null,historyFrames=[],dragCursor=-1;
+let referenceCapture=null,historyFrames=[],dragCursor=-1,classicActiveCursor=0;
 function note(message){$('status').textContent=message}
 function recordHistory(records){
  const mode=appearance.persistenceMode;
@@ -70,14 +70,14 @@ function drawCursors(ctx){
  ctx.save();ctx.beginPath();ctx.rect(g.x,g.y,g.w,g.h);ctx.clip();
  for(let i=0;i<2;i++){
   let p=positions[i],x=g.x+p.x*g.w,y=g.y+p.y*g.h;
-  ctx.strokeStyle=colors[i];ctx.lineWidth=1.5;ctx.setLineDash(i===0?[]:[6,4]);
+  ctx.strokeStyle=colors[i];ctx.lineWidth=i===classicActiveCursor?2.5:1.5;ctx.setLineDash(i===0?[]:[6,4]);
   ctx.beginPath();ctx.moveTo(x,g.y);ctx.lineTo(x,g.y+g.h);ctx.moveTo(g.x,y);ctx.lineTo(g.x+g.w,y);ctx.stroke();
   ctx.setLineDash([]);ctx.fillStyle=colors[i];ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fill();
   canvasLabel(ctx,i===0?'A':'B',Math.min(x+7,g.x+g.w-19),Math.max(y-8,g.y+20),colors[i],16);
  }
  ctx.restore();
  const [a,b]=positions,dt=Math.abs(b.t-a.t),dv=Math.abs(b.v-a.v);
- readout.textContent='Cursor '+appearance.cursorChannel+'\n'+
+ readout.textContent='Cursor '+appearance.cursorChannel+' · active '+(classicActiveCursor?'B':'A')+'\n'+
   'A · '+displayNumber(a.t,'s')+' · '+displayNumber(a.v,'V')+'\n'+
   'B · '+displayNumber(b.t,'s')+' · '+displayNumber(b.v,'V')+'\n'+
   'Difference · Δt '+displayNumber(dt,'s')+' · ΔV '+displayNumber(dv,'V')+
@@ -108,6 +108,19 @@ function pointerCoords(event){
  return {x:(x-viewport.x)/viewport.w,y:(y-viewport.y)/viewport.h};
 }
 const clamp01=x=>Math.max(0,Math.min(1,x));
+window.classicCursorControl={
+ enabled:()=>appearance.cursorsEnabled,
+ active:()=>classicActiveCursor?'B':'A',
+ position:()=>Math.round(Number(appearance['cursor'+(classicActiveCursor+1)+'x'])*1000)/10,
+ select:()=>{classicActiveCursor=1-classicActiveCursor;if(lastRecords&&scopeState)draw(lastRecords,traceUpdates)},
+ step:(sign,coarse)=>{
+  const key='cursor'+(classicActiveCursor+1)+'x';
+  appearance[key]=clamp01(Number(appearance[key])+sign*(coarse?.05:.005)).toFixed(4);
+  try{localStorage.setItem('scopeTraceAppearance.v1',JSON.stringify(appearance))}catch(e){}
+  if(lastRecords&&scopeState)draw(lastRecords,traceUpdates);
+  return Math.round(Number(appearance[key])*1000)/10;
+ }
+};
 function moveCursor(event){
  if(dragCursor<0)return;
  const point=pointerCoords(event),key='cursor'+(dragCursor+1);
@@ -123,7 +136,7 @@ $('trace').addEventListener('pointerdown',event=>{
   let dx=p.x-Number(appearance['cursor'+i+'x']),dy=p.y-Number(appearance['cursor'+i+'y']);
   return dx*dx+dy*dy;
  };
- dragCursor=score(1)<=score(2)?0:1;
+ dragCursor=score(1)<=score(2)?0:1;classicActiveCursor=dragCursor;
  $('trace').setPointerCapture(event.pointerId);
  moveCursor(event);event.preventDefault();
 });

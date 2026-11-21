@@ -15,7 +15,7 @@ a{color:#8de4e2}h1{font-size:1.45rem;margin:.3em 0}p{line-height:1.5;color:#bcd0
 .hotspot{position:absolute;z-index:2;left:calc(var(--x)*100%/2048);top:calc(var(--y)*100%/1032);width:calc(var(--w)*100%/2048);height:calc(var(--h)*100%/1032);padding:0;border:2px solid transparent;background:transparent;border-radius:20%;cursor:pointer;color:transparent;font-size:0;line-height:1}
 .hotspot:hover,.hotspot:focus-visible{border-color:#4eefd9;background:#31c8ae35;outline:none}
 .hotspot.selected{border-color:#42efdb;background:#31c8ae33}
-#settingsShade[hidden],#knobShade[hidden]{display:none}
+#settingsShade[hidden],#knobShade[hidden],#knobTargetRow[hidden]{display:none}
 #settingsShade{position:fixed;z-index:900;right:14px;top:84px;width:min(445px,calc(100vw - 28px));height:min(76dvh,850px);max-height:calc(100dvh - 92px);min-width:280px;min-height:250px;overflow:auto;resize:both;background:#152635;border:1px solid #60828e;border-radius:12px;box-shadow:0 18px 45px #000b}
 #settingsShade header{position:sticky;top:0;z-index:2}
 #settingsShade .size-control{padding:10px 15px;background:#1d3443;border-bottom:1px solid #4d7080;color:#e6f8f6;display:grid;gap:6px}
@@ -91,7 +91,7 @@ a{color:#8de4e2}h1{font-size:1.45rem;margin:.3em 0}p{line-height:1.5;color:#bcd0
 <div class="toolbar"><button id="displaySettings" type="button">Customize scope screen</button><button id="runScope" type="button">▶ Run</button><button id="stopScope" type="button">■ Stop</button><span id="feedback" role="status" aria-live="polite">Loading live display…</span></div>
 <div class="panel" id="panel">
 <img src="/static/tek-classic-panel.jpg" alt="Tektronix TDS 3032B front panel; interactive controls overlaid" width="2048" height="1032">
-<iframe id="scopeScreen" title="Live simulated scope display with Option 10 settings" src="/static/trace-speed-test.html?classic_embed=1&amp;mode=trace&amp;v=14"></iframe>
+<iframe id="scopeScreen" title="Live simulated scope display with Option 10 settings" src="/static/trace-speed-test.html?classic_embed=1&amp;mode=trace&amp;v=15"></iframe>
 </div>
 <div id="liveReadouts">
 <section><h2>Scope settings · live readback</h2><pre id="classicReadback">Waiting for scope settings…</pre></section>
@@ -127,13 +127,15 @@ a{color:#8de4e2}h1{font-size:1.45rem;margin:.3em 0}p{line-height:1.5;color:#bcd0
 </div>
 <button id="measurementResizeGrip" type="button" aria-label="Drag lower-left corner to resize measurement window" title="Drag this corner to resize measurements and text"></button></div>
 <div id="knobShade" hidden><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="knobTitle">
-<h2 id="knobTitle"></h2><p id="knobHelp"></p><label>Value <input id="knobValue" type="number" step="any"></label><div class="actions"><button type="button" id="stepDown">− step</button><button type="button" id="stepUp">+ step</button><button type="button" id="cancelKnob">Cancel</button><button type="button" id="applyKnob">Apply to scope</button></div></div></div>
+<h2 id="knobTitle"></h2><p id="knobHelp"></p><label id="knobTargetRow" hidden>Adjust <select id="knobTarget"><option value="trigger_level">Trigger level</option><option value="ch1_position">CH1 vertical position</option><option value="ch2_position">CH2 vertical position</option><option value="timebase">Horizontal timebase</option></select></label><p id="knobMode">Fine adjustment</p><label>Value <input id="knobValue" type="number" step="any"></label><div class="actions"><button type="button" id="selectKnob">SELECT</button><button type="button" id="coarseKnob">COARSE</button><button type="button" id="stepDown">− step</button><button type="button" id="stepUp">+ step</button><button type="button" id="cancelKnob">Cancel</button><button type="button" id="applyKnob">Apply to scope</button></div></div></div>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
 const iframe=$('scopeScreen'),panel=$('panel'),feedback=$('feedback');
 const positions=[
  ['Print scope screen',110,709,84,83,'print'],
+ ['Select cursor or setting',1285,74,80,62,'gp_select'],['Toggle coarse adjustment',1285,155,80,62,'gp_coarse'],
+ ['General-purpose adjustment knob',1392,79,112,115,'gp_knob'],
  ['CH 1',1256,325,75,65,'ch1'],['CH 2',1256,398,75,65,'ch2'],
  ['Channel OFF',1377,440,77,61,'off'],['Run / Stop',1860,288,86,65,'run'],
  ['Single sequence',1861,359,85,64,'single'],['Autoset',1862,441,84,57,'autoset'],
@@ -152,7 +154,14 @@ const positions=[
  ['Acquisition settings',1862,717,81,60,'acquisition'],
  ['Vertical menu',1374,720,83,60,'ch_settings']
 ];
-let selected='ch1',state=null,editing=null,busy=false;
+let selected='ch1',state=null,editing=null,busy=false,coarseMode=false;
+const generalTargets=[
+ ['trigger_level','Trigger level',-1000,1000,.1,'V'],
+ ['ch1_position','CH1 vertical position',-5,5,.2,'div'],
+ ['ch2_position','CH2 vertical position',-5,5,.2,'div'],
+ ['timebase','Horizontal timebase',.000000001,10,1,'s/div']
+];
+let generalIndex=0,knobRequest=0;
 for(const [label,x,y,w,h,action] of positions){
  const b=document.createElement('button');
  b.className='hotspot';b.type='button';b.title=label;b.setAttribute('aria-label',label);
@@ -514,25 +523,73 @@ $('measurementFrame').addEventListener('load',()=>{
   }).observe(status,{childList:true,subtree:true,characterData:true});
  }
 });
-$('cancelKnob').onclick=()=>$('knobShade').hidden=true;
-async function editNumber(key,label,min,max,step,unit){
+$('cancelKnob').onclick=()=>{knobRequest++;editing=null;$('knobShade').hidden=true};
+async function editNumber(key,label,min,max,step,unit,general=false){
+ const request=++knobRequest;
  try{
-  const d=await readState(),value=Number(d[key]);
+  const d=await readState();if(request!==knobRequest)return;
+  const value=Number(d[key]);
   if(!Number.isFinite(value))throw Error('Scope did not report '+label);
   editing={key,min,max,step};
+  $('knobTargetRow').hidden=!general;
+  $('knobTarget').value=key;
+  $('knobValue').readOnly=false;
+  $('applyKnob').textContent='Apply to scope';
+  $('knobMode').textContent=coarseMode?'Coarse adjustment':'Fine adjustment';
   $('knobTitle').textContent=label;
   $('knobHelp').textContent='Current scope setting: '+value+' '+unit+'. Range: '+min+' to '+max+' '+unit+'. This changes the real scope when you press Apply.';
   $('knobValue').min=min;$('knobValue').max=max;$('knobValue').step='any';$('knobValue').value=value;
   $('knobShade').hidden=false;$('knobValue').focus();$('knobValue').select();
  }catch(e){message(e.message,true)}
 }
+$('knobTarget').onchange=()=>{
+ generalIndex=generalTargets.findIndex(target=>target[0]===$('knobTarget').value);
+ editNumber(...generalTargets[generalIndex],true);
+};
+function cursorControl(){return iframe.contentWindow?.classicCursorControl}
+function openGeneralKnob(){
+ const cursor=cursorControl();
+ if(cursor?.enabled()){
+  knobRequest++;editing={cursor:true};$('knobTargetRow').hidden=true;
+  $('knobTitle').textContent='Cursor '+cursor.active();
+  $('knobHelp').textContent='Use − and + to move the active cursor across the simulated waveform. SELECT switches cursors. No scope command is sent.';
+  $('knobMode').textContent=coarseMode?'Coarse adjustment':'Fine adjustment';
+  $('knobValue').readOnly=true;$('knobValue').value=cursor.position();
+  $('applyKnob').textContent='Done';$('knobShade').hidden=false;
+  return;
+ }
+ editNumber(...generalTargets[generalIndex],true);
+}
+function selectGeneral(){
+ const cursor=cursorControl();
+ if(cursor?.enabled()){
+  cursor.select();
+  if(editing?.cursor&&!$('knobShade').hidden){$('knobTitle').textContent='Cursor '+cursor.active();$('knobValue').value=cursor.position()}
+  message('Cursor '+cursor.active()+' selected on simulated display.');return;
+ }
+ generalIndex=(generalIndex+1)%generalTargets.length;
+ message(generalTargets[generalIndex][1]+' selected. Click the general-purpose knob to adjust.');
+ if(editing&&!$('knobShade').hidden&&!$('knobTargetRow').hidden)editNumber(...generalTargets[generalIndex],true);
+}
+$('selectKnob').onclick=selectGeneral;
+$('coarseKnob').onclick=toggleCoarse;
+function toggleCoarse(){
+ coarseMode=!coarseMode;
+ panel.querySelector('[data-action="gp_coarse"]').classList.toggle('selected',coarseMode);
+ $('knobMode').textContent=coarseMode?'Coarse adjustment':'Fine adjustment';
+ $('coarseKnob').textContent=coarseMode?'COARSE ON':'COARSE';
+ message((coarseMode?'Coarse':'Fine')+' adjustment selected.');
+}
 for(const [id,sign] of [['stepDown',-1],['stepUp',1]])$(id).onclick=()=>{
  if(!editing)return;
+ if(editing.cursor){const cursor=cursorControl();if(cursor?.enabled())$('knobValue').value=cursor.step(sign,coarseMode);return}
  const v=Number($('knobValue').value);
- const next=editing.key==='timebase'||editing.key.endsWith('_scale')?v*(sign>0?2:.5):v+sign*editing.step;
+ const factor=coarseMode?10:2;
+ const next=editing.key==='timebase'||editing.key.endsWith('_scale')?v*(sign>0?factor:1/factor):v+sign*editing.step*(coarseMode?10:1);
  $('knobValue').value=Number(Math.max(editing.min,Math.min(editing.max,next)).toPrecision(6));
 };
 $('applyKnob').onclick=async()=>{
+ if(editing?.cursor){knobRequest++;$('knobShade').hidden=true;editing=null;return}
  const v=Number($('knobValue').value);
  if(!editing||!$('knobValue').value||!Number.isFinite(v)||v<editing.min||v>editing.max){message('Enter a valid number in the shown range.',true);return}
  const key=editing.key;$('knobShade').hidden=true;await control(key,v)
@@ -553,6 +610,9 @@ function printScopeScreen(){
  message('Opening screen-only print preview…');
 }
 async function handle(action){
+ if(action==='gp_select'){selectGeneral();return}
+ if(action==='gp_coarse'){toggleCoarse();return}
+ if(action==='gp_knob'){openGeneralKnob();return}
  if(action==='print'){printScopeScreen();return}
  if(action==='trigger'){showTrigger();return}
  if(action==='acquisition'){showAcquisition();return}
