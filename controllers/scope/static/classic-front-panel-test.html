@@ -142,7 +142,7 @@ async function readState(){
  if(!r.ok)throw Error(d.error||d.message||'Unable to read scope settings');
  state=d;return d;
 }
-async function control(key,value){
+async function control(key,value,{refreshTrace=false}={}){
  if(busy)return;
  busy=true;message('Sending '+key+' to scope…');
  try{
@@ -152,7 +152,16 @@ async function control(key,value){
   state=null;
   message(d.message||'Applied '+key);
   const child=iframe.contentWindow;
-  if(child&&typeof child.updateSettings==='function')child.updateSettings().catch(()=>{});
+  if(refreshTrace&&key==='autoset'){
+   for(let n=0;n<20;n++){
+    const response=await fetch('/api/autoset-status',{cache:'no-store'});
+    if(!response.ok)throw Error('Could not read Autoset progress');
+    if(!(await response.json()).busy)break;
+    await new Promise(resolve=>setTimeout(resolve,500));
+   }
+  }
+  if(child&&typeof child.updateSettings==='function')await child.updateSettings();
+  if(refreshTrace&&child&&typeof child.cycle==='function')await child.cycle();
  }catch(e){message(e.message,true)}finally{busy=false}
 }
 function copyAppearance(){
@@ -468,9 +477,10 @@ async function handle(action){
  }
  if(action==='ch1'||action==='ch2'){selectChannel(action);await control(action+'_on','1');return}
  if(action==='off'){await control(selected+'_on','0');return}
- if(action==='single'||action==='autoset'||action==='menu_off'){await control(action,'1');return}
+ if(action==='single'||action==='autoset'){await control(action,'1',{refreshTrace:true});return}
+ if(action==='menu_off'){await control(action,'1');return}
  if(action==='run'){
-  try{const d=await readState();await control('running',String(d.running)==='0'?'1':'0')}
+  try{const d=await readState();await control('running',String(d.running)==='0'?'1':'0',{refreshTrace:true})}
   catch(e){message(e.message,true)}return
  }
  if(action==='ch_position'){await editNumber(selected+'_position',selected.toUpperCase()+' vertical position',-5,5,.2,'div');return}
