@@ -61,6 +61,10 @@ a{color:#8de4e2}h1{font-size:1.45rem;margin:.3em 0}p{line-height:1.5;color:#bcd0
 #measurementPopup header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 14px;background:#1d3443;min-height:48px}
 #measurementPopup button{min-height:35px;padding:6px 12px;border:1px solid #7ca9ae;border-radius:5px;background:#294a56;color:white;cursor:pointer}
 #measurementPopup p{margin:0;padding:9px 14px;color:#c6e6e4;font-size:13px;line-height:1.4}
+#mathPanel[hidden]{display:none!important}
+#measurementFrame[hidden]{display:none!important}
+#mathPanel label{display:grid;gap:6px;color:#cce9ec}
+#mathPanel select{padding:9px;background:#203746;color:white;border:1px solid #7ca9ae;border-radius:5px;font-size:inherit}
 #measurementFrame{flex:1;width:100%;min-height:0;border:0;background:#101b29}
 
 #settingsShade{resize:none;--settings-font-size:15px;font-size:var(--settings-font-size);padding-bottom:35px}
@@ -104,6 +108,12 @@ a{color:#8de4e2}h1{font-size:1.45rem;margin:.3em 0}p{line-height:1.5;color:#bcd0
 <label class="measure-size-control" style="display:flex;align-items:center"><input id="autoMeasurementFont" type="checkbox" checked style="width:20px;height:20px"> Scale measurement text when resized</label>
 <label class="measure-size-control">Measurement text size <span id="measurementFontLabel">14 px</span><input id="measurementFont" type="range" min="12" max="24" step="1" value="14"></label>
 <iframe id="measurementFrame" title="Scope measurement entries and display slots"></iframe>
+<div id="mathPanel" hidden style="flex:1;padding:16px;overflow:auto;display:grid;align-content:start;gap:14px;background:#101b29">
+<label>Math waveform <select id="mathDisplay"><option value="0">Off</option><option value="1">On</option></select></label>
+<label>Dual waveform operation <select id="mathOperation"><option value="CH1+CH2">CH1 + CH2</option><option value="CH1-CH2">CH1 − CH2</option><option value="CH2-CH1">CH2 − CH1</option><option value="CH1*CH2">CH1 × CH2</option><option value="CH1/CH2">CH1 ÷ CH2</option><option value="CH2/CH1">CH2 ÷ CH1</option></select></label>
+<button type="button" id="mathApply">Apply operation and show Math</button><button type="button" id="mathRead">Read scope Math settings</button>
+<div id="mathStatus" role="status">Waiting for scope…</div><small>The operation controls the real scope's Math waveform. The simulated CH1/CH2 display continues to show those two channels.</small>
+</div>
 <button id="measurementResizeGrip" type="button" aria-label="Drag lower-left corner to resize measurement window" title="Drag this corner to resize measurements and text"></button></div>
 <div id="knobShade" hidden><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="knobTitle">
 <h2 id="knobTitle"></h2><p id="knobHelp"></p><label>Value <input id="knobValue" type="number" step="any"></label><div class="actions"><button type="button" id="stepDown">− step</button><button type="button" id="stepUp">+ step</button><button type="button" id="cancelKnob">Cancel</button><button type="button" id="applyKnob">Apply to scope</button></div></div></div>
@@ -117,7 +127,7 @@ const positions=[
  ['Channel OFF',1377,440,77,61,'off'],['Run / Stop',1860,288,86,65,'run'],
  ['Single sequence',1861,359,85,64,'single'],['Autoset',1862,441,84,57,'autoset'],
  ['Menu OFF',1040,719,70,73,'menu_off'],['Measure settings',1527,94,78,63,'measure'],
- ['Saved setups',1624,94,78,63,'presets'],
+ ['Saved setups',1624,94,78,63,'presets'],['Math settings',1255,632,77,61,'math'],
  ['Cursor display',1527,166,78,64,'cursor'],['Display settings',1624,165,78,65,'display'],
  ['Utility / full settings',1723,168,76,62,'display'],
  ['Vertical position',1367,307,100,99,'ch_position'],['Vertical scale',1355,555,112,113,'ch_scale'],
@@ -316,6 +326,7 @@ function setMeasurementFont(n,persist=false){
  $('measurementFont').value=n;$('measurementFontLabel').textContent=n+' px';
  const doc=$('measurementFrame').contentDocument;
  if(doc?.getElementById('panel-measurements'))doc.documentElement.style.zoom=(n/14).toFixed(2);
+ $('mathPanel').style.fontSize=n+'px';
  if(persist)try{localStorage.setItem('scopeClassicMeasurementFont.v1',String(n))}catch(e){}
 }
 function syncMeasurementFont(){
@@ -349,7 +360,31 @@ function endMeasureResize(){
 }
 measureGrip.addEventListener('pointerup',endMeasureResize);
 measureGrip.addEventListener('pointercancel',endMeasureResize);
+async function readMath(){
+ const status=$('mathStatus');status.textContent='Reading scope Math settings…';
+ try{const r=await fetch('/api/math',{cache:'no-store'}),d=await r.json();if(!r.ok)throw Error(d.error||'Math read failed');
+  $('mathDisplay').value=String(d.enabled)==='1'?'1':'0';
+  const expression=String(d.definition).match(/CH[12][+*\/-]CH[12]/)?.[0];
+  if(expression&&[...$('mathOperation').options].some(o=>o.value===expression))$('mathOperation').value=expression;
+  status.textContent='Math '+($('mathDisplay').value==='1'?'ON':'OFF')+' · '+d.type+' · '+d.definition;
+ }catch(e){status.textContent=e.message}
+}
+async function applyMath(action,value){
+ const status=$('mathStatus');status.textContent='Applying Math setting…';
+ try{const r=await fetch('/api/math',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,value})}),d=await r.json();if(!r.ok)throw Error(d.error||'Math change failed');
+  await readMath();const child=iframe.contentWindow;child?.updateSettings?.().catch(()=>{});
+ }catch(e){status.textContent=e.message}
+}
+$('mathDisplay').onchange=e=>applyMath('display',e.target.value);
+$('mathApply').onclick=()=>applyMath('operation',$('mathOperation').value);
+$('mathRead').onclick=readMath;
+function showMath(){
+ closeSettings();const popup=$('measurementPopup');popup.dataset.view='math';
+ popup.querySelector('header strong').textContent='Math settings';popup.querySelector('p').hidden=true;
+ popup.hidden=false;$('measurementFrame').hidden=true;$('mathPanel').hidden=false;syncMeasurementFont();readMath();
+}
 function showVertical(){
+ $('mathPanel').hidden=true;$('measurementFrame').hidden=false;
  closeSettings();
  const popup=$('measurementPopup'),frame=$('measurementFrame');
  popup.dataset.view='vertical';
@@ -360,6 +395,7 @@ function showVertical(){
  frame.src='/?measurement_popup=1&vertical_popup=1&channel='+selected.slice(2);
 }
 function showSavedSetups(){
+ $('mathPanel').hidden=true;$('measurementFrame').hidden=false;
  closeSettings();
  const popup=$('measurementPopup'),frame=$('measurementFrame');
  popup.dataset.view='presets';
@@ -370,6 +406,7 @@ function showSavedSetups(){
  frame.src='/?measurement_popup=1&presets_popup=1';
 }
 function showAcquisition(){
+ $('mathPanel').hidden=true;$('measurementFrame').hidden=false;
  closeSettings();
  const popup=$('measurementPopup'),frame=$('measurementFrame');
  popup.dataset.view='acquisition';
@@ -380,6 +417,7 @@ function showAcquisition(){
  frame.src='/?measurement_popup=1&acquisition_popup=1';
 }
 function showTrigger(){
+ $('mathPanel').hidden=true;$('measurementFrame').hidden=false;
  closeSettings();
  const popup=$('measurementPopup'),frame=$('measurementFrame');
  popup.dataset.view='trigger';
@@ -390,6 +428,7 @@ function showTrigger(){
  frame.src='/?measurement_popup=1&trigger_popup=1';
 }
 function showMeasurements(){
+ $('mathPanel').hidden=true;$('measurementFrame').hidden=false;
  closeSettings();
  const popup=$('measurementPopup'),frame=$('measurementFrame');
  const prior=popup.dataset.view;
@@ -403,7 +442,7 @@ function closeMeasurements(){$('measurementPopup').hidden=true}
 $('closeMeasurements').onclick=closeMeasurements;
 $('measurementFrame').addEventListener('load',()=>{
  const frame=$('measurementFrame'),doc=frame.contentDocument;
- if(!doc)return;
+ if(!doc||measureBox.dataset.view==='math')return;
  doc.getElementById('suite-unified-header')?.remove();
  const style=doc.createElement('style');
  const target=measureBox.dataset.view==='trigger'?'panel-trigger':measureBox.dataset.view==='vertical'?'panel-'+selected:measureBox.dataset.view==='acquisition'?'panel-acquisition':measureBox.dataset.view==='presets'?'panel-presets':'panel-measurements';
@@ -466,6 +505,7 @@ async function handle(action){
  if(action==='trigger'){showTrigger();return}
  if(action==='acquisition'){showAcquisition();return}
  if(action==='presets'){showSavedSetups();return}
+ if(action==='math'){showMath();return}
  if(action==='ch_settings'){showVertical();return}
  if(action==='measure'){showMeasurements();return}
  if(action==='display'){showSettings();return}

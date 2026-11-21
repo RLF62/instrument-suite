@@ -1,4 +1,4 @@
-"""Fischer Lab Tektronix controller, v0.3.8. One worker; threaded requests serialized."""
+"""Fischer Lab Tektronix controller, v0.3.9. One worker; threaded requests serialized."""
 import gzip
 import json
 import logging
@@ -17,7 +17,7 @@ from scope_io import (ROOT, ScopeError, ask, atomic_json, channel, config, measu
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 262144
-VERSION = '0.3.8'
+VERSION = '0.3.9'
 FIELDS = {
  'timebase': ('HORIZONTAL:MAIN:SCALE', 1e-9, 10),
  'acq_mode': ('ACQUIRE:MODE', ('SAMPLE','PEAKDETECT','AVERAGE','ENVELOPE')),
@@ -153,6 +153,32 @@ def save_config():
 def state():
     with scope() as (s,c):
         return jsonify(read_state(s,c))
+
+@app.get('/api/math')
+def math_status():
+    with scope() as (s,_):
+        return jsonify(enabled=ask(s,'SELECT:MATH?'),type=ask(s,'MATH:TYPE?'),
+                       definition=ask(s,'MATH:DEFINE?'))
+
+
+@app.post('/api/math')
+def math_control():
+    d=request.get_json(silent=True)
+    if not isinstance(d,dict) or set(d)!={'action','value'}:
+        raise ScopeError('Expected math action and value.',400)
+    action,value=d['action'],d['value']
+    operations=('CH1+CH2','CH1-CH2','CH2-CH1','CH1*CH2','CH1/CH2','CH2/CH1')
+    if action=='display' and value in ('0','1'):
+        commands=('SELECT:MATH '+value,)
+    elif action=='operation' and value in operations:
+        commands=('MATH:TYPE DUAL','MATH:DEFINE "'+value+'"','SELECT:MATH 1')
+    else:
+        raise ScopeError('Unsupported math setting.',400)
+    with scope() as (s,_):
+        for command in commands:s.write(command)
+        return jsonify(ok=True,enabled=ask(s,'SELECT:MATH?'),type=ask(s,'MATH:TYPE?'),
+                       definition=ask(s,'MATH:DEFINE?'))
+
 
 @app.get('/api/acquisition')
 def status():
