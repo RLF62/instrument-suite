@@ -88,7 +88,7 @@ a{color:#8de4e2}h1{font-size:1.45rem;margin:.3em 0}p{line-height:1.5;color:#bcd0
 #measurementResizeGrip:focus-visible{outline:2px solid #7bf1df;outline-offset:-3px}
 </style></head>
 <body><main>
-<div class="toolbar"><button id="displaySettings" type="button">Customize scope screen</button><span id="feedback" role="status" aria-live="polite">Loading live display…</span></div>
+<div class="toolbar"><button id="displaySettings" type="button">Customize scope screen</button><button id="runScope" type="button">▶ Run</button><button id="stopScope" type="button">■ Stop</button><span id="feedback" role="status" aria-live="polite">Loading live display…</span></div>
 <div class="panel" id="panel">
 <img src="/static/tek-classic-panel.jpg" alt="Tektronix TDS 3032B front panel; interactive controls overlaid" width="2048" height="1032">
 <iframe id="scopeScreen" title="Live simulated scope display with Option 10 settings" src="/static/trace-speed-test.html?classic_embed=1&amp;mode=trace&amp;v=14"></iframe>
@@ -601,5 +601,7 @@ function syncLiveReadouts(){
 }
 iframe.addEventListener('load',()=>{const doc=iframe.contentDocument;doc?.getElementById('suite-unified-header')?.remove();doc?.documentElement.classList.add('classic-embed');syncLiveReadouts();message('Live trace ready. Select CH 1 or CH 2 before adjusting vertical controls.')});
 setInterval(syncLiveReadouts,500);
+$('runScope').onclick=()=>control('running','1',{refreshTrace:true});
+$('stopScope').onclick=()=>control('running','0',{refreshTrace:true});
 selectChannel('ch1');
 </script></main></body></html>
