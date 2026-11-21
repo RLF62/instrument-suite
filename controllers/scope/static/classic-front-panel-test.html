@@ -117,6 +117,7 @@ const positions=[
  ['Channel OFF',1377,440,77,61,'off'],['Run / Stop',1860,288,86,65,'run'],
  ['Single sequence',1861,359,85,64,'single'],['Autoset',1862,441,84,57,'autoset'],
  ['Menu OFF',1040,719,70,73,'menu_off'],['Measure settings',1527,94,78,63,'measure'],
+ ['Saved setups',1624,94,78,63,'presets'],
  ['Cursor display',1527,166,78,64,'cursor'],['Display settings',1624,165,78,65,'display'],
  ['Utility / full settings',1723,168,76,62,'display'],
  ['Vertical position',1367,307,100,99,'ch_position'],['Vertical scale',1355,555,112,113,'ch_scale'],
@@ -349,6 +350,26 @@ function showVertical(){
  frame.style.visibility='hidden';
  frame.src='/?measurement_popup=1&vertical_popup=1&channel='+selected.slice(2);
 }
+function showSavedSetups(){
+ closeSettings();
+ const popup=$('measurementPopup'),frame=$('measurementFrame');
+ popup.dataset.view='presets';
+ popup.querySelector('header strong').textContent='Saved Setups';
+ popup.querySelector('p').hidden=true;
+ popup.hidden=false;syncMeasurementFont();
+ frame.style.visibility='hidden';
+ frame.src='/?measurement_popup=1&presets_popup=1';
+}
+function showAcquisition(){
+ closeSettings();
+ const popup=$('measurementPopup'),frame=$('measurementFrame');
+ popup.dataset.view='acquisition';
+ popup.querySelector('header strong').textContent='Acquisition settings';
+ popup.querySelector('p').hidden=true;
+ popup.hidden=false;syncMeasurementFont();
+ frame.style.visibility='hidden';
+ frame.src='/?measurement_popup=1&acquisition_popup=1';
+}
 function showTrigger(){
  closeSettings();
  const popup=$('measurementPopup'),frame=$('measurementFrame');
@@ -376,7 +397,7 @@ $('measurementFrame').addEventListener('load',()=>{
  if(!doc)return;
  doc.getElementById('suite-unified-header')?.remove();
  const style=doc.createElement('style');
- const target=measureBox.dataset.view==='trigger'?'panel-trigger':measureBox.dataset.view==='vertical'?'panel-'+selected:'panel-measurements';
+ const target=measureBox.dataset.view==='trigger'?'panel-trigger':measureBox.dataset.view==='vertical'?'panel-'+selected:measureBox.dataset.view==='acquisition'?'panel-acquisition':measureBox.dataset.view==='presets'?'panel-presets':'panel-measurements';
  style.textContent='body{margin:0!important;padding:8px!important}body>*:not(#panels){display:none!important}#panels{display:block!important;max-width:none!important;width:100%!important;padding:0!important;margin:0!important}#panels>section:not(#'+target+'){display:none!important}#'+target+'{display:block!important;position:static!important;width:100%!important;max-width:none!important;height:auto!important;margin:0!important;padding:10px!important;transform:none!important}#panel-measurements .metrics{width:100%!important;grid-template-columns:repeat(auto-fit,minmax(205px,1fr))!important}';
  doc.head.append(style);
  frame.style.visibility='visible';syncMeasurementFont();
@@ -434,9 +455,11 @@ function printScopeScreen(){
 async function handle(action){
  if(action==='print'){printScopeScreen();return}
  if(action==='trigger'){showTrigger();return}
+ if(action==='acquisition'){showAcquisition();return}
+ if(action==='presets'){showSavedSetups();return}
  if(action==='ch_settings'){showVertical();return}
  if(action==='measure'){showMeasurements();return}
- if(action==='display'||action==='acquisition'){showSettings();return}
+ if(action==='display'){showSettings();return}
  if(action==='cursor'){
   const doc=iframe.contentDocument,box=doc?.getElementById('cursorsEnabled');
   if(!box){message('Display is still loading. Try again shortly.',true);return}

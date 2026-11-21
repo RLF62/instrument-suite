@@ -1,4 +1,4 @@
-"""Fischer Lab Tektronix controller, v0.3.7. One worker; threaded requests serialized."""
+"""Fischer Lab Tektronix controller, v0.3.8. One worker; threaded requests serialized."""
 import gzip
 import json
 import logging
@@ -17,7 +17,7 @@ from scope_io import (ROOT, ScopeError, ask, atomic_json, channel, config, measu
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 262144
-VERSION = '0.3.7'
+VERSION = '0.3.8'
 FIELDS = {
  'timebase': ('HORIZONTAL:MAIN:SCALE', 1e-9, 10),
  'acq_mode': ('ACQUIRE:MODE', ('SAMPLE','PEAKDETECT','AVERAGE','ENVELOPE')),
