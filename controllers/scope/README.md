@@ -29,10 +29,13 @@ The original user-service installer remains available: extract the source into a
 - Dashboard: `http://CONTROLLER_HOST:8081/`
 - Setup: `http://CONTROLLER_HOST:8081/setup`
 - Documentation: `http://CONTROLLER_HOST:8081/docs/`
+- Classic front panel: `http://CONTROLLER_HOST:8081/static/classic-front-panel-test.html`
 
 The controller host is the Pi. Setup's scope connection address is the instrument's own address. The direct scope dashboard uses trusted-LAN HTTP and does not inherit the supply's HTTPS login.
 
 ![Tektronix dashboard](docs/assets/dashboard.jpg)
+
+The [operating guide](docs/index.html#classic-panel) documents the Classic front panel controls, including the SELECT/COARSE/general-purpose knob, intensity slider, mapped acquisition buttons and simulated cursors.
 
 ## Documentation
 
