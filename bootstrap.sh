@@ -12,6 +12,17 @@ for command in curl python3 openssl base64; do command -v "$command" >/dev/null 
 [[ -r /proc/device-tree/model ]] && grep -q 'Raspberry Pi' /proc/device-tree/model || die 'Use a Raspberry Pi running Raspberry Pi OS'
 id pi >/dev/null 2>&1 || die 'The reviewed installers require the pi account and /home/pi'
 case "$(uname -m)" in aarch64|armv7l|armv6l) ;; *) die 'Unsupported CPU architecture';; esac
+python3 - <<'OS_CHECK'
+from pathlib import Path
+import platform,sys
+values=dict(line.split('=',1) for line in Path('/etc/os-release').read_text().splitlines() if '=' in line)
+release=values.get('VERSION_CODENAME','').strip('"')
+os_id=values.get('ID','').strip('"')
+expected={'bookworm':(3,11),'trixie':(3,13)}
+if os_id not in ('debian','raspbian') or release not in expected or sys.version_info[:2]!=expected[release]:
+    raise SystemExit('Supported Raspberry Pi OS: Bookworm with Python 3.11 or Trixie with Python 3.13. No installation started.')
+print(f'Detected Raspberry Pi OS {release}, Python {sys.version_info.major}.{sys.version_info.minor}, {platform.machine()}.',flush=True)
+OS_CHECK
 available=$(df -Pk /home/pi | awk 'NR==2 {print $4}')
 [[ "$available" -ge 524288 ]] || die 'Free at least 512 MiB before staging a release; more may be required for backups'
 [[ ! -e /etc/fischer-suite-updater.json ]] || die 'Updater already exists. Use sudo instrument-suite install or update; bootstrap will not overwrite it'

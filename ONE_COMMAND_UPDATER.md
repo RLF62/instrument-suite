@@ -26,7 +26,13 @@ sudo instrument-suite rollback
 controllers to install. Noninteractive installations specify `--instruments`.
 The existing reviewed installers currently require the `pi` account and
 `/home/pi`. The installer checks Raspberry Pi hardware, ARM architecture,
-dependencies and disk space. At least 512 MiB plus the estimated backup size
+dependencies and disk space. Fresh bootstrap identifies Bookworm/Python 3.11
+or Trixie/Python 3.13 before downloading the release. After installing OS
+prerequisites, it verifies the signed wheels for every selected controller
+before enrolling the updater or changing controller services. A missing wheel
+or hash fails with the existing installation intact; package versions and
+hashes remain pinned. The signed locks contain reviewed 64-bit ARM wheels for
+both Python versions. At least 512 MiB plus the estimated backup size
 must be free; dependencies may require more space.
 
 The shared dashboard uses port 8080. Independent controllers retain ports 8081

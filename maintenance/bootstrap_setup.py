@@ -6,6 +6,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import tempfile
 from .engine import Engine
 from .linux import LinuxHost
 from .security import atomic_json, MaintenanceError
@@ -49,6 +50,20 @@ def main(argv=None):
     subprocess.run(['apt-get','install','-y','python3-venv','python3-pip','curl','openssl','nginx','sudo','libusb-1.0-0'],check=True,timeout=600)
     print('OS packages ready. Checking space for signed controller packages...',flush=True)
     host.preflight(sum(manifest['components'][n]['size'] for n in ['suite',*selected]))
+    # Verify every selected, signed wheel lock before enrolling the updater.
+    # A Bookworm/Python 3.11 hash failure must leave existing controllers untouched.
+    print('Checking signed Python wheels for this OS before enrollment...',flush=True)
+    with tempfile.TemporaryDirectory(prefix='fischer-wheel-preflight-') as scratch:
+        work=Path(scratch)
+        stages=engine.prepare(manifest,['suite',*selected],work)
+        for name,stage in stages.items():
+            wheels=work/(name+'-wheels')
+            result=subprocess.run([sys.executable,'-m','pip','download',
+                '--only-binary=:all:','--require-hashes','--dest',str(wheels),
+                '-r',str(stage/'requirements.lock')],timeout=600)
+            if result.returncode:
+                raise MaintenanceError(name+': signed dependency wheels unavailable for this OS/Python; no updater or controller was enrolled')
+    print('Signed Python wheels verified for this OS.',flush=True)
     # Enroll only the updater. Existing instruments remain untouched if apply blocks.
     source=Path(__file__).resolve().parents[1]
     engine_root=Path('/opt/fischer-suite-updater');engine_root.mkdir(mode=0o755,exist_ok=True)
