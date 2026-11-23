@@ -97,4 +97,5 @@ def main(argv=None):
     print('Logs: sudo journalctl -u fischer-suite-dashboard -n 60 --no-pager')
     print('Recovery: sudo instrument-suite rollback')
     print('For USB permissions, unplug/replug the GPIB adapter if required. Instrument connections begin disabled/unconfigured.')
+    print('GPIB connection setup: https://github.com/RLF62/instrument-suite/blob/main/GPIB_SETUP.md')
     return 0

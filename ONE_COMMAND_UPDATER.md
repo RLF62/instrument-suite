@@ -35,6 +35,11 @@ hashes remain pinned. The signed locks contain reviewed 64-bit ARM wheels for
 both Python versions. At least 512 MiB plus the estimated backup size
 must be free; dependencies may require more space.
 
+After the installer succeeds, use [Connect an instrument](GPIB_SETUP.md) to discover
+the local adapter resource, set unique GPIB addresses and enable only connected
+instruments. The HP 6033A supply-only steps include exact commands and a
+read-only verification. These settings are not entered in the suite dashboard.
+
 The shared dashboard uses port 8080. Independent controllers retain ports 8081
 (scope), 8082 (meter), and 8083 (supply). Fresh installation uses trusted-LAN
 HTTP. Existing TLS, authentication and deployment wrappers are preserved;

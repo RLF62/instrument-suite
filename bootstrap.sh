@@ -122,6 +122,8 @@ for name, folder, port, path in controllers:
             manager = f'http://{host}:{port}/api/suite/manager'
 if manager:
     print(f'  Add Instruments:  {manager}')
-print('\nConfigure instrument connections from each controller before use.')
+print('\nUSB-GPIB setup (adapter resource and instrument addresses):')
+print('  https://github.com/RLF62/instrument-suite/blob/main/GPIB_SETUP.md')
+print('Configure the Ethernet scope IP in Scope Setup.')
 WELCOME
 fi

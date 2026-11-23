@@ -37,7 +37,7 @@ FILES = {'suite': {'activate.py', 'adapter_broker.py', 'adapter_worker.py', 'cat
     'counter': {'counter_app.py'}}
 COMMON = {'requirements.txt', 'requirements.lock', 'config.example.json', 'README.md', 'ONE_COMMAND_UPDATER.md','INSTALL.md',
           'STANDALONE.md', 'CATALOG.md', 'GATEWAY_MIGRATION.md', 'DEPLOYMENT.md', 'INSTRUMENT_SUITE.md', 'PROJECT_HANDOFF.md',
-          'HTTPS_MIGRATION_VALIDATION.md','GPIB_FIRMWARE.md'}
+          'HTTPS_MIGRATION_VALIDATION.md','GPIB_FIRMWARE.md','GPIB_SETUP.md'}
 SYSTEM = (Path('/etc/nginx'), Path('/etc/systemd/system'), Path('/etc/sudoers.d'),
           Path('/etc/fischer-suite'), Path('/etc/udev/rules.d'), Path('/opt/fischer-suite-manager'),
           Path('/etc/ssl'), Path('/etc/letsencrypt'),

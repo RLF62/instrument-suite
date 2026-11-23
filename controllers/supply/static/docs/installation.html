@@ -59,8 +59,20 @@ esac
 <p>The installer configures the service, USB permissions, and Nginx. After it verifies the status endpoint and both dashboards and confirms the service is running and enabled, it prints <strong>INSTALLATION COMPLETED SUCCESSFULLY</strong>. Copy the dashboard URL from the summary. It uses the IP address or hostname you entered and the protocol you selected. Use the same URL after rebooting the Pi.</p>
 <p>The HTTPS summary explains the self-signed certificate warning. The HTTP-only summary confirms password-free dashboard access and command-line updates. If the adapter is configured during setup, the summary asks you to check its connection on the dashboard. Otherwise, it prints the manual commissioning steps.</p>
 </section>
-<section id="config"><h2>Connect the supply and configure VISA</h2>
-<p>During interactive setup, unplug and reconnect the USB-GPIB adapter when prompted, then press Enter. If setup detects exactly one supported UsbGpib V2 adapter, it saves its VISA address before starting the service. Open the dashboard and verify that GPIB is connected and the readings match the front panel before enabling remote control.</p>
+<section id="config"><h2>Connect the HP 6033A after a signed suite install</h2>
+<p>A fresh suite installation leaves USB-GPIB access disabled. On the Pi, configure the <strong>shared adapter</strong> at <code>/home/pi/instrument-suite/config.json</code>, rather than only the standalone controller's <code>gpib_resource</code>. The <a href="https://github.com/RLF62/instrument-suite/blob/main/GPIB_SETUP.md">suite GPIB setup guide</a> has the full procedure for supply-only and multi-instrument installations.</p>
+<ol>
+<li>Note the physical supply's HP-IB address (10 is an example), confirm output OFF and remote programming disabled. Connect the GPIB cable to the supply before plugging the USB adapter into the Pi.</li>
+<li>Find this adapter's unique VISA string using the installed suite environment:</li>
+</ol>
+<pre><code>sudo /home/pi/instrument-suite/venv/bin/python -c 'import pyvisa; print(pyvisa.ResourceManager("@py").list_resources("USB?*::INSTR"))'</code></pre>
+<p>Edit the shared config: set <code>resource</code> to the returned <code>USB...::INSTR</code> string, <code>addresses.supply</code> to the physical supply's address, and both <code>hardware_enabled</code> and <code>supply_enabled</code> to JSON <code>true</code>. Keep absent devices disabled. Save and restart only the shared adapter broker:</p>
+<pre><code>sudo nano /home/pi/instrument-suite/config.json
+sudo systemctl restart fischer-gpib
+curl -fsS http://127.0.0.1:8083/api/status | python3 -m json.tool</code></pre>
+<p>Confirm <code>gpib_connected: true</code>, <code>gpib_status: CONNECTED</code>, output OFF, and live readings matching the front panel. Remote control remains disabled until separately enabled on the dashboard. If the adapter is busy on the first read, refresh after a few seconds. Do not reuse another Pi's USB serial.</p>
+<h3>Original standalone HP 6033A installer</h3>
+<p>The following steps are for the older <code>~/hp6033a</code> standalone install, not the signed suite. During interactive setup, unplug and reconnect the USB-GPIB adapter when prompted, then press Enter. If setup detects exactly one supported UsbGpib V2 adapter, it saves its VISA address before starting the service. Open the dashboard and verify that GPIB is connected and the readings match the front panel before enabling remote control.</p>
 <p>Type <code>s</code> to skip automatic configuration. If you skip it or detection fails, follow these manual steps:</p>
 <ol>
 <li>Reconnect the UsbGpib V2 adapter after the udev rules are installed. Open a fresh SSH session after any change to the user's <code>plugdev</code> membership.</li>

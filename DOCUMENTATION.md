@@ -5,6 +5,7 @@
 | Task | Guide |
 | --- | --- |
 | Signed installation, updates, web authorization and rollback | [One-command maintenance](ONE_COMMAND_UPDATER.md) |
+| First USB-GPIB connection and HP 6033A supply setup | [Connect an instrument](GPIB_SETUP.md) |
 | Existing HTTPS installation migration | [Gateway migration](GATEWAY_MIGRATION.md) |
 | Release acceptance and remaining limits | [Current validation](FRESH_CARD_VALIDATION.md) |
 | Original catalog and removal workflow | [Catalog](CATALOG.md) |
