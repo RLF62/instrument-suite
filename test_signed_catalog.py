@@ -17,6 +17,20 @@ class SignedCatalogTests(unittest.TestCase):
     with patch.multiple(manager,HOME=base,UNITS=units,REGISTRY=base/'registry.json'):
      self.assertEqual(manager.removal_policy(tool),(True,''))
 
+ def test_shared_suite_runtime_services_are_removable(self):
+  for tool,folder,port,module in (('counter','hp5385a',8085,'counter_app'),('generator','hp33120a',8084,'generator_app')):
+   with self.subTest(tool=tool),tempfile.TemporaryDirectory() as tmp:
+    base=Path(tmp);target=base/folder;target.mkdir();units=base/'units';units.mkdir()
+    unit=units/(folder+'.service')
+    text=f'User=pi\nWorkingDirectory={target}\nExecStart={base}/instrument-suite/venv/bin/gunicorn --bind 0.0.0.0:{port} {module}:app\n'
+    unit.write_text(text)
+    with patch.multiple(manager,HOME=base,UNITS=units,REGISTRY=base/'registry.json'):
+     self.assertEqual(manager.removal_policy(tool),(True,''))
+     unit.write_text(text.replace(module+':app','other_app:app'))
+     self.assertFalse(manager.removal_policy(tool)[0])
+     unit.write_text(text.replace(f':{port}',':8089'))
+     self.assertFalse(manager.removal_policy(tool)[0])
+
  def test_unknown_guard_or_shared_host_stays_protected(self):
   with tempfile.TemporaryDirectory() as tmp:
    base=Path(tmp);target=base/'hp34401a';target.mkdir();units=base/'units';units.mkdir()

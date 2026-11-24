@@ -69,7 +69,10 @@ def standalone_service(tool,target,text,port,module):
     if f'WorkingDirectory={target}\n' not in text or f':{port}' not in text:
         return False
     starts=[line for line in text.splitlines() if line.startswith('ExecStart=')]
-    if len(starts)!=1 or f'{target}/venv/bin/gunicorn ' not in starts[0]:
+    launchers=[f'{target}/venv/bin/gunicorn ']
+    if (tool,target.name) in (('counter','hp5385a'),('generator','hp33120a')) and not (target/'venv').exists():
+        launchers.append(f'{target.parent}/instrument-suite/venv/bin/gunicorn ')
+    if len(starts)!=1 or not any(launcher in starts[0] for launcher in launchers):
         return False
     if starts[0].split()[-1:]==[module+':app']:
         return True
