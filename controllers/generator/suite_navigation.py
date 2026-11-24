@@ -39,7 +39,8 @@ TITLES = {'supply':'HP 6033A POWER SUPPLY','meter':'HP 34401A MULTIMETER',
 LABELS = {'supply':'HP 6033A','meter':'HP 34401A','scope':'Tektronix',
           'generator':'HP 33120A','counter':'HP 5385A'}
 VIEWS = {'supply':('/classic-dual','/'),'meter':('/multimeter/classic','/multimeter/modern'),
-         'generator':('/generator/classic','/generator/modern'),'counter':('/classic','/modern')}
+         'generator':('/generator/classic','/generator/modern'),'counter':('/classic','/modern'),
+         'scope':('/classic','/')}
 DOCS = {'supply':'/docs/','meter':'/multimeter/assets/docs/index.html','scope':'/docs/',
         'generator':'/generator/assets/docs.html','counter':'/docs/'}
 HEADER_CSS = """<style>

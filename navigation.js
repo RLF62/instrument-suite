@@ -24,7 +24,7 @@
       supply:classic?'/classic-dual':'/',
       meter:classic?'/multimeter/classic':'/multimeter/modern',
       generator:classic?'/generator/classic':'/generator/modern',
-      scope:'/',
+      scope:classic?'/classic':'/',
       counter:classic?'/classic':'/modern'
     };
     const docs={supply:'/docs/',meter:'/multimeter/assets/docs/index.html',scope:'/docs/',generator:'/generator/assets/docs.html',counter:'/docs/'};

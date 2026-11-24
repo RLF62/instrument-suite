@@ -26,7 +26,7 @@
       generator: classicView ? '/generator/classic' : '/generator/modern',
       meter: classicView ? '/multimeter/classic' : '/multimeter/modern',
       supply: classicView ? '/classic-dual' : '/',
-      scope: '/'
+      scope: classicView ? '/classic' : '/'
     };
     const targets = {
       generator: ['HP 33120A', location.origin+pathFor.generator],
