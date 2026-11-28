@@ -176,6 +176,22 @@ class SafetyTests(unittest.TestCase):
         self.assertEqual(Guard('supply',c).check(),
                          {'connected':False,'remote_control_enabled':False,'verified':True})
 
+    def test_offline_supply_adapter(self):
+        c=types.SimpleNamespace(remote_control_enabled=False,GPIB_RESOURCE='',
+                                read_gpib=MagicMock())
+        self.assertFalse(Guard('supply',c).check()['connected'])
+        c.read_gpib.assert_not_called()
+        try:
+            from pyvisa.constants import StatusCode
+            from pyvisa.errors import VisaIOError
+        except ImportError:
+            return
+        c.GPIB_RESOURCE='GPIB0::1::INSTR'
+        c.read_gpib.side_effect=VisaIOError(StatusCode.error_resource_not_found)
+        self.assertFalse(Guard('supply',c).check()['connected'])
+        c.read_gpib.side_effect=VisaIOError(StatusCode.error_timeout)
+        with self.assertRaises(VisaIOError):Guard('supply',c).check()
+
     def test_disconnected_or_unexpected_supply_error_blocks(self):
         for error in (OSError(),RuntimeError('adapter unavailable')):
             c=types.SimpleNamespace(remote_control_enabled=False,read_gpib=MagicMock(side_effect=error))
@@ -187,6 +203,28 @@ class SafetyTests(unittest.TestCase):
                          {'connected':False,'verified':True})
         offline.config.return_value={'address':'192.168.1.78'}
         with self.assertRaises(AssertionError):Guard('scope',None,scope_io=offline).check()
+
+    def test_scope_offline_connect_and_connected_failure(self):
+        import errno
+        for code in (errno.EHOSTUNREACH, errno.ENETUNREACH, errno.ECONNREFUSED):
+            instrument=MagicMock(client=None,link=None)
+            instrument.open.side_effect=OSError(code,'unreachable')
+            @contextmanager
+            def scope():yield instrument,{}
+            io=types.SimpleNamespace(scope=scope,ask=MagicMock())
+            self.assertEqual(Guard('scope',None,scope_io=io).check(),
+                             {'connected':False,'verified':True})
+            io.ask.assert_not_called()
+            instrument.client=object()
+            with self.assertRaises(OSError):Guard('scope',None,scope_io=io).check()
+        instrument=MagicMock(client=None,link=None)
+        instrument.open.side_effect=TimeoutError('ambiguous timeout')
+        @contextmanager
+        def scope():yield instrument,{}
+        io=types.SimpleNamespace(scope=scope,ask=MagicMock())
+        self.assertFalse(Guard('scope',None,scope_io=io).check()['connected'])
+        instrument.client=object()
+        with self.assertRaises(TimeoutError):Guard('scope',None,scope_io=io).check()
 
     def test_meter_polling_and_queued_operations_block(self):
         for state in ({'polling':True,'pending_controls':0},{'polling':False,'pending_controls':1},{'polling':False}):

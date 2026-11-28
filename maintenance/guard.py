@@ -1,5 +1,6 @@
 """Controller-side maintenance lease. No reset, stop or setting commands."""
 from contextlib import ExitStack
+import errno
 import json
 import os
 from pathlib import Path
@@ -43,6 +44,10 @@ class Guard:
         if self.tool == 'supply':
             if getattr(self.controller, 'remote_control_enabled', None) is not False:
                 raise RuntimeError('In the live HP 6033A dashboard, turn OUTPUT OFF, then disable remote programming and retry. The updater never switches output')
+            # An empty VISA resource means this installation has no GPIB path.
+            # The controller has already drained requests and remote writes are off.
+            if getattr(self.controller, 'GPIB_RESOURCE', None) == '':
+                return {'connected': False, 'remote_control_enabled': False, 'verified': True}
             # Same read-only path used by the controller; a cached display is insufficient.
             try:
                 values = self.controller.read_gpib()
@@ -51,6 +56,17 @@ class Guard:
                                   'Hardware access is disabled pending coordination checks'):
                     # The broker has disabled hardware transactions; the web
                     # controller has remote programming disabled as checked above.
+                    return {'connected': False, 'remote_control_enabled': False, 'verified': True}
+                raise
+            except Exception as error:
+                # VISA's resource-not-found status identifies an absent adapter.
+                # Timeouts or protocol errors from an attached instrument still block.
+                try:
+                    from pyvisa.constants import StatusCode
+                    from pyvisa.errors import VisaIOError
+                except ImportError:
+                    raise error
+                if isinstance(error, VisaIOError) and error.error_code == StatusCode.error_resource_not_found:
                     return {'connected': False, 'remote_control_enabled': False, 'verified': True}
                 raise
             output = values.get('OUT')
@@ -75,6 +91,16 @@ class Guard:
             if hasattr(self.scope_io, 'config') and self.scope_io.config()['address'] == 'scope-not-configured.invalid':
                 return {'connected': False, 'verified': True}
             with self.scope_io.scope() as (instrument, config):
+                try:
+                    instrument.open()
+                except (OSError, TimeoutError) as error:
+                    # A failed initial TCP connection cannot be an active controller
+                    # transaction. Do not treat errors after link creation as offline.
+                    if (isinstance(error, TimeoutError) or
+                            error.errno in (errno.EHOSTUNREACH, errno.ENETUNREACH, errno.ECONNREFUSED)) and (
+                            instrument.client is None and instrument.link is None):
+                        return {'connected': False, 'verified': True}
+                    raise
                 running = self.scope_io.ask(instrument, 'ACQUIRE:STATE?')
                 busy = self.scope_io.ask(instrument, 'BUSY?')
             if running != '0' or busy != '0':
