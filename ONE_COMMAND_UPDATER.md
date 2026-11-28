@@ -79,14 +79,18 @@ not a replacement of the transaction engine.
 Before interruption, the root engine holds a local maintenance lease. The lease
 blocks new requests, drains active requests and verifies the instrument state.
 
-- Supply: the existing read-only shared-broker path must return output OFF,
-  and the controller must report remote programming disabled. Missing connection
-  or an unknown value blocks maintenance. The updater never switches output.
+- Supply: the controller must report remote programming disabled. With a
+  connected GPIB adapter, the read-only path must return output OFF. An empty
+  resource or VISA resource-not-found error permits software-only maintenance;
+  an ambiguous read or unknown output still blocks it. The updater never
+  switches output.
 - Meter: polling must be paused, no controls may be queued, and the operation
   mutex must be idle.
-- Scope: the serialized read-only path must confirm acquisition stopped and
-  BUSY false. If it cannot, the user must stop acquisition and retry. No reset,
-  stop, autoset or programming command is sent by the updater.
+- Scope: if the initial connection is unreachable or times out before a
+  VXI link exists, software-only maintenance may proceed. A connected scope
+  must confirm acquisition stopped and BUSY false; connection loss during
+  queries still blocks maintenance. No reset, stop, autoset or programming
+  command is sent by the updater.
 
 A durable journal and maintenance gate keep controls locked across failed
 activation or unexpected restarts. Staged files are verified before interruption.
