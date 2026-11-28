@@ -119,7 +119,7 @@ def install_helper():
         runner.write_text('import sys\nsys.path.insert(0,"/opt/fischer-suite-updater/current")\nfrom maintenance.helper import main\nmain()\n');runner.chmod(0o644)
     unit=Path('/etc/systemd/system/fischer-suite-updater-web.service')
     if not unit.exists():
-        unit.write_text('[Unit]\nDescription=Fischer fixed-action software update helper\nAfter=network.target\n[Service]\nUser=root\nGroup=www-data\nRuntimeDirectory=fischer-suite-updater-web\nRuntimeDirectoryMode=0750\nUMask=0007\nExecStart=/usr/bin/python3 -I /opt/fischer-suite-updater/helper_runner.py\nNoNewPrivileges=true\nProtectSystem=true\nPrivateTmp=true\nRestrictSUIDSGID=true\nRestrictAddressFamilies=AF_UNIX AF_INET AF_INET6\nRestart=on-failure\nTimeoutStopSec=30\n[Install]\nWantedBy=multi-user.target\n');unit.chmod(0o644)
+        unit.write_text('[Unit]\nDescription=Fischer fixed-action software update helper\nAfter=network.target\n[Service]\nUser=root\nGroup=www-data\nRuntimeDirectory=fischer-suite-updater-web\nRuntimeDirectoryMode=0750\nUMask=0007\nExecStart=/usr/bin/python3 -I /opt/fischer-suite-updater/helper_runner.py\nNoNewPrivileges=false\nProtectSystem=true\nPrivateTmp=true\nRestrictSUIDSGID=false\nRestrictAddressFamilies=AF_UNIX AF_INET AF_INET6\nRestart=on-failure\nTimeoutStopSec=30\n[Install]\nWantedBy=multi-user.target\n');unit.chmod(0o644)
     subprocess.run(['systemctl','daemon-reload'],check=True)
     subprocess.run(['systemctl','reset-failed','fischer-suite-updater-web'],check=False)
     subprocess.run(['systemctl','enable','--now','fischer-suite-updater-web'],check=True)
