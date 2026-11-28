@@ -40,7 +40,7 @@ The fresh suite dashboard uses port 8080. Existing HTTPS installations retain th
 
 Signed manifests select compatible, independently versioned controller packages. Downloads and dependency locks are verified before activation. Instrument interlocks, private backups and automatic recovery remain mandatory.
 
-Before maintenance, confirm supply output OFF and remote programming disabled, pause meter polling, and stop scope acquisition. Missing or unknown instrument state blocks the operation. The updater does not change those instrument states for you.
+Before maintenance, disable supply remote programming, pause meter polling, and stop scope acquisition if the instruments are connected. The supply output must read OFF when GPIB is connected. Updates can proceed with no configured GPIB resource, a missing GPIB adapter, or an unreachable scope. An ambiguous read or a failure after the scope connects still blocks the update. The updater does not change instrument states.
 
 ```sh
 sudo instrument-suite status
