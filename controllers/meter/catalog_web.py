@@ -3,7 +3,7 @@ import json
 import socket
 import sys
 from pathlib import Path
-from flask import Response, jsonify, request
+from flask import Response, jsonify, request, send_file
 
 SOCKET='/run/fischer-suite-manager/install.sock'
 
@@ -28,6 +28,12 @@ def install(app):
     @app.get('/api/suite/manager')
     def instrument_manager_page():
         return Response((Path(__file__).parent/'catalog.html').read_text(),mimetype='text/html',headers={'Cache-Control':'no-store'})
+
+    @app.get('/api/suite/favicon.png')
+    def instrument_suite_icon():
+        icon=Path('/home/pi/instrument-suite/maintenance/static/favicon.png')
+        if not icon.is_file():return Response(status=404)
+        return send_file(icon,mimetype='image/png')
 
     @app.get('/api/suite/catalog')
     def instrument_catalog():
